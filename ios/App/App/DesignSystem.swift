@@ -109,16 +109,15 @@ struct RoundGlassButton: View {
 
     @ViewBuilder
     private var visualLabel: some View {
-        if #available(iOS 26.0, *) {
-            iconLabel
-                .glassEffect(.regular.interactive(), in: .circle)
-        } else {
-            iconLabel
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.white.opacity(0.8), lineWidth: 1))
-                .background(.ultraThinMaterial, in: Circle())
-                .shadow(color: NoteTheme.ink.opacity(0.08), radius: 18, y: 8)
-        }
+        iconLabel
+            .clipShape(Circle())
+            .overlay {
+                if !selected {
+                    Circle()
+                        .stroke(Color.white.opacity(0.68), lineWidth: 1)
+                }
+            }
+            .shadow(color: NoteTheme.ink.opacity(0.07), radius: 16, y: 7)
     }
 
     private var iconLabel: some View {
@@ -129,6 +128,13 @@ struct RoundGlassButton: View {
             .background {
                 if selected {
                     Circle().fill(NoteTheme.ink)
+                } else {
+                    Circle()
+                        .fill(Color.white.opacity(0.46))
+                        .overlay {
+                            Circle()
+                                .fill(NoteTheme.ink.opacity(0.014))
+                        }
                 }
             }
             .contentShape(Circle())
@@ -238,6 +244,39 @@ struct EmptyStateView: View {
         }
         .foregroundStyle(NoteTheme.ink)
         .padding(28)
+    }
+}
+
+struct UserFacingAlert: Identifiable {
+    let id = UUID()
+    let message: String
+
+    init(error: Error) {
+        message = error.localizedDescription
+    }
+
+    init(message: String) {
+        self.message = message
+    }
+
+    static func local(error: Error) -> UserFacingAlert? {
+        if let storeError = error as? NoteStoreError,
+           case .persistenceWriteFailed = storeError {
+            return nil
+        }
+        return UserFacingAlert(error: error)
+    }
+}
+
+extension View {
+    func noteErrorAlert(_ alert: Binding<UserFacingAlert?>) -> some View {
+        self.alert(item: alert) { alert in
+            Alert(
+                title: Text("操作未完成"),
+                message: Text(alert.message),
+                dismissButton: .default(Text("知道了"))
+            )
+        }
     }
 }
 

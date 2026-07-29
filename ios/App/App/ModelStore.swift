@@ -111,6 +111,8 @@ enum NoteStoreError: LocalizedError {
     case emptyGroupName
     case itemNotFound
     case invalidOperation(String)
+    case persistenceUnavailable
+    case persistenceWriteFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -124,6 +126,10 @@ enum NoteStoreError: LocalizedError {
             "没有找到对应内容。"
         case .invalidOperation(let message):
             message
+        case .persistenceUnavailable:
+            "本机数据暂时无法读取。为保护原记录，NOTE1 已暂停写入。"
+        case .persistenceWriteFailed(let message):
+            "本机数据没有保存成功：\(message)"
         }
     }
 }
@@ -136,12 +142,42 @@ final class NoteStore: ObservableObject {
     @Published private(set) var groups: [IdeaGroup] = []
     @Published private(set) var attachments: [Attachment] = []
     @Published private(set) var lastPersistenceError: String?
+    @Published private(set) var isReadOnlyBecausePersistenceFailed = false
 
     private struct StoredData: Codable {
-        var version = 1
+        static let currentVersion = 2
+
+        var version: Int
         var ideas: [Idea]
         var groups: [IdeaGroup]
         var attachments: [Attachment]
+
+        init(
+            version: Int = Self.currentVersion,
+            ideas: [Idea],
+            groups: [IdeaGroup],
+            attachments: [Attachment]
+        ) {
+            self.version = version
+            self.ideas = ideas
+            self.groups = groups
+            self.attachments = attachments
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case version
+            case ideas
+            case groups
+            case attachments
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            version = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+            ideas = try container.decode([Idea].self, forKey: .ideas)
+            groups = try container.decode([IdeaGroup].self, forKey: .groups)
+            attachments = try container.decode([Attachment].self, forKey: .attachments)
+        }
     }
 
     private let fileManager: FileManager
@@ -178,6 +214,7 @@ final class NoteStore: ObservableObject {
             try load()
         } catch {
             lastPersistenceError = error.localizedDescription
+            isReadOnlyBecausePersistenceFailed = true
         }
     }
 
@@ -283,7 +320,8 @@ final class NoteStore: ObservableObject {
     @discardableResult
     func createIdea(
         content: String,
-        attachmentInputs: [AttachmentInput] = []
+        attachmentInputs: [AttachmentInput] = [],
+        groupID: UUID? = nil
     ) throws -> Idea {
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty || !attachmentInputs.isEmpty else {
@@ -292,16 +330,28 @@ final class NoteStore: ObservableObject {
         try validateAttachmentInputs(attachmentInputs)
 
         let now = Date()
+        var updatedGroups = groups
+        if let groupID {
+            guard let groupIndex = updatedGroups.firstIndex(where: { $0.id == groupID }) else {
+                throw NoteStoreError.itemNotFound
+            }
+            guard updatedGroups[groupIndex].status == .active else {
+                throw NoteStoreError.invalidOperation("不能向已完成的灵感组添加内容。")
+            }
+            updatedGroups[groupIndex].updatedAt = now
+            updatedGroups[groupIndex].activityAt = now
+        }
+
         let idea = Idea(
             id: UUID(),
             content: content,
             status: .active,
-            groupID: nil,
+            groupID: groupID,
             createdAt: now,
             updatedAt: now,
             activityAt: now,
             completedAt: nil,
-            addedToGroupAt: nil
+            addedToGroupAt: groupID == nil ? nil : now
         )
         let newAttachments = try writeAttachments(
             attachmentInputs,
@@ -312,7 +362,7 @@ final class NoteStore: ObservableObject {
         do {
             try commit(
                 ideas: ideas + [idea],
-                groups: groups,
+                groups: updatedGroups,
                 attachments: attachments + newAttachments
             )
         } catch {
@@ -414,6 +464,9 @@ final class NoteStore: ObservableObject {
         }
         guard let index = groups.firstIndex(where: { $0.id == id }) else {
             throw NoteStoreError.itemNotFound
+        }
+        guard groups[index].status == .active else {
+            throw NoteStoreError.invalidOperation("请先恢复灵感组，再修改名称。")
         }
 
         let now = Date()
@@ -591,7 +644,7 @@ final class NoteStore: ObservableObject {
     private func itemMatches(_ item: ReviewItem, query: String) -> Bool {
         switch item {
         case .group(let group):
-            return group.name.localizedCaseInsensitiveContains(query) ||
+            return group.name.localizedStandardContains(query) ||
                 ideas
                     .filter { $0.groupID == group.id }
                     .contains { ideaMatches($0, query: query) }
@@ -601,10 +654,10 @@ final class NoteStore: ObservableObject {
     }
 
     private func ideaMatches(_ idea: Idea, query: String) -> Bool {
-        idea.content.localizedCaseInsensitiveContains(query) ||
+        idea.content.localizedStandardContains(query) ||
             attachments.contains {
                 $0.ideaID == idea.id &&
-                    $0.name.localizedCaseInsensitiveContains(query)
+                    $0.name.localizedStandardContains(query)
             }
     }
 
@@ -625,14 +678,17 @@ final class NoteStore: ObservableObject {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let storedData = try decoder.decode(StoredData.self, from: data)
-        let migratedGroups = storedData.groups.map { group in
-            guard group.name == "Existing group" else { return group }
-            var migrated = group
-            migrated.name = "灵感组"
-            return migrated
-        }
+        let needsLegacyPlaceholderMigration = storedData.version < 2
+        let migratedGroups = needsLegacyPlaceholderMigration
+            ? storedData.groups.map { group in
+                guard group.name == "Existing group" else { return group }
+                var migrated = group
+                migrated.name = "灵感组"
+                return migrated
+            }
+            : storedData.groups
 
-        if migratedGroups != storedData.groups {
+        if storedData.version < StoredData.currentVersion {
             try commit(
                 ideas: storedData.ideas,
                 groups: migratedGroups,
@@ -651,6 +707,9 @@ final class NoteStore: ObservableObject {
         groups newGroups: [IdeaGroup],
         attachments newAttachments: [Attachment]
     ) throws {
+        guard !isReadOnlyBecausePersistenceFailed else {
+            throw NoteStoreError.persistenceUnavailable
+        }
         let storedData = StoredData(
             ideas: newIdeas,
             groups: newGroups,
@@ -660,7 +719,13 @@ final class NoteStore: ObservableObject {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(storedData)
-        try data.write(to: databaseURL, options: [.atomic])
+        do {
+            try data.write(to: databaseURL, options: [.atomic])
+        } catch {
+            let message = error.localizedDescription
+            lastPersistenceError = message
+            throw NoteStoreError.persistenceWriteFailed(message)
+        }
 
         ideas = newIdeas
         groups = newGroups

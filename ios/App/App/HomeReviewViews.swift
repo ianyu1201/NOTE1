@@ -14,6 +14,7 @@ struct HomeView: View {
     @State private var showAttachmentSource = false
     @State private var showPhotoPicker = false
     @State private var showFileImporter = false
+    @State private var errorAlert: UserFacingAlert?
     @FocusState private var inputFocused: Bool
 
     var body: some View {
@@ -121,8 +122,14 @@ struct HomeView: View {
             allowedContentTypes: [.item],
             allowsMultipleSelection: true
         ) { result in
-            guard case .success(let urls) = result else { return }
-            draftAttachments.append(contentsOf: urls.compactMap(makeAttachmentInput))
+            do {
+                let urls = try result.get()
+                draftAttachments.append(
+                    contentsOf: try urls.map(AttachmentImporter.input)
+                )
+            } catch {
+                present(error)
+            }
         }
         .photosPicker(
             isPresented: $showPhotoPicker,
@@ -133,6 +140,7 @@ struct HomeView: View {
         .onChange(of: selectedPhotoItems) { _, items in
             importPhotos(items)
         }
+        .noteErrorAlert($errorAlert)
     }
 
     @ViewBuilder
@@ -199,24 +207,13 @@ struct HomeView: View {
             inputFocused = false
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
     private var hasSaveableDraft: Bool {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || !draftAttachments.isEmpty
-    }
-
-    private func makeAttachmentInput(from url: URL) -> AttachmentInput? {
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer {
-            if accessed { url.stopAccessingSecurityScopedResource() }
-        }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        let type = (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType)?
-            .preferredMIMEType ?? "application/octet-stream"
-        return AttachmentInput(name: url.lastPathComponent, mimeType: type, data: data)
     }
 
     private func importPhotos(_ items: [PhotosPickerItem]) {
@@ -227,8 +224,14 @@ struct HomeView: View {
             selectedPhotoItems = []
             if inputs.isEmpty {
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
+                errorAlert = UserFacingAlert(message: "没有读到可添加的照片，请重新选择。")
             }
         }
+    }
+
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 
     private func presentAttachmentPicker(_ source: AttachmentSource) {
@@ -264,6 +267,7 @@ struct ReviewView: View {
     @State private var isCompleting = false
     @State private var undoItem: ReviewItem?
     @State private var undoDismissTask: DispatchWorkItem?
+    @State private var errorAlert: UserFacingAlert?
     @GestureState private var groupButtonPressed = false
 
     private var items: [ReviewItem] { store.reviewItems }
@@ -339,6 +343,7 @@ struct ReviewView: View {
         .onChange(of: items.count) { _, count in
             index = min(index, max(0, count - 1))
         }
+        .noteErrorAlert($errorAlert)
     }
 
     @ViewBuilder
@@ -418,6 +423,18 @@ struct ReviewView: View {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityIdentifier("review.card.\(item.id.uuidString)")
                     .accessibilityHint("点按编辑；上下滑动切换；左右滑动完成")
+                    .accessibilityAction(.default) {
+                        open(item)
+                    }
+                    .accessibilityAction(named: "查看上一条") {
+                        page(direction: -1, height: proxy.size.height)
+                    }
+                    .accessibilityAction(named: "查看下一条") {
+                        page(direction: 1, height: proxy.size.height)
+                    }
+                    .accessibilityAction(named: "完成这条灵感") {
+                        completeCurrent(direction: 1, width: proxy.size.width)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -593,7 +610,7 @@ struct ReviewView: View {
                 try store.assignIdea(ideaID, to: targetGroupID)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             } catch {
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                present(error)
             }
         } else if hoveringNew {
             showGroupPicker = true
@@ -688,7 +705,7 @@ struct ReviewView: View {
                 dragOffset = .zero
                 cardPresented = true
                 isCompleting = false
-                UINotificationFeedbackGenerator().notificationOccurred(.error)
+                present(error)
             }
         }
         guard !reduceMotion else {
@@ -733,7 +750,7 @@ struct ReviewView: View {
                 }
             }
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -742,6 +759,11 @@ struct ReviewView: View {
         case .idea(let idea): onOpenIdea(idea.id)
         case .group(let group): onOpenGroup(group.id)
         }
+    }
+
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 }
 

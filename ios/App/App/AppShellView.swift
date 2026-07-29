@@ -18,6 +18,7 @@ struct AppShellView: View {
     @State private var isNavigationLocked = false
     @State private var contentVisible = false
     @State private var edgeBackOffset: CGFloat = 0
+    @State private var errorAlert: UserFacingAlert?
 
     var body: some View {
         ZStack {
@@ -63,7 +64,18 @@ struct AppShellView: View {
                     .accessibilityHidden(true)
             }
         }
-        .onAppear(perform: playLaunchTransition)
+        .onAppear {
+            playLaunchTransition()
+            presentStartupErrorIfNeeded()
+        }
+        .onChange(of: store.lastPersistenceError) { _, message in
+            guard !store.isReadOnlyBecausePersistenceFailed,
+                  let message else { return }
+            errorAlert = UserFacingAlert(
+                message: "本机数据没有保存成功：\(message)"
+            )
+        }
+        .noteErrorAlert($errorAlert)
     }
 
     private var usesSharedBottomSlot: Bool {
@@ -182,6 +194,13 @@ struct AppShellView: View {
                 contentVisible = true
             }
         }
+    }
+
+    private func presentStartupErrorIfNeeded() {
+        guard store.isReadOnlyBecausePersistenceFailed else { return }
+        errorAlert = UserFacingAlert(
+            message: "NOTE1 无法读取原有本机数据。为保护这些记录，本次已暂停写入。请不要删除 App，可先保留数据后再处理。"
+        )
     }
 }
 

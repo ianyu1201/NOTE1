@@ -149,14 +149,6 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.idea(id: idea.id)?.status, .active)
     }
 
-    func testLegacyExistingGroupNameMigratesToChinese() throws {
-        let group = try store.createGroup(name: "Existing group")
-
-        let reloaded = NoteStore(storageDirectory: directory)
-
-        XCTAssertEqual(reloaded.group(id: group.id)?.name, "灵感组")
-    }
-
     func testHistorySearchesAttachmentNames() throws {
         let attachment = AttachmentInput(
             name: "企业架构草图.pdf",

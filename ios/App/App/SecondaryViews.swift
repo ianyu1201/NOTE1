@@ -28,13 +28,14 @@ struct HistoryView: View {
     @State private var selecting = false
     @State private var selection: Set<UUID> = []
     @State private var showingDeleteConfirmation = false
+    @State private var errorAlert: UserFacingAlert?
 
     private var visibleItems: [ReviewItem] {
         store.recordItems(status: filter.status, matching: query)
     }
 
     private var selectedItems: [ReviewItem] {
-        store.allRecordItems.filter { selection.contains($0.id) }
+        visibleItems.filter { selection.contains($0.id) }
     }
 
     var body: some View {
@@ -80,7 +81,7 @@ struct HistoryView: View {
                 }
                 .font(.system(size: 13, weight: .semibold))
                 .buttonStyle(.plain)
-                .frame(width: 52, height: 38)
+                .frame(width: 52, height: 44)
                 .contentShape(Rectangle())
                 .accessibilityIdentifier("history.selection.toggle")
             }
@@ -188,6 +189,13 @@ struct HistoryView: View {
         } message: {
             Text("此操作会同时删除记录中的附件，且无法撤销。")
         }
+        .onChange(of: visibleItems.map(\.id)) { _, visibleItemIDs in
+            selection = HistorySelectionPolicy.visibleSelection(
+                selection,
+                visibleItemIDs: visibleItemIDs
+            )
+        }
+        .noteErrorAlert($errorAlert)
     }
 
     private var emptyTitle: String {
@@ -213,8 +221,12 @@ struct HistoryView: View {
 
     private func setFilter(_ nextFilter: RecordFilter) {
         filter = nextFilter
-        selection.formIntersection(
-            store.recordItems(status: nextFilter.status, matching: query).map(\.id)
+        selection = HistorySelectionPolicy.visibleSelection(
+            selection,
+            visibleItemIDs: store.recordItems(
+                status: nextFilter.status,
+                matching: query
+            ).map(\.id)
         )
     }
 
@@ -225,7 +237,7 @@ struct HistoryView: View {
         .font(.system(size: 13, weight: filter == item ? .semibold : .regular))
         .foregroundStyle(NoteTheme.ink)
         .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, minHeight: 32)
+        .frame(maxWidth: .infinity, minHeight: 44)
         .background(
             filter == item ? Color.white.opacity(0.82) : Color.clear,
             in: Capsule()
@@ -248,7 +260,7 @@ struct HistoryView: View {
             try store.restore(item)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -261,8 +273,13 @@ struct HistoryView: View {
             if selection.isEmpty { selecting = false }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
+    }
+
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 
     private func open(_ item: ReviewItem) {
@@ -285,6 +302,7 @@ struct EditorView: View {
     @State private var showPhotoPicker = false
     @State private var showFileImporter = false
     @State private var previewAttachment: Attachment?
+    @State private var errorAlert: UserFacingAlert?
     @FocusState private var editorFocused: Bool
 
     private var idea: Idea? { store.idea(id: ideaID) }
@@ -340,6 +358,8 @@ struct EditorView: View {
                                 Image(systemName: "xmark")
                             }
                             .buttonStyle(.plain)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                             .accessibilityLabel("移除附件")
                         }
                         .padding(.horizontal, 16)
@@ -417,9 +437,12 @@ struct EditorView: View {
             allowedContentTypes: [.item],
             allowsMultipleSelection: true
         ) { result in
-            guard case .success(let urls) = result else { return }
-            let inputs = urls.compactMap(makeAttachmentInput)
-            addAttachments(inputs)
+            do {
+                let urls = try result.get()
+                addAttachments(try urls.map(AttachmentImporter.input))
+            } catch {
+                present(error)
+            }
         }
         .photosPicker(
             isPresented: $showPhotoPicker,
@@ -436,6 +459,7 @@ struct EditorView: View {
                 url: store.attachmentURL(attachment)
             )
         }
+        .noteErrorAlert($errorAlert)
     }
 
     private func scheduleSave() {
@@ -459,7 +483,7 @@ struct EditorView: View {
             )
             savedContent = content
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
         saving = false
     }
@@ -474,7 +498,7 @@ struct EditorView: View {
             )
             savedContent = content
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -489,7 +513,7 @@ struct EditorView: View {
             )
             savedContent = content
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -501,6 +525,7 @@ struct EditorView: View {
             selectedPhotoItems = []
             if inputs.isEmpty {
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
+                errorAlert = UserFacingAlert(message: "没有读到可添加的照片，请重新选择。")
             }
         }
     }
@@ -527,15 +552,9 @@ struct EditorView: View {
         }
     }
 
-    private func makeAttachmentInput(from url: URL) -> AttachmentInput? {
-        let accessed = url.startAccessingSecurityScopedResource()
-        defer {
-            if accessed { url.stopAccessingSecurityScopedResource() }
-        }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        let type = (try? url.resourceValues(forKeys: [.contentTypeKey]).contentType)?
-            .preferredMIMEType ?? "application/octet-stream"
-        return AttachmentInput(name: url.lastPathComponent, mimeType: type, data: data)
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 }
 
@@ -715,10 +734,12 @@ struct IdeaGroupView: View {
     @State private var editingName = false
     @State private var name = ""
     @State private var showComposer = false
+    @State private var errorAlert: UserFacingAlert?
     @FocusState private var nameFocused: Bool
 
     private var group: IdeaGroup? { store.group(id: groupID) }
     private var ideas: [Idea] { store.ideas(in: groupID) }
+    private var isGroupActive: Bool { group?.status == .active }
 
     var body: some View {
         VStack(spacing: 18) {
@@ -726,26 +747,32 @@ struct IdeaGroupView: View {
                 HStack(spacing: 12) {
                     if editingName {
                         TextField("灵感组名称", text: $name)
-                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .font(.largeTitle.bold())
                             .focused($nameFocused)
                             .onSubmit(saveName)
                     } else {
                         Text(group.name)
-                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .font(.largeTitle.bold())
                     }
                     Spacer()
-                    RoundGlassButton(
-                        systemName: editingName ? "checkmark" : "square.and.pencil",
-                        label: editingName ? "保存灵感组名称" : "编辑灵感组名称",
-                        action: editingName ? saveName : beginEditingName
-                    )
+                    if isGroupActive {
+                        RoundGlassButton(
+                            systemName: editingName ? "checkmark" : "square.and.pencil",
+                            label: editingName ? "保存灵感组名称" : "编辑灵感组名称",
+                            action: editingName ? saveName : beginEditingName
+                        )
+                    }
                 }
 
                 if ideas.isEmpty {
                     EmptyStateView(
-                        systemName: "rectangle.stack.badge.plus",
+                        systemName: isGroupActive
+                            ? "rectangle.stack.badge.plus"
+                            : "checkmark.circle",
                         title: "这个灵感组还是空的",
-                        message: "可以从卡片页把灵感加入这里。"
+                        message: isGroupActive
+                            ? "可以从卡片页把灵感加入这里。"
+                            : "恢复整个灵感组后，才能继续添加内容。"
                     )
                     .frame(maxHeight: .infinity)
                 } else {
@@ -761,7 +788,7 @@ struct IdeaGroupView: View {
                                                 .font(.caption)
                                                 .foregroundStyle(NoteTheme.secondaryInk)
                                             Text(idea.content.isEmpty ? "未命名想法" : idea.content)
-                                                .font(.system(size: 17, weight: .medium))
+                                                .font(.body)
                                                 .multilineTextAlignment(.leading)
                                                 .lineLimit(4)
                                         }
@@ -769,14 +796,18 @@ struct IdeaGroupView: View {
                                     }
                                     .buttonStyle(.plain)
 
-                                    Button {
-                                        removeFromGroup(idea.id)
-                                    } label: {
-                                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                                            .font(.system(size: 16, weight: .semibold))
+                                    if isGroupActive {
+                                        Button {
+                                            removeFromGroup(idea.id)
+                                        } label: {
+                                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                                .font(.system(size: 16, weight: .semibold))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .frame(width: 44, height: 44)
+                                        .contentShape(Rectangle())
+                                        .accessibilityLabel("移出灵感组")
                                     }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel("移出灵感组")
                                 }
                                 .padding(20)
                                 .background(
@@ -802,16 +833,18 @@ struct IdeaGroupView: View {
                     .scrollBounceBehavior(.basedOnSize)
                 }
 
-                Button {
-                    showComposer = true
-                } label: {
-                    Label("新增", systemImage: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
+                if isGroupActive {
+                    Button {
+                        showComposer = true
+                    } label: {
+                        Label("新增", systemImage: "plus")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .noteGlass(cornerRadius: 28)
                 }
-                .buttonStyle(PressScaleButtonStyle())
-                .noteGlass(cornerRadius: 28)
             } else {
                 EmptyStateView(
                     systemName: "exclamationmark.circle",
@@ -833,9 +866,11 @@ struct IdeaGroupView: View {
         .sheet(isPresented: $showComposer) {
             GroupIdeaComposer(store: store, groupID: groupID)
         }
+        .noteErrorAlert($errorAlert)
     }
 
     private func beginEditingName() {
+        guard isGroupActive else { return }
         name = group?.name ?? ""
         editingName = true
         DispatchQueue.main.async {
@@ -851,7 +886,7 @@ struct IdeaGroupView: View {
             nameFocused = false
             editingName = false
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -860,8 +895,13 @@ struct IdeaGroupView: View {
             try store.removeIdeaFromGroup(ideaID)
             UINotificationFeedbackGenerator().notificationOccurred(.success)
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
+    }
+
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 }
 
@@ -871,9 +911,10 @@ struct GroupPickerView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var newGroupName = ""
+    @State private var errorAlert: UserFacingAlert?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 Section("选择灵感组") {
                     ForEach(store.activeGroups) { group in
@@ -900,6 +941,7 @@ struct GroupPickerView: View {
                 }
             }
         }
+        .noteErrorAlert($errorAlert)
     }
 
     private func assign(to groupID: UUID) {
@@ -907,7 +949,7 @@ struct GroupPickerView: View {
             try store.assignIdea(ideaID, to: groupID)
             dismiss()
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
     }
 
@@ -918,8 +960,13 @@ struct GroupPickerView: View {
             _ = try store.createGroup(name: groupName, initialIdeaID: ideaID)
             dismiss()
         } catch {
-            UINotificationFeedbackGenerator().notificationOccurred(.error)
+            present(error)
         }
+    }
+
+    private func present(_ error: Error) {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        errorAlert = UserFacingAlert.local(error: error)
     }
 }
 
@@ -930,7 +977,7 @@ struct IdeaGroupsListView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List(store.activeGroups) { group in
                 Button {
                     dismiss()
@@ -960,11 +1007,12 @@ private struct GroupIdeaComposer: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var content = ""
+    @State private var errorAlert: UserFacingAlert?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             TextEditor(text: $content)
-                .font(.system(size: 20))
+                .font(.body)
                 .padding()
                 .navigationTitle("新增")
                 .toolbar {
@@ -977,17 +1025,22 @@ private struct GroupIdeaComposer: View {
                     }
                 }
         }
+        .noteErrorAlert($errorAlert)
     }
 
     private func add() {
         let value = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else { return }
         do {
-            let idea = try store.createIdea(content: value, attachmentInputs: [])
-            try store.assignIdea(idea.id, to: groupID)
+            _ = try store.createIdea(
+                content: value,
+                attachmentInputs: [],
+                groupID: groupID
+            )
             dismiss()
         } catch {
             UINotificationFeedbackGenerator().notificationOccurred(.error)
+            errorAlert = UserFacingAlert.local(error: error)
         }
     }
 }
