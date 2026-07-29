@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="EHf-IW-A2E">
+            <objects>
+                <viewController id="01J-lp-oVM" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="snD-IY-ifK">
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="N O T E 1" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" translatesAutoresizingMaskIntoConstraints="NO" id="ZKQ-1i-EVf">
+                                <rect key="frame" x="133" y="310" width="109" height="27"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="22"/>
+                                <color key="textColor" red="0.035" green="0.105" blue="0.205" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FuB-h8-Ews">
+                                <rect key="frame" x="160.5" y="355" width="54" height="3"/>
+                                <color key="backgroundColor" red="0.48" green="0.54" blue="0.67" alpha="0.26" colorSpace="custom" customColorSpace="sRGB"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="54" id="Lkn-uN-02F"/>
+                                    <constraint firstAttribute="height" constant="3" id="QEy-dm-PoD"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" red="0.965" green="0.965" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="ZKQ-1i-EVf" firstAttribute="centerX" secondItem="snD-IY-ifK" secondAttribute="centerX" id="B5J-Rk-yox"/>
+                            <constraint firstItem="ZKQ-1i-EVf" firstAttribute="centerY" secondItem="snD-IY-ifK" secondAttribute="centerY" constant="-10" id="J6c-JN-hNV"/>
+                            <constraint firstItem="FuB-h8-Ews" firstAttribute="centerX" secondItem="snD-IY-ifK" secondAttribute="centerX" id="TOH-oJ-G09"/>
+                            <constraint firstItem="FuB-h8-Ews" firstAttribute="top" secondItem="ZKQ-1i-EVf" secondAttribute="bottom" constant="14" id="ezu-ss-HnB"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="53" y="375"/>
+        </scene>
+    </scenes>
+</document>

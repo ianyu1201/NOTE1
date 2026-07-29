@@ -1,0 +1,9 @@
+.DS_Store
+DerivedData/
+.derivedData/
+build/
+*.xcuserstate
+xcuserdata/
+
+# 本机历史素材与清理候选，不进入正式版本
+可删除文件/
