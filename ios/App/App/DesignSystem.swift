@@ -191,7 +191,12 @@ struct SharedTopBar: View {
     var body: some View {
         ZStack {
             Text("NOTE1")
-                .font(.system(size: 22, weight: .medium, design: .rounded))
+                .noteFont(
+                    size: 22,
+                    weight: .medium,
+                    design: .rounded,
+                    relativeTo: .title3
+                )
                 .tracking(7)
                 .foregroundStyle(NoteTheme.ink)
                 .accessibilityAddTraits(.isHeader)
@@ -234,10 +239,15 @@ struct EmptyStateView: View {
             Image(systemName: systemName)
                 .font(.system(size: 34, weight: .light))
             Text(title)
-                .font(.system(size: 21, weight: .semibold, design: .rounded))
+                .noteFont(
+                    size: 21,
+                    weight: .semibold,
+                    design: .rounded,
+                    relativeTo: .title3
+                )
             if !message.isEmpty {
                 Text(message)
-                    .font(.system(size: 15))
+                    .noteFont(size: 15, relativeTo: .subheadline)
                     .foregroundStyle(NoteTheme.secondaryInk)
                     .multilineTextAlignment(.center)
             }
