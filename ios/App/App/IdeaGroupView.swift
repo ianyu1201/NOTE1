@@ -51,58 +51,18 @@ struct IdeaGroupView: View {
                     .frame(maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(ideas) { idea in
-                                HStack(spacing: 12) {
-                                    Button {
-                                        onOpenIdea(idea.id)
-                                    } label: {
-                                        VStack(alignment: .leading, spacing: 8) {
-                                            Text(NoteDateFormatter.display(idea.createdAt))
-                                                .font(.caption)
-                                                .foregroundStyle(NoteTheme.secondaryInk)
-                                            Text(idea.content.isEmpty ? "未命名想法" : idea.content)
-                                                .font(.body)
-                                                .multilineTextAlignment(.leading)
-                                                .lineLimit(4)
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    if isGroupActive {
-                                        Button {
-                                            removeFromGroup(idea.id)
-                                        } label: {
-                                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                                .font(.system(size: 16, weight: .semibold))
-                                        }
-                                        .buttonStyle(.plain)
-                                        .frame(width: 44, height: 44)
-                                        .contentShape(Rectangle())
-                                        .accessibilityLabel(
-                                            "将 \(idea.content.isEmpty ? "未命名想法" : idea.content) 移出灵感组"
-                                        )
-                                    }
-                                }
-                                .padding(20)
-                                .background(
-                                    Color.white.opacity(0.34),
-                                    in: RoundedRectangle(
-                                        cornerRadius: 24,
-                                        style: .continuous
-                                    )
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(ideas.enumerated()), id: \.element.id) {
+                                offset,
+                                idea in
+                                timelineRow(
+                                    idea,
+                                    sequence: offset + 1,
+                                    isLast: offset == ideas.count - 1
                                 )
-                                .overlay {
-                                    RoundedRectangle(
-                                        cornerRadius: 24,
-                                        style: .continuous
-                                    )
-                                    .stroke(Color.white.opacity(0.62), lineWidth: 1)
-                                }
                             }
                         }
-                        .padding(.bottom, 4)
+                        .padding(.vertical, 8)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .scrollIndicators(.visible)
@@ -143,6 +103,107 @@ struct IdeaGroupView: View {
             GroupIdeaComposer(store: store, groupID: groupID)
         }
         .noteErrorAlert($errorAlert)
+    }
+
+    private func timelineRow(
+        _ idea: Idea,
+        sequence: Int,
+        isLast: Bool
+    ) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(spacing: 6) {
+                Text("\(sequence)")
+                    .noteFont(
+                        size: 12,
+                        weight: .semibold,
+                        design: .rounded,
+                        relativeTo: .caption
+                    )
+                    .foregroundStyle(NoteTheme.accent)
+                    .frame(width: 30, height: 30)
+                    .background(
+                        NoteTheme.accent.opacity(0.1),
+                        in: Circle()
+                    )
+                    .overlay {
+                        Circle()
+                            .stroke(
+                                NoteTheme.accent.opacity(0.24),
+                                lineWidth: 1
+                            )
+                    }
+
+                if !isLast {
+                    Rectangle()
+                        .fill(NoteTheme.accent.opacity(0.18))
+                        .frame(width: 1.5)
+                        .frame(maxHeight: .infinity)
+                }
+            }
+            .frame(width: 30)
+            .frame(maxHeight: .infinity)
+            .accessibilityHidden(true)
+
+            HStack(alignment: .top, spacing: 8) {
+                Button {
+                    onOpenIdea(idea.id)
+                } label: {
+                    VStack(alignment: .leading, spacing: 9) {
+                        Text(
+                            NoteDateFormatter.display(
+                                idea.addedToGroupAt ?? idea.createdAt
+                            )
+                        )
+                        .noteFont(size: 12, relativeTo: .caption)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+
+                        Text(idea.content.isEmpty ? "未命名想法" : idea.content)
+                            .noteFont(size: 16, relativeTo: .body)
+                            .foregroundStyle(NoteTheme.ink)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(6)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    "第 \(sequence) 条思考，\(idea.content.isEmpty ? "未命名想法" : idea.content)"
+                )
+                .accessibilityHint("点按打开编辑")
+
+                if isGroupActive {
+                    Button {
+                        removeFromGroup(idea.id)
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 15, weight: .semibold))
+                            .frame(width: 40, height: 40)
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .contentShape(Rectangle())
+                    .accessibilityLabel(
+                        "将 \(idea.content.isEmpty ? "未命名想法" : idea.content) 移出灵感组"
+                    )
+                }
+            }
+            .padding(16)
+            .background(
+                Color.white.opacity(0.22),
+                in: RoundedRectangle(
+                    cornerRadius: 20,
+                    style: .continuous
+                )
+            )
+            .overlay {
+                RoundedRectangle(
+                    cornerRadius: 20,
+                    style: .continuous
+                )
+                .stroke(Color.white.opacity(0.5), lineWidth: 1)
+            }
+            .padding(.bottom, isLast ? 0 : 14)
+        }
     }
 
     private func beginEditingName() {

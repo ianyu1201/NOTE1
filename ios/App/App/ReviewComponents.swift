@@ -129,7 +129,7 @@ struct ReviewCardView: View {
             HStack {
                 Label("上下切换", systemImage: "arrow.up.arrow.down")
                 Spacer()
-                Label("左右完成", systemImage: "arrow.left.and.right")
+                Label("左滑完成", systemImage: "arrow.left")
             }
             .noteFont(
                 size: 12,

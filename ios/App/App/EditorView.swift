@@ -10,11 +10,12 @@ struct EditorView: View {
 
     @State private var content = ""
     @State private var savedContent = ""
-    @State private var saving = false
+    @State private var pendingSaveTask: Task<Void, Never>?
     @State private var selectedPhotoItems: [PhotosPickerItem] = []
     @State private var showAttachmentSource = false
     @State private var showPhotoPicker = false
     @State private var showFileImporter = false
+    @State private var isImportingAttachments = false
     @State private var previewAttachment: Attachment?
     @State private var errorAlert: UserFacingAlert?
     @FocusState private var editorFocused: Bool
@@ -107,6 +108,7 @@ struct EditorView: View {
                         .frame(minHeight: 48)
                 }
                 .buttonStyle(.plain)
+                .disabled(isImportingAttachments)
 
                 Spacer()
 
@@ -164,17 +166,26 @@ struct EditorView: View {
                 editorFocused = true
             }
         }
-        .onDisappear(perform: saveNow)
+        .onDisappear {
+            pendingSaveTask?.cancel()
+            saveNow()
+        }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.item],
             allowsMultipleSelection: true
         ) { result in
-            do {
-                let urls = try result.get()
-                addAttachments(try urls.map(AttachmentImporter.input))
-            } catch {
-                present(error)
+            Task { @MainActor in
+                isImportingAttachments = true
+                defer { isImportingAttachments = false }
+                do {
+                    let urls = try result.get()
+                    addAttachments(
+                        try await AttachmentImporter.inputs(from: urls)
+                    )
+                } catch {
+                    present(error)
+                }
             }
         }
         .photosPicker(
@@ -196,17 +207,17 @@ struct EditorView: View {
     }
 
     private func scheduleSave() {
+        pendingSaveTask?.cancel()
         guard content != savedContent else { return }
-        let expected = content
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            guard content == expected else { return }
+        pendingSaveTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
             saveNow()
         }
     }
 
     private func saveNow() {
         guard idea != nil, content != savedContent else { return }
-        saving = true
         do {
             try store.updateIdea(
                 id: ideaID,
@@ -218,7 +229,6 @@ struct EditorView: View {
         } catch {
             present(error)
         }
-        saving = false
     }
 
     private func removeAttachment(_ attachment: Attachment) {

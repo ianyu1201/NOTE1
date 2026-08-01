@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReviewView: View {
     @ObservedObject var store: NoteStore
+    @Binding var selectedItemID: UUID?
     let onOpenIdea: (UUID) -> Void
     let onOpenGroup: (UUID) -> Void
 
@@ -98,6 +99,15 @@ struct ReviewView: View {
         .onChange(of: items.count) { _, count in
             index = min(index, max(0, count - 1))
         }
+        .onAppear {
+            synchronizeSelection()
+        }
+        .onChange(of: items.map(\.id)) { _, _ in
+            synchronizeSelection()
+        }
+        .onChange(of: index) { _, _ in
+            publishCurrentSelection()
+        }
         .noteErrorAlert($errorAlert)
     }
 
@@ -131,6 +141,28 @@ struct ReviewView: View {
     var currentItem: ReviewItem? {
         guard items.indices.contains(index) else { return nil }
         return items[index]
+    }
+
+    private func synchronizeSelection() {
+        guard let resolvedIndex = ReviewPositionPolicy.resolvedIndex(
+            preferredItemID: selectedItemID,
+            currentIndex: index,
+            itemIDs: items.map(\.id)
+        ) else {
+            index = 0
+            selectedItemID = nil
+            return
+        }
+        index = resolvedIndex
+        selectedItemID = items[resolvedIndex].id
+    }
+
+    private func publishCurrentSelection() {
+        guard items.indices.contains(index) else {
+            selectedItemID = nil
+            return
+        }
+        selectedItemID = items[index].id
     }
 
     private var cardStage: some View {
@@ -185,7 +217,7 @@ struct ReviewView: View {
                     .accessibilityIdentifier("review.card.\(item.id.uuidString)")
                     .accessibilityLabel(accessibilityLabel(for: item))
                     .accessibilityValue("第 \(index + 1) 条，共 \(items.count) 条")
-                    .accessibilityHint("点按编辑；上下滑动切换；左右滑动完成")
+                    .accessibilityHint("点按编辑；上下滑动切换；向左滑动完成")
                     .accessibilityAction(.default) {
                         open(item)
                     }
@@ -196,7 +228,7 @@ struct ReviewView: View {
                         page(direction: 1, height: proxy.size.height)
                     }
                     .accessibilityAction(named: "完成这条灵感") {
-                        completeCurrent(direction: 1, width: proxy.size.width)
+                        completeCurrent(direction: -1, width: proxy.size.width)
                     }
                 }
             }

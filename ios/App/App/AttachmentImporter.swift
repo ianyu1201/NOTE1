@@ -1,8 +1,13 @@
 import Foundation
 import UniformTypeIdentifiers
 
-@MainActor
 enum AttachmentImporter {
+    static func inputs(from urls: [URL]) async throws -> [AttachmentInput] {
+        try await Task.detached(priority: .userInitiated) {
+            try urls.map(input)
+        }.value
+    }
+
     static func input(from url: URL) throws -> AttachmentInput {
         let accessed = url.startAccessingSecurityScopedResource()
         defer {

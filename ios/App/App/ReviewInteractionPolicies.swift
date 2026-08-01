@@ -33,8 +33,8 @@ enum ReviewGestureClassifier {
         predictedEndTranslation: CGSize
     ) -> Bool {
         guard axis == .horizontal else { return false }
-        return abs(translation.width) > 110
-            || abs(predictedEndTranslation.width) > 190
+        return translation.width < -110
+            || predictedEndTranslation.width < -190
     }
 
     static func shouldPage(
@@ -45,6 +45,25 @@ enum ReviewGestureClassifier {
         guard axis == .vertical else { return false }
         return abs(translation.height) > 64
             || abs(predictedEndTranslation.height) > 96
+    }
+}
+
+enum ReviewInteractionTiming {
+    static let undoBannerDuration: TimeInterval = 3
+}
+
+enum ReviewPositionPolicy {
+    static func resolvedIndex(
+        preferredItemID: UUID?,
+        currentIndex: Int,
+        itemIDs: [UUID]
+    ) -> Int? {
+        guard !itemIDs.isEmpty else { return nil }
+        if let preferredItemID,
+           let preferredIndex = itemIDs.firstIndex(of: preferredItemID) {
+            return preferredIndex
+        }
+        return min(max(currentIndex, 0), itemIDs.count - 1)
     }
 }
 

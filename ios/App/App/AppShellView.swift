@@ -11,6 +11,7 @@ enum AppRoute: Hashable {
 struct AppShellView: View {
     @ObservedObject var store: NoteStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var route: AppRoute = .home
     @State private var routeHistory: [AppRoute] = []
@@ -19,6 +20,12 @@ struct AppShellView: View {
     @State private var contentVisible = false
     @State private var edgeBackOffset: CGFloat = 0
     @State private var errorAlert: UserFacingAlert?
+    @State private var selectedReviewItemID = ReviewPositionPreference.load()
+    @State private var externalDraft: String?
+
+    init(store: NoteStore) {
+        self.store = store
+    }
 
     var body: some View {
         ZStack {
@@ -40,7 +47,7 @@ struct AppShellView: View {
                     screen
                         .id(route)
                         .transition(screenTransition)
-                        .offset(x: route == .history ? edgeBackOffset : 0)
+                        .offset(x: supportsEdgeBack ? edgeBackOffset : 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea(
@@ -56,17 +63,18 @@ struct AppShellView: View {
         .tint(NoteTheme.ink)
         .foregroundStyle(NoteTheme.ink)
         .overlay(alignment: .leading) {
-            if route == .history {
+            if supportsEdgeBack {
                 Color.clear
                     .frame(width: EdgeBackGestureClassifier.activationWidth)
                     .contentShape(Rectangle())
-                    .gesture(historyEdgeBackGesture)
+                    .gesture(edgeBackGesture)
                     .accessibilityHidden(true)
             }
         }
         .onAppear {
             playLaunchTransition()
             presentStartupErrorIfNeeded()
+            handlePendingShortcutDraft()
         }
         .onChange(of: store.lastPersistenceError) { _, message in
             guard !store.isReadOnlyBecausePersistenceFailed,
@@ -75,11 +83,29 @@ struct AppShellView: View {
                 message: "本机数据没有保存成功：\(message)"
             )
         }
+        .onChange(of: selectedReviewItemID) { _, itemID in
+            ReviewPositionPreference.save(itemID)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            handlePendingShortcutDraft()
+        }
+        .onReceive(
+            NotificationCenter.default.publisher(
+                for: AppShortcutDraftStore.didSaveNotification
+            )
+        ) { _ in
+            handlePendingShortcutDraft()
+        }
         .noteErrorAlert($errorAlert)
     }
 
     private var usesSharedBottomSlot: Bool {
         route == .home || route == .review
+    }
+
+    private var supportsEdgeBack: Bool {
+        route == .review || route == .history
     }
 
     @ViewBuilder
@@ -88,12 +114,14 @@ struct AppShellView: View {
         case .home:
             HomeView(
                 store: store,
+                externalDraft: $externalDraft,
                 onReview: { navigate(to: .review) },
                 onOpenIdea: { navigate(to: .editor($0)) }
             )
         case .review:
             ReviewView(
                 store: store,
+                selectedItemID: $selectedReviewItemID,
                 onOpenIdea: { navigate(to: .editor($0)) },
                 onOpenGroup: { navigate(to: .group($0)) }
             )
@@ -146,7 +174,7 @@ struct AppShellView: View {
         }
     }
 
-    private var historyEdgeBackGesture: some Gesture {
+    private var edgeBackGesture: some Gesture {
         DragGesture(minimumDistance: 8)
             .onChanged { value in
                 guard value.translation.width > 0,
@@ -183,13 +211,11 @@ struct AppShellView: View {
         guard !contentVisible else { return }
 
         if reduceMotion {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                contentVisible = true
-            }
+            contentVisible = true
             return
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.async {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
                 contentVisible = true
             }
@@ -201,6 +227,40 @@ struct AppShellView: View {
         errorAlert = UserFacingAlert(
             message: "NOTE1 无法读取原有本机数据。为保护这些记录，本次已暂停写入。请不要删除 App，可先保留数据后再处理。"
         )
+    }
+
+    private func handlePendingShortcutDraft() {
+        guard let text = AppShortcutDraftStore.consume() else { return }
+        externalDraft = text
+        guard route != .home else { return }
+        routeHistory.removeAll()
+        isNavigatingBack = true
+        withAnimation(
+            reduceMotion
+                ? .linear(duration: 0.12)
+                : .spring(response: 0.42, dampingFraction: 0.86)
+        ) {
+            route = .home
+        }
+    }
+}
+
+enum ReviewPositionPreference {
+    private static let key = "note1.review.last-item-id"
+
+    static func load(defaults: UserDefaults = .standard) -> UUID? {
+        defaults.string(forKey: key).flatMap(UUID.init(uuidString:))
+    }
+
+    static func save(
+        _ itemID: UUID?,
+        defaults: UserDefaults = .standard
+    ) {
+        if let itemID {
+            defaults.set(itemID.uuidString, forKey: key)
+        } else {
+            defaults.removeObject(forKey: key)
+        }
     }
 }
 

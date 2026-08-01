@@ -2,7 +2,7 @@ import SwiftUI
 
 extension ReviewView {
     var completionCueProgress: Double {
-        let distance = abs(dragOffset.width)
+        let distance = max(-dragOffset.width, 0)
         return min(max((distance - 76) / 84, 0), 1)
     }
 
@@ -26,8 +26,11 @@ extension ReviewView {
 
                 switch dragAxis {
                 case .horizontal:
+                    let horizontal = value.translation.width < 0
+                        ? value.translation.width
+                        : value.translation.width * 0.18
                     dragOffset = CGSize(
-                        width: value.translation.width,
+                        width: horizontal,
                         height: value.translation.height * 0.06
                     )
                 case .vertical:
@@ -48,7 +51,7 @@ extension ReviewView {
                     predictedEndTranslation: value.predictedEndTranslation
                 ) {
                     completeCurrent(
-                        direction: value.predictedEndTranslation.width < 0 ? -1 : 1,
+                        direction: -1,
                         width: containerSize.width
                     )
                 } else if ReviewGestureClassifier.shouldPage(
@@ -285,7 +288,10 @@ extension ReviewView {
             }
         }
         undoDismissTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 7, execute: task)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + ReviewInteractionTiming.undoBannerDuration,
+            execute: task
+        )
     }
 
     func undoCompletion() {

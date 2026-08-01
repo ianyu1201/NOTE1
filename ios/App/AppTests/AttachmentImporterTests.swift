@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class AttachmentImporterTests: XCTestCase {
-    func testOversizedFileIsRejectedBeforeImport() throws {
+    func testOversizedFileIsRejectedBeforeImport() async throws {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("NOTE1-Oversized-\(UUID().uuidString).bin")
         XCTAssertTrue(FileManager.default.createFile(atPath: url.path, contents: nil))
@@ -15,7 +15,10 @@ final class AttachmentImporterTests: XCTestCase {
         )
         try handle.close()
 
-        XCTAssertThrowsError(try AttachmentImporter.input(from: url)) { error in
+        do {
+            _ = try await AttachmentImporter.inputs(from: [url])
+            XCTFail("应拒绝超大附件")
+        } catch {
             guard case NoteStoreError.attachmentTooLarge = error else {
                 return XCTFail("应返回附件过大错误，实际为：\(error)")
             }

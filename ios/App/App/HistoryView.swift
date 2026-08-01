@@ -28,6 +28,12 @@ struct HistoryView: View {
     @State private var selection: Set<UUID> = []
     @State private var showingDeleteConfirmation = false
     @State private var errorAlert: UserFacingAlert?
+    @State private var backupDocument = NoteBackupDocument()
+    @State private var isExportingBackup = false
+    @State private var isImportingBackup = false
+    @State private var isBackupOperationInProgress = false
+    @State private var pendingRestoreData: Data?
+    @State private var showingRestoreConfirmation = false
 
     private var visibleItems: [ReviewItem] {
         store.recordItems(status: filter.status, matching: query)
@@ -76,26 +82,51 @@ struct HistoryView: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("history.status.filter")
 
-                Button(selecting ? "完成" : "选择") {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selecting.toggle()
-                        if !selecting { selection.removeAll() }
+                HStack(spacing: 2) {
+                    Button(selecting ? "完成" : "选择") {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            selecting.toggle()
+                            if !selecting { selection.removeAll() }
+                        }
                     }
+                    .noteFont(
+                        size: 13,
+                        weight: .semibold,
+                        relativeTo: .footnote
+                    )
+                    .buttonStyle(.plain)
+                    .frame(
+                        minWidth: 52,
+                        maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 52,
+                        minHeight: 44,
+                        alignment: .trailing
+                    )
+                    .contentShape(Rectangle())
+                    .accessibilityIdentifier("history.selection.toggle")
+
+                    Menu {
+                        Button {
+                            exportBackup()
+                        } label: {
+                            Label("导出本机备份", systemImage: "square.and.arrow.up")
+                        }
+
+                        Button {
+                            isImportingBackup = true
+                        } label: {
+                            Label("从备份恢复", systemImage: "arrow.down.doc")
+                        }
+                    } label: {
+                        Image(systemName: "externaldrive")
+                            .font(.system(size: 16, weight: .semibold))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .disabled(isBackupOperationInProgress)
+                    .accessibilityLabel("本机数据")
+                    .accessibilityHint("导出备份或从备份恢复")
                 }
-                .noteFont(
-                    size: 13,
-                    weight: .semibold,
-                    relativeTo: .footnote
-                )
-                .buttonStyle(.plain)
-                .frame(
-                    minWidth: 52,
-                    maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 52,
-                    minHeight: 44,
-                    alignment: .trailing
-                )
-                .contentShape(Rectangle())
-                .accessibilityIdentifier("history.selection.toggle")
             }
             .padding(.horizontal, NoteTheme.horizontalPadding)
 
@@ -204,6 +235,27 @@ struct HistoryView: View {
                 .padding(.bottom, 8)
             }
         }
+        .overlay {
+            if isBackupOperationInProgress {
+                ZStack {
+                    Color.black.opacity(0.04)
+                        .ignoresSafeArea()
+                    HStack(spacing: 12) {
+                        ProgressView()
+                        Text("正在处理本机数据…")
+                            .noteFont(
+                                size: 14,
+                                weight: .semibold,
+                                relativeTo: .subheadline
+                            )
+                    }
+                    .padding(.horizontal, 22)
+                    .frame(minHeight: 58)
+                    .noteGlass(cornerRadius: 24)
+                }
+                .transition(.opacity)
+            }
+        }
         .alert(
             "永久删除 \(selectedItems.count) 项记录？",
             isPresented: $showingDeleteConfirmation
@@ -214,6 +266,39 @@ struct HistoryView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("此操作会同时删除记录中的附件，且无法撤销。")
+        }
+        .alert(
+            "使用备份替换当前本机数据？",
+            isPresented: $showingRestoreConfirmation
+        ) {
+            Button("恢复并替换", role: .destructive) {
+                restorePendingBackup()
+            }
+            Button("取消", role: .cancel) {
+                pendingRestoreData = nil
+            }
+        } message: {
+            Text("当前全部文字、灵感组、状态和附件会被备份中的内容替换。恢复前请确认已导出当前数据。")
+        }
+        .fileExporter(
+            isPresented: $isExportingBackup,
+            document: backupDocument,
+            contentType: .note1Backup,
+            defaultFilename: backupFilename
+        ) { result in
+            if case .failure(let error) = result {
+                present(error)
+            } else {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            }
+            backupDocument = NoteBackupDocument()
+        }
+        .fileImporter(
+            isPresented: $isImportingBackup,
+            allowedContentTypes: [.note1Backup, .json],
+            allowsMultipleSelection: false
+        ) { result in
+            importBackup(result)
         }
         .onChange(of: visibleItems.map(\.id)) { _, visibleItemIDs in
             selection = HistorySelectionPolicy.visibleSelection(
@@ -318,6 +403,80 @@ struct HistoryView: View {
     private func present(_ error: Error) {
         UINotificationFeedbackGenerator().notificationOccurred(.error)
         errorAlert = UserFacingAlert.local(error: error)
+    }
+
+    private var backupFilename: String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_Hans_CN")
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        return "NOTE1-本机备份-\(formatter.string(from: Date()))"
+    }
+
+    private func exportBackup() {
+        guard !isBackupOperationInProgress else { return }
+        isBackupOperationInProgress = true
+        Task { @MainActor in
+            defer { isBackupOperationInProgress = false }
+            do {
+                backupDocument = NoteBackupDocument(
+                    data: try await store.exportBackupData()
+                )
+                isExportingBackup = true
+            } catch {
+                present(error)
+            }
+        }
+    }
+
+    private func importBackup(_ result: Result<[URL], Error>) {
+        guard !isBackupOperationInProgress else { return }
+        isBackupOperationInProgress = true
+        Task { @MainActor in
+            defer { isBackupOperationInProgress = false }
+            do {
+                guard let url = try result.get().first else { return }
+                let data = try await Task.detached(priority: .userInitiated) {
+                    let accessed = url.startAccessingSecurityScopedResource()
+                    defer {
+                        if accessed {
+                            url.stopAccessingSecurityScopedResource()
+                        }
+                    }
+                    return try Data(
+                        contentsOf: url,
+                        options: [.mappedIfSafe]
+                    )
+                }.value
+                try await store.validateBackupData(data)
+                pendingRestoreData = data
+                showingRestoreConfirmation = true
+            } catch {
+                present(error)
+            }
+        }
+    }
+
+    private func restorePendingBackup() {
+        guard let data = pendingRestoreData,
+              !isBackupOperationInProgress else {
+            return
+        }
+        isBackupOperationInProgress = true
+        Task { @MainActor in
+            defer { isBackupOperationInProgress = false }
+            do {
+                try await store.restoreBackupData(data)
+                pendingRestoreData = nil
+                selection.removeAll()
+                selecting = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } catch {
+                present(error)
+                if store.isReadOnlyBecausePersistenceFailed {
+                    pendingRestoreData = nil
+                }
+            }
+        }
     }
 
     private func open(_ item: ReviewItem) {

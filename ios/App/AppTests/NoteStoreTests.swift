@@ -53,7 +53,7 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
-    func testReviewGestureRequiresClearHorizontalIntentAndHigherThreshold() {
+    func testReviewGestureOnlyCompletesWithClearLeftwardIntent() {
         XCTAssertNil(
             ReviewGestureClassifier.axis(
                 for: CGSize(width: 28, height: 25)
@@ -67,15 +67,22 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(
             ReviewGestureClassifier.shouldComplete(
                 axis: axis,
-                translation: CGSize(width: 96, height: 24),
-                predictedEndTranslation: CGSize(width: 130, height: 36)
+                translation: CGSize(width: -96, height: 24),
+                predictedEndTranslation: CGSize(width: -130, height: 36)
             )
         )
         XCTAssertTrue(
             ReviewGestureClassifier.shouldComplete(
                 axis: axis,
-                translation: CGSize(width: 116, height: 24),
-                predictedEndTranslation: CGSize(width: 200, height: 36)
+                translation: CGSize(width: -116, height: 24),
+                predictedEndTranslation: CGSize(width: -200, height: 36)
+            )
+        )
+        XCTAssertFalse(
+            ReviewGestureClassifier.shouldComplete(
+                axis: axis,
+                translation: CGSize(width: 160, height: 24),
+                predictedEndTranslation: CGSize(width: 260, height: 36)
             )
         )
     }
@@ -130,6 +137,36 @@ final class NoteStoreTests: XCTestCase {
                 startX: 12,
                 translation: CGSize(width: 70, height: 82),
                 predictedEndTranslation: CGSize(width: 95, height: 140)
+            )
+        )
+    }
+
+    func testReviewPositionRestoresPreferredItemAndFallsBackToNeighbor() {
+        let first = UUID()
+        let second = UUID()
+        let third = UUID()
+
+        XCTAssertEqual(
+            ReviewPositionPolicy.resolvedIndex(
+                preferredItemID: second,
+                currentIndex: 0,
+                itemIDs: [first, second, third]
+            ),
+            1
+        )
+        XCTAssertEqual(
+            ReviewPositionPolicy.resolvedIndex(
+                preferredItemID: second,
+                currentIndex: 1,
+                itemIDs: [first, third]
+            ),
+            1
+        )
+        XCTAssertNil(
+            ReviewPositionPolicy.resolvedIndex(
+                preferredItemID: second,
+                currentIndex: 1,
+                itemIDs: []
             )
         )
     }

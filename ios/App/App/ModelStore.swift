@@ -1,12 +1,12 @@
 import Combine
 import Foundation
 
-enum ItemStatus: String, Codable, Hashable {
+enum ItemStatus: String, Codable, Hashable, Sendable {
     case active
     case completed
 }
 
-struct Idea: Identifiable, Codable, Hashable {
+struct Idea: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     var content: String
     var status: ItemStatus
@@ -18,7 +18,7 @@ struct Idea: Identifiable, Codable, Hashable {
     var addedToGroupAt: Date?
 }
 
-struct IdeaGroup: Identifiable, Codable, Hashable {
+struct IdeaGroup: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     var name: String
     var status: ItemStatus
@@ -28,7 +28,7 @@ struct IdeaGroup: Identifiable, Codable, Hashable {
     var completedAt: Date?
 }
 
-struct Attachment: Identifiable, Codable, Hashable {
+struct Attachment: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     let ideaID: UUID
     var name: String
@@ -38,7 +38,7 @@ struct Attachment: Identifiable, Codable, Hashable {
     let createdAt: Date
 }
 
-struct AttachmentInput: Hashable {
+struct AttachmentInput: Hashable, Sendable {
     let name: String
     let mimeType: String
     let data: Data
@@ -50,11 +50,11 @@ struct AttachmentInput: Hashable {
     }
 }
 
-enum ReviewItem: Identifiable, Codable, Hashable {
+enum ReviewItem: Identifiable, Codable, Hashable, Sendable {
     case idea(Idea)
     case group(IdeaGroup)
 
-    enum Kind: String, Codable, Hashable {
+    enum Kind: String, Codable, Hashable, Sendable {
         case idea
         case group
     }
@@ -105,6 +105,76 @@ enum ReviewItem: Identifiable, Codable, Hashable {
     }
 }
 
+private struct NoteStoreIndexes {
+    let reviewItems: [ReviewItem]
+    let recentActiveIdeas: [Idea]
+    let completedItems: [ReviewItem]
+    let allRecordItems: [ReviewItem]
+    let activeGroups: [IdeaGroup]
+    let ideasByID: [UUID: Idea]
+    let groupsByID: [UUID: IdeaGroup]
+    let attachmentsByIdeaID: [UUID: [Attachment]]
+    let ideasByGroupID: [UUID: [Idea]]
+
+    init(
+        ideas: [Idea] = [],
+        groups: [IdeaGroup] = [],
+        attachments: [Attachment] = []
+    ) {
+        let ungroupedActiveIdeas = ideas
+            .filter { $0.status == .active && $0.groupID == nil }
+            .map(ReviewItem.idea)
+        let activeGroupItems = groups
+            .filter { $0.status == .active }
+            .map(ReviewItem.group)
+        reviewItems = (ungroupedActiveIdeas + activeGroupItems)
+            .sorted { $0.activityAt > $1.activityAt }
+
+        recentActiveIdeas = Array(
+            ideas
+                .filter { $0.status == .active }
+                .sorted { $0.activityAt > $1.activityAt }
+                .prefix(5)
+        )
+
+        let ungroupedCompletedIdeas = ideas
+            .filter { $0.status == .completed && $0.groupID == nil }
+            .map(ReviewItem.idea)
+        let completedGroups = groups
+            .filter { $0.status == .completed }
+            .map(ReviewItem.group)
+        completedItems = (ungroupedCompletedIdeas + completedGroups)
+            .sorted {
+                ($0.completedAt ?? .distantPast) >
+                    ($1.completedAt ?? .distantPast)
+            }
+        allRecordItems = (reviewItems + completedItems)
+            .sorted { $0.activityAt > $1.activityAt }
+        activeGroups = groups
+            .filter { $0.status == .active }
+            .sorted { $0.activityAt > $1.activityAt }
+        ideasByID = Dictionary(uniqueKeysWithValues: ideas.map { ($0.id, $0) })
+        groupsByID = Dictionary(uniqueKeysWithValues: groups.map { ($0.id, $0) })
+        attachmentsByIdeaID = Dictionary(
+            grouping: attachments,
+            by: \.ideaID
+        ).mapValues {
+            $0.sorted { $0.createdAt < $1.createdAt }
+        }
+        ideasByGroupID = Dictionary(
+            grouping: ideas.compactMap { idea in
+                idea.groupID.map { ($0, idea) }
+            },
+            by: \.0
+        ).mapValues {
+            $0.map(\.1).sorted {
+                ($0.addedToGroupAt ?? $0.createdAt) <
+                    ($1.addedToGroupAt ?? $1.createdAt)
+            }
+        }
+    }
+}
+
 enum NoteStoreError: LocalizedError {
     case attachmentTooLarge(name: String)
     case emptyIdea
@@ -136,7 +206,7 @@ enum NoteStoreError: LocalizedError {
 
 @MainActor
 final class NoteStore: ObservableObject {
-    static let maximumAttachmentSize = 25 * 1_024 * 1_024
+    nonisolated static let maximumAttachmentSize = 25 * 1_024 * 1_024
 
     @Published private(set) var ideas: [Idea] = []
     @Published private(set) var groups: [IdeaGroup] = []
@@ -184,6 +254,7 @@ final class NoteStore: ObservableObject {
     private let storageDirectory: URL
     private let attachmentsDirectory: URL
     private let databaseURL: URL
+    private var indexes = NoteStoreIndexes()
 
     init(
         fileManager: FileManager = .default,
@@ -219,15 +290,7 @@ final class NoteStore: ObservableObject {
     }
 
     var reviewItems: [ReviewItem] {
-        let ungroupedIdeas = ideas
-            .filter { $0.status == .active && $0.groupID == nil }
-            .map(ReviewItem.idea)
-        let activeGroupItems = groups
-            .filter { $0.status == .active }
-            .map(ReviewItem.group)
-
-        return (ungroupedIdeas + activeGroupItems)
-            .sorted { $0.activityAt > $1.activityAt }
+        indexes.reviewItems
     }
 
     var activeReviewItems: [ReviewItem] {
@@ -235,32 +298,17 @@ final class NoteStore: ObservableObject {
     }
 
     var recentActiveIdeas: [Idea] {
-        Array(
-            ideas
-                .filter { $0.status == .active }
-                .sorted { $0.activityAt > $1.activityAt }
-                .prefix(5)
-        )
+        indexes.recentActiveIdeas
     }
 
     var completedItems: [ReviewItem] {
-        let ungroupedIdeas = ideas
-            .filter { $0.status == .completed && $0.groupID == nil }
-            .map(ReviewItem.idea)
-        let completedGroups = groups
-            .filter { $0.status == .completed }
-            .map(ReviewItem.group)
-
-        return (ungroupedIdeas + completedGroups).sorted {
-            ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast)
-        }
+        indexes.completedItems
     }
 
     /// The complete, user-visible record index. Ideas that belong to a group are
     /// represented by their group so the history screen does not show duplicates.
     var allRecordItems: [ReviewItem] {
-        (reviewItems + completedItems)
-            .sorted { $0.activityAt > $1.activityAt }
+        indexes.allRecordItems
     }
 
     /// Returns the record index for History's status filter and local query.
@@ -285,36 +333,88 @@ final class NoteStore: ObservableObject {
     }
 
     var activeGroups: [IdeaGroup] {
-        groups
-            .filter { $0.status == .active }
-            .sorted { $0.activityAt > $1.activityAt }
+        indexes.activeGroups
     }
 
     func idea(id: UUID) -> Idea? {
-        ideas.first { $0.id == id }
+        indexes.ideasByID[id]
     }
 
     func group(id: UUID) -> IdeaGroup? {
-        groups.first { $0.id == id }
+        indexes.groupsByID[id]
     }
 
     func attachments(for ideaID: UUID) -> [Attachment] {
-        attachments
-            .filter { $0.ideaID == ideaID }
-            .sorted { $0.createdAt < $1.createdAt }
+        indexes.attachmentsByIdeaID[ideaID] ?? []
     }
 
     func ideas(in groupID: UUID) -> [Idea] {
-        ideas
-            .filter { $0.groupID == groupID }
-            .sorted {
-                ($0.addedToGroupAt ?? $0.createdAt) <
-                    ($1.addedToGroupAt ?? $1.createdAt)
-            }
+        indexes.ideasByGroupID[groupID] ?? []
     }
 
     func attachmentURL(_ attachment: Attachment) -> URL {
         attachmentsDirectory.appendingPathComponent(attachment.relativePath)
+    }
+
+    func exportBackupData(
+        service: any NoteBackupServicing = JSONNoteBackupService()
+    ) async throws -> Data {
+        let snapshotIdeas = ideas
+        let snapshotGroups = groups
+        let attachmentLocations = attachments.map {
+            ($0, attachmentURL($0))
+        }
+
+        return try await Task.detached(priority: .userInitiated) {
+            let fileManager = FileManager.default
+            var backupAttachments: [NoteBackupAttachment] = []
+            backupAttachments.reserveCapacity(attachmentLocations.count)
+
+            for (attachment, url) in attachmentLocations {
+                guard fileManager.fileExists(atPath: url.path) else {
+                    throw NoteBackupError.missingAttachment(attachment.name)
+                }
+                let values = try url.resourceValues(forKeys: [.fileSizeKey])
+                if let fileSize = values.fileSize,
+                   fileSize > Self.maximumAttachmentSize {
+                    throw NoteStoreError.attachmentTooLarge(name: attachment.name)
+                }
+                let data = try Data(contentsOf: url, options: [.mappedIfSafe])
+                backupAttachments.append(
+                    NoteBackupAttachment(metadata: attachment, data: data)
+                )
+            }
+
+            return try service.encode(
+                NoteBackupPayload(
+                    ideas: snapshotIdeas,
+                    groups: snapshotGroups,
+                    attachments: backupAttachments
+                )
+            )
+        }.value
+    }
+
+    func validateBackupData(
+        _ data: Data,
+        service: any NoteBackupServicing = JSONNoteBackupService()
+    ) async throws {
+        _ = try await Task.detached(priority: .userInitiated) {
+            try service.decode(data)
+        }.value
+    }
+
+    func restoreBackupData(
+        _ data: Data,
+        service: any NoteBackupServicing = JSONNoteBackupService()
+    ) async throws {
+        guard !isReadOnlyBecausePersistenceFailed else {
+            throw NoteStoreError.persistenceUnavailable
+        }
+        let payload = try await Task.detached(priority: .userInitiated) {
+            try service.decode(data)
+        }.value
+        try await restore(payload)
     }
 
     @discardableResult
@@ -645,8 +745,7 @@ final class NoteStore: ObservableObject {
         switch item {
         case .group(let group):
             return group.name.localizedStandardContains(query) ||
-                ideas
-                    .filter { $0.groupID == group.id }
+                (indexes.ideasByGroupID[group.id] ?? [])
                     .contains { ideaMatches($0, query: query) }
         case .idea(let idea):
             return ideaMatches(idea, query: query)
@@ -655,9 +754,8 @@ final class NoteStore: ObservableObject {
 
     private func ideaMatches(_ idea: Idea, query: String) -> Bool {
         idea.content.localizedStandardContains(query) ||
-            attachments.contains {
-                $0.ideaID == idea.id &&
-                    $0.name.localizedStandardContains(query)
+            (indexes.attachmentsByIdeaID[idea.id] ?? []).contains {
+                $0.name.localizedStandardContains(query)
             }
     }
 
@@ -695,6 +793,11 @@ final class NoteStore: ObservableObject {
                 attachments: storedData.attachments
             )
         } else {
+            rebuildIndexes(
+                ideas: storedData.ideas,
+                groups: storedData.groups,
+                attachments: storedData.attachments
+            )
             ideas = storedData.ideas
             groups = storedData.groups
             attachments = storedData.attachments
@@ -727,9 +830,177 @@ final class NoteStore: ObservableObject {
             throw NoteStoreError.persistenceWriteFailed(message)
         }
 
+        rebuildIndexes(
+            ideas: newIdeas,
+            groups: newGroups,
+            attachments: newAttachments
+        )
         ideas = newIdeas
         groups = newGroups
         attachments = newAttachments
+        lastPersistenceError = nil
+    }
+
+    private func restore(_ payload: NoteBackupPayload) async throws {
+        let currentDatabaseURL = databaseURL
+        let currentAttachmentsDirectory = attachmentsDirectory
+        let operationID = UUID().uuidString
+        let stagingDirectory = storageDirectory.appendingPathComponent(
+            ".Restore-\(operationID)",
+            isDirectory: true
+        )
+        let stagingAttachments = stagingDirectory.appendingPathComponent(
+            "Attachments",
+            isDirectory: true
+        )
+        let stagingDatabase = stagingDirectory.appendingPathComponent(
+            "note1-data.json"
+        )
+        let recoveryDirectory = storageDirectory.appendingPathComponent(
+            ".Recovery-\(operationID)",
+            isDirectory: true
+        )
+        let recoveryAttachments = recoveryDirectory.appendingPathComponent(
+            "Attachments",
+            isDirectory: true
+        )
+        let recoveryDatabase = recoveryDirectory.appendingPathComponent(
+            "note1-data.json"
+        )
+
+        do {
+            try await Task.detached(priority: .userInitiated) {
+                let fileManager = FileManager.default
+                do {
+                    try fileManager.createDirectory(
+                        at: stagingAttachments,
+                        withIntermediateDirectories: true
+                    )
+                    for entry in payload.attachments {
+                        try entry.data.write(
+                            to: stagingAttachments.appendingPathComponent(
+                                entry.metadata.relativePath
+                            ),
+                            options: [.atomic]
+                        )
+                    }
+
+                    let storedData = StoredData(
+                        ideas: payload.ideas,
+                        groups: payload.groups,
+                        attachments: payload.attachments.map(\.metadata)
+                    )
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                    encoder.dateEncodingStrategy = .iso8601
+                    try encoder.encode(storedData).write(
+                        to: stagingDatabase,
+                        options: [.atomic]
+                    )
+                    try fileManager.createDirectory(
+                        at: recoveryDirectory,
+                        withIntermediateDirectories: true
+                    )
+                } catch {
+                    try? fileManager.removeItem(at: stagingDirectory)
+                    try? fileManager.removeItem(at: recoveryDirectory)
+                    throw NoteBackupError.restoreFailed(
+                        error.localizedDescription
+                    )
+                }
+
+                var movedCurrentDatabase = false
+                var movedCurrentAttachments = false
+                do {
+                    if fileManager.fileExists(atPath: currentDatabaseURL.path) {
+                        try fileManager.moveItem(
+                            at: currentDatabaseURL,
+                            to: recoveryDatabase
+                        )
+                        movedCurrentDatabase = true
+                    }
+                    if fileManager.fileExists(
+                        atPath: currentAttachmentsDirectory.path
+                    ) {
+                        try fileManager.moveItem(
+                            at: currentAttachmentsDirectory,
+                            to: recoveryAttachments
+                        )
+                        movedCurrentAttachments = true
+                    }
+
+                    try fileManager.moveItem(
+                        at: stagingAttachments,
+                        to: currentAttachmentsDirectory
+                    )
+                    try fileManager.moveItem(
+                        at: stagingDatabase,
+                        to: currentDatabaseURL
+                    )
+                } catch {
+                    let replacementError = error
+                    var rollbackFailed = false
+                    do {
+                        if fileManager.fileExists(atPath: currentDatabaseURL.path) {
+                            try fileManager.removeItem(at: currentDatabaseURL)
+                        }
+                        if fileManager.fileExists(
+                            atPath: currentAttachmentsDirectory.path
+                        ) {
+                            try fileManager.removeItem(
+                                at: currentAttachmentsDirectory
+                            )
+                        }
+                        if movedCurrentDatabase {
+                            try fileManager.moveItem(
+                                at: recoveryDatabase,
+                                to: currentDatabaseURL
+                            )
+                        }
+                        if movedCurrentAttachments {
+                            try fileManager.moveItem(
+                                at: recoveryAttachments,
+                                to: currentAttachmentsDirectory
+                            )
+                        } else {
+                            try fileManager.createDirectory(
+                                at: currentAttachmentsDirectory,
+                                withIntermediateDirectories: true
+                            )
+                        }
+                    } catch {
+                        rollbackFailed = true
+                    }
+                    try? fileManager.removeItem(at: stagingDirectory)
+                    if rollbackFailed {
+                        throw NoteBackupError.restoreRecoveryFailed
+                    }
+                    try? fileManager.removeItem(at: recoveryDirectory)
+                    throw NoteBackupError.restoreFailed(
+                        replacementError.localizedDescription
+                    )
+                }
+
+                try? fileManager.removeItem(at: stagingDirectory)
+                try? fileManager.removeItem(at: recoveryDirectory)
+            }.value
+        } catch {
+            if case NoteBackupError.restoreRecoveryFailed = error {
+                isReadOnlyBecausePersistenceFailed = true
+                lastPersistenceError = error.localizedDescription
+            }
+            throw error
+        }
+
+        let restoredAttachments = payload.attachments.map(\.metadata)
+        rebuildIndexes(
+            ideas: payload.ideas,
+            groups: payload.groups,
+            attachments: restoredAttachments
+        )
+        ideas = payload.ideas
+        groups = payload.groups
+        attachments = restoredAttachments
         lastPersistenceError = nil
     }
 
@@ -737,6 +1008,18 @@ final class NoteStore: ObservableObject {
         for input in inputs where input.data.count > Self.maximumAttachmentSize {
             throw NoteStoreError.attachmentTooLarge(name: input.name)
         }
+    }
+
+    private func rebuildIndexes(
+        ideas: [Idea],
+        groups: [IdeaGroup],
+        attachments: [Attachment]
+    ) {
+        indexes = NoteStoreIndexes(
+            ideas: ideas,
+            groups: groups,
+            attachments: attachments
+        )
     }
 
     private func writeAttachments(
