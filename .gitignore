@@ -1,7 +1,9 @@
 .DS_Store
 DerivedData/
 .derivedData/
+.derivedData-device/
 build/
+node_modules/
 *.xcuserstate
 xcuserdata/
 

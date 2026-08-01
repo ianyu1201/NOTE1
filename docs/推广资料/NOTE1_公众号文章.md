@@ -1,61 +1,59 @@
-# 我做了一个只用来记录灵感的 iOS App
+# 我用 AI 做了一个用来记录灵感的  App
 
-> 文档用途：公众号推广资料
+它的名字叫 **NOTE1**。
 
-我用 Codex 做了一款 iOS 软件，叫 NOTE1。
+它的诞生，很大程度来自于《置身钉内》这篇文章，NOTE1 的名字以及 UI 交互都参考了文中的「ONE」。
 
-它做的事情很简单：帮我快速记下灵感，再在有空的时候，一条条翻回来继续想。
+但真正驱动我把它做出来的，是我一直没找到一款适合自己的“备忘录”，最后索性自己做了一个。
 
-## 为什么要做 NOTE1
+## 为什么想做 NOTE1
 
-我平时会冒出很多点子。
+我出差的时候，坐在高铁或飞机上，望着窗外，脑子里会冒出很多想法和不完整的念头。这些灵感来得快，去得也快。我尝试过几个软件用来记录它们。最开始是微信文件传输助手，后来也试过用 iphone 自带的备忘录和无边记。可实际用下来，每个都差点意思，不够适合我。
 
-有时候在飞机上，有时候在火车上。一个念头突然出现，如果当时不记下来，过一会儿可能就忘了。
+<img src="/Users/yusiyuan/Downloads/IMG_1945.PNG" alt="使用微信文件传输助手记录灵感的实际截图" style="width: 56%; max-width: 56%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-以前我会把它们放进手机备忘录，或者发到微信文件传输助手里。但时间一长，工作内容、临时消息和各种零散记录混在一起，越来越乱。想再把某个点子找回来，很难；想把它们集中翻一遍，也不方便。
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">文件传输助手记录很方便，但看着太杂乱</p>
 
-所以我想做一个更简单的东西。
+<img src="/Users/yusiyuan/Downloads/IMG_1946.PNG" alt="使用无边记记录灵感的实际截图" style="width: 92%; max-width: 92%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-在灵感出现的时候，只负责快速记下来；回到酒店，有一段完整的空余时间，再慢慢翻阅。重新看到当时写下的那句话，回想当时为什么会有这个念头，再由它激发新的灵感。
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">无边记和备忘录类似，功能足够强大，但是对我来说上手难度有点高了，我希望操作可以更简单一些</p>
 
-有些灵感最后会写成文章，有些会被做成一个具体的东西。
+## 我给 NOTE1 打的标签：快速录入，简单翻阅
 
-这就是 NOTE1 的主旨。
+打开 App 后，正中央显示最近记录的几条灵感，点开即可补充续写；底部是输入区，可以添加照片和文件。
 
-![NOTE1 记录首页](../../media/demo/01-home.png)
+<img src="../../media/demo/01-home.png" alt="NOTE1 记录首页" style="width: 60%; max-width: 60%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-## 我是怎么呈现的
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">NOTE1首页</p>
 
-NOTE1 的整体风格只有一个关键词：极简。
+**我没有在 NOTE1 里加入单独的语音录入功能。**
 
-打开后可以直接输入，不需要先选分类，也没有复杂的设置。写完保存，灵感就进入自己的记录里。
+现在大部分输入法 app 已经有成熟的语音转文字能力，我何必再班门弄斧，与其浪费时间做一个空有其表的功能，那不如不做。
 
-首页只保留最近几条内容，方便我马上继续补充。想集中回看时，就进入卡片界面，一次只看一条。
+## 把灵感重新放到眼前
 
-![NOTE1 卡片回看](../../media/demo/02-review.png)
+点击首页右下角的按钮，进入回看功能。这个交互方式参考了「ONE」提出的卡片样式，采用了类似于短视频的滑动操作进行翻阅。向上或向下切换前后内容；向左或向右滑动，把当前灵感标记为完成；点按卡片进入编辑状态。
 
-在当前实现里，上下滑动用来切换上一条和下一条；左右滑动用来完成当前内容。整个过程很像刷短视频，但这里看到的不是别人推给我的内容，而是我自己曾经记录下来的想法。
+<img src="../../media/demo/02-review.png" alt="NOTE1 卡片回看" style="width: 60%; max-width: 60%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-如果某条灵感还值得继续，我可以直接点开补充；如果几条内容属于同一个方向，也可以把它们放进同一个灵感组。
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">NOTE1回看功能</p>
 
-![NOTE1 专注编辑](../../media/demo/03-editor.png)
+<img src="../../media/demo/03-editor.png" alt="NOTE1 专注编辑" style="width: 60%; max-width: 60%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-![NOTE1 灵感组](../../media/demo/04-group.png)
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">在回看的卡片中点击进入灵感文本编辑</p>
 
-历史页面用来统一查找未完成和已完成的记录，也可以搜索、恢复或删除。
+## 记录之后，再简单归组
 
-![NOTE1 历史记录](../../media/demo/05-history.png)
+如果几条灵感属于同一个方向，还可以把它们放进一个灵感组。灵感组只是在记录后把相关内容聚在一起，不会在记录之前强迫先进行分类。
 
-我希望它一直保持简单：快速录入，快速查阅，快速翻阅。
+<img src="../../media/demo/04-group.png" alt="NOTE1 灵感组" style="width: 60%; max-width: 60%; height: auto; display: block; margin: 24px auto 8px; border-radius: 8px;" />
 
-## 目前还不会上架
+<p style="text-align: center; color: #8a8a8a; font-size: 13px; line-height: 1.6; margin: 0 auto 26px;">NOTE1灵感组功能</p>
 
-现在 NOTE1 只是以测试开发者的方式运行在我自己的 iPhone 里。
+## NOTE1 想解决的事情
 
-iOS 开发者每年需要交大约 100 美元，对我来说还是挺贵的。所以我暂时没有直接上架 App Store。
+在灵感出现的时候，可以快速记下来；当空闲下来的时候，再慢慢翻阅。回想当时写下内容，再由它激发新的灵感。
 
-我发这篇文章和演示视频，主要是想把它分享出来，看看大家真实使用时还需要什么，有没有值得补充和优化的地方。
+## 还在测试，想听听你的意见
 
-这件事是纯公益的，我没有给它设定商业化目标。后面要不要正式上架，会根据大家的反馈和实际需求量再决定。
-
-如果你也有很多零散灵感，欢迎告诉我：你会在什么场景下用它，还希望它补充什么功能。
+NOTE1 目前处于测试阶段，还没有上架 App Store。如果你也有很多零散灵感，暂时还缺少一个合适的 app 帮助你记录它，倘若 NOTE1 真的能解决你的需求，请你告诉我。如果是对NOTE1 有意见或是建议，欢迎随时和我留言沟通。

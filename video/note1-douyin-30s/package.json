@@ -1,0 +1,21 @@
+{
+  "name": "note1-douyin-30s",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render NOTE1Douyin30s out/note1-douyin-30s.mp4",
+    "still": "remotion still NOTE1Douyin30s out/cover.png --frame=885"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.501",
+    "@remotion/media-utils": "4.0.501",
+    "remotion": "4.0.501",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4",
+    "typescript": "5.8.2"
+  }
+}
