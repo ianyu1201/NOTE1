@@ -40,7 +40,17 @@ struct V02AppShellView: View {
         ZStack {
             NoteTheme.background.ignoresSafeArea()
             GeometryReader { proxy in
-                pageContent
+                TabView(selection: $page) {
+                    ForEach(V02PrimaryPage.allCases) { destination in
+                        pageContent(for: destination)
+                            .tabItem {
+                                Label(destination.rawValue, systemImage: destination.symbol)
+                            }
+                            .tag(destination)
+                            .accessibilityIdentifier("v02.primary.\(destination.rawValue)")
+                    }
+                }
+                    .toolbar(isChildEditorPresented ? .hidden : .visible, for: .tabBar)
                     .simultaneousGesture(primaryPageEdgeGesture(width: proxy.size.width))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -64,18 +74,6 @@ struct V02AppShellView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .transition(.opacity)
                 .zIndex(V02ReceiptGenerationLayoutPolicy.generationZIndex)
-            }
-        }
-        // The primary bar is a real safe-area inset rather than a sibling at
-        // the bottom of an unconstrained VStack. This keeps every 44pt hit
-        // cell inside the viewport (including the home-indicator area) while
-        // leaving the content and floating composer in a stable coordinate
-        // space.
-        .safeAreaInset(edge: .bottom, spacing: V02NavigationLayoutPolicy.primaryContentSpacing) {
-            if !isChildEditorPresented {
-                V02BottomNavigation(selection: $page)
-                    .padding(.bottom, 4)
-                    .zIndex(V02ReceiptGenerationLayoutPolicy.primaryNavigationZIndex)
             }
         }
         .overlay(alignment: .bottomTrailing) {
@@ -124,8 +122,8 @@ struct V02AppShellView: View {
     }
 
     @ViewBuilder
-    private var pageContent: some View {
-        switch page {
+    private func pageContent(for destination: V02PrimaryPage) -> some View {
+        switch destination {
         case .inspirations:
             V02InspirationListView(
                 store: store,

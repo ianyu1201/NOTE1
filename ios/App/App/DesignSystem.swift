@@ -240,57 +240,6 @@ struct V02FloatingComposerButton: View {
     }
 }
 
-/// A single safe-area container owns both the painted bar and the full-width
-/// button cells. This keeps accessibility frames inside the viewport and
-/// makes the selected state a visual detail rather than the hit target.
-struct V02BottomNavigation: View {
-    @Binding var selection: V02PrimaryPage
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(V02PrimaryPage.allCases) { destination in
-                Button {
-                    selection = destination
-                } label: {
-                    VStack(spacing: 3) {
-                        Group {
-                            if destination == .receipts {
-                                V02ReceiptTabSymbol(isSelected: selection == destination)
-                            } else {
-                                    Image(systemName: destination.symbol)
-                                    .font(.system(size: 19, weight: .semibold))
-                                    .foregroundStyle(selection == destination ? .white : NoteTheme.secondaryInk)
-                                }
-                        }
-                        .frame(width: 34, height: 34)
-                        .background(
-                            selection == destination ? NoteTheme.ink : .clear,
-                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        )
-                        Text(destination.rawValue)
-                            .noteFontCapped(size: 13, maximumScale: 1.25, weight: .medium, relativeTo: .caption)
-                            .foregroundStyle(selection == destination ? NoteTheme.ink : NoteTheme.secondaryInk)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .minimumScaleFactor(0.84)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: V02NavigationLayoutPolicy.cellMinHeight)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("v02.primary.\(destination.rawValue)")
-                .accessibilityLabel(destination.rawValue)
-                .accessibilityAddTraits(selection == destination ? .isSelected : [])
-            }
-        }
-        .frame(height: V02NavigationLayoutPolicy.barHeight)
-        .padding(.horizontal, 10)
-        .noteGlass(cornerRadius: NoteTheme.cornerRadius, castsShadow: false)
-        .padding(.horizontal, V02NavigationLayoutPolicy.barHorizontalInset)
-    }
-}
-
 struct RoundGlassPressedFeedback: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

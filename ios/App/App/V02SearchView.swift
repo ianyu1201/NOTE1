@@ -26,29 +26,6 @@ struct V02SearchView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        V02GlassIconButton(systemName: "xmark", label: "关闭搜索", action: { dismiss() })
-                        Spacer()
-                        Text("搜索")
-                            .noteFont(size: 22, weight: .semibold, design: .rounded, relativeTo: .title3)
-                            .foregroundStyle(NoteTheme.ink)
-                            .accessibilityAddTraits(.isHeader)
-                        Spacer()
-                        if scope == .inspirations || scope == .receipts {
-                            V02GlassIconButton(
-                                systemName: isSelecting ? "xmark" : "checkmark.square",
-                                label: isSelecting ? "取消选择" : "选择",
-                                action: {
-                                    isSelecting.toggle()
-                                    if !isSelecting { selectedIDs.removeAll() }
-                                }
-                            )
-                        } else {
-                            Color.clear.frame(width: NoteTheme.controlSize)
-                        }
-                    }
-                    .frame(height: NoteTheme.topBarHeight)
-
                     HStack(spacing: 10) {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(NoteTheme.secondaryInk)
@@ -125,6 +102,22 @@ struct V02SearchView: View {
             }
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
+            .navigationTitle("搜索")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+                if scope == .inspirations || scope == .receipts {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(isSelecting ? "取消选择" : "选择") {
+                            isSelecting.toggle()
+                            if !isSelecting { selectedIDs.removeAll() }
+                        }
+                    }
+                }
+            }
         }
         .onChange(of: scope) { _, _ in
             isSelecting = false

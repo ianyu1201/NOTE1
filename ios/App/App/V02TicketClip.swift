@@ -46,18 +46,3 @@ struct V02TicketClip: View {
             .frame(width: 30, height: 22)
     }
 }
-
-/// NOTE1 专用的小票册图标，来自本地 Assets 的矢量资源。
-struct V02ReceiptTabSymbol: View {
-    var isSelected: Bool
-
-    var body: some View {
-        Image("ReceiptBookIcon")
-            .renderingMode(.template)
-            .resizable()
-            .scaledToFit()
-            .frame(width: 20, height: 22)
-            .foregroundStyle(isSelected ? Color.white : NoteTheme.secondaryInk)
-        .accessibilityHidden(true)
-    }
-}

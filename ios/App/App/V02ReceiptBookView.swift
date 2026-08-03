@@ -27,9 +27,12 @@ struct V02ReceiptBookView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 18) {
-                header
+        NavigationStack {
+          ScrollView {
+            VStack(spacing: 14) {
+                Text("每一轮构思，都留下一张存根")
+                    .noteFont(size: 12, relativeTo: .caption)
+                    .foregroundStyle(NoteTheme.secondaryInk)
                 if isSelecting { selectionToolbar }
                 if receipts.isEmpty {
                     emptyBook
@@ -57,15 +60,52 @@ struct V02ReceiptBookView: View {
                 }
             }
             .padding(.horizontal, NoteTheme.horizontalPadding)
-            .padding(.top, 24)
+            .padding(.top, 6)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
                     .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
                     .allowsHitTesting(false)
             }
         }
-        .scrollIndicators(.hidden)
-        .background(NoteTheme.background.ignoresSafeArea())
+          .scrollIndicators(.hidden)
+          .background(NoteTheme.background.ignoresSafeArea())
+          .navigationTitle("小票册")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbarBackground(.hidden, for: .navigationBar)
+          .toolbar {
+              ToolbarItemGroup(placement: .topBarTrailing) {
+                  Button {
+                      isPresentingSearch = true
+                  } label: {
+                      Image(systemName: "magnifyingglass")
+                  }
+                  .accessibilityLabel("搜索小票")
+                  Menu {
+                      Button(isSelecting ? "取消选择" : "选择", systemImage: "checkmark.circle") {
+                          isSelecting.toggle()
+                          if !isSelecting { selectedIDs.removeAll() }
+                      }
+                      Menu("切换模板", systemImage: "rectangle.2.swap") {
+                          ForEach(V02ReceiptTemplate.allCases) { template in
+                              Button(template.rawValue) { setTemplate(template) }
+                          }
+                      }
+                      Button("导出 PDF", systemImage: "doc.badge.arrow.up") { exportCurrent(.pdf) }
+                      Button("分享", systemImage: "square.and.arrow.up") { exportCurrent(.pdf) }
+                      Button("复制", systemImage: "doc.on.doc") { copyCurrentReceipt() }
+                      Button("在小票中查找", systemImage: "magnifyingglass") {
+                          if let currentReceipt { detailReceipt = currentReceipt }
+                      }
+                      Button("删除", systemImage: "trash", role: .destructive) {
+                          if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
+                      }
+                  } label: {
+                      Image(systemName: "ellipsis")
+                  }
+                  .accessibilityLabel("更多小票册操作")
+              }
+          }
+        }
         .onChange(of: receipts.map(\.id)) { _, ids in
             receiptIndex = min(receiptIndex, max(0, ids.count - 1))
         }
@@ -107,50 +147,6 @@ struct V02ReceiptBookView: View {
             }
         }
         .noteErrorAlert($error)
-    }
-
-    private var header: some View {
-        ZStack {
-            VStack(spacing: 3) {
-                Text("小票册")
-                    .noteFont(size: 24, weight: .semibold, design: .rounded, relativeTo: .title2)
-                    .foregroundStyle(NoteTheme.ink)
-                Text("每一轮构思，都留下一张存根")
-                    .noteFont(size: 12, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
-            HStack {
-                Spacer()
-                V02GlassIconButton(systemName: "magnifyingglass", label: "搜索小票", action: { isPresentingSearch = true })
-                Menu {
-                    Button(isSelecting ? "取消选择" : "选择", systemImage: "checkmark.circle") {
-                        isSelecting.toggle()
-                        if !isSelecting { selectedIDs.removeAll() }
-                    }
-                    Menu("切换模板", systemImage: "rectangle.2.swap") {
-                        ForEach(V02ReceiptTemplate.allCases) { template in
-                            Button(template.rawValue) { setTemplate(template) }
-                        }
-                    }
-                    Button("导出 PDF", systemImage: "doc.badge.arrow.up") { exportCurrent(.pdf) }
-                    Button("分享", systemImage: "square.and.arrow.up") { exportCurrent(.pdf) }
-                    Button("复制", systemImage: "doc.on.doc") { copyCurrentReceipt() }
-                    Button("在小票中查找", systemImage: "magnifyingglass") {
-                        if let currentReceipt { detailReceipt = currentReceipt }
-                    }
-                    Button("删除", systemImage: "trash", role: .destructive) {
-                        if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
-                    }
-                } label: {
-                    V02GlassIconLabel(systemName: "ellipsis")
-                }
-                .buttonStyle(RoundGlassPressButtonStyle())
-                .accessibilityLabel("更多小票册操作")
-            }
-        }
-        .frame(height: NoteTheme.topBarHeight + 10)
     }
 
     private var selectionToolbar: some View {

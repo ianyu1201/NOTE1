@@ -48,9 +48,9 @@ struct V02InspirationListView: View {
     }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
-                header
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0) {
                 if !recentSummary.isEmpty {
                     Text(recentSummary)
                         .noteFontCapped(size: 15, maximumScale: 1.3, relativeTo: .subheadline)
@@ -108,16 +108,21 @@ struct V02InspirationListView: View {
                         }
                     }
                 }
+                }
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.top, 6)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    Color.clear
+                        .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
+                        .allowsHitTesting(false)
+                }
             }
-            .padding(.horizontal, NoteTheme.horizontalPadding)
-            .padding(.top, 14)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear
-                    .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
-                    .allowsHitTesting(false)
-            }
+            .scrollIndicators(.hidden)
+            .background(NoteTheme.background.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar { inspirationToolbar }
         }
-        .scrollIndicators(.hidden)
         .alert("删除选中的灵感？", isPresented: $isConfirmingDelete) {
             Button("删除", role: .destructive) {
                 do {
@@ -138,8 +143,9 @@ struct V02InspirationListView: View {
         }
     }
 
-    private var header: some View {
-        HStack {
+    @ToolbarContentBuilder
+    private var inspirationToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
             Menu {
                 Button(isSelecting ? "取消选择" : "选择灵感", systemImage: "checkmark.square") {
                     isSelecting.toggle()
@@ -148,24 +154,38 @@ struct V02InspirationListView: View {
                 Button("回收站", systemImage: "trash", action: showTrash)
                 Button("设置", systemImage: "gearshape", action: showSettings)
             } label: {
-                V02GlassIconLabel(systemName: "line.3.horizontal")
+                Image(systemName: "line.3.horizontal")
+                    .fontWeight(.semibold)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("本机功能与设置")
-            Spacer()
+        }
+        ToolbarItem(placement: .principal) {
             Menu {
                 Button("创建时间从新到旧") { isAscending = false }
                 Button("创建时间从旧到新") { isAscending = true }
             } label: {
-                Text("NOTE1⌄")
-                    .noteFontCapped(size: 23, maximumScale: 1.3, weight: .semibold, design: .rounded, relativeTo: .title2)
-                    .tracking(4)
-                    .foregroundStyle(NoteTheme.ink)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("NOTE1")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .tracking(4)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(NoteTheme.ink)
             }
             .accessibilityLabel("NOTE1，排序")
-            Spacer()
-            V02GlassIconButton(systemName: "magnifyingglass", label: "搜索", action: showSearch)
         }
-        .frame(height: NoteTheme.topBarHeight)
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(action: showSearch) {
+                Image(systemName: "magnifyingglass")
+                    .fontWeight(.semibold)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("搜索")
+        }
     }
 
     private var selectionToolbar: some View {

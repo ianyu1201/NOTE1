@@ -24,29 +24,10 @@ struct V02CollectionListView: View {
     }
 
     var body: some View {
-        ZStack {
+        NavigationStack {
+          ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                ZStack {
-                    Text("构思集")
-                        .noteFont(size: 23, weight: .semibold, design: .rounded, relativeTo: .title2)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                    HStack {
-                        Menu {
-                            Button("新建构思集", systemImage: "plus", action: requestNewCollection)
-                            Button("构思历程", systemImage: "clock.arrow.circlepath") { isShowingHistory = true }
-                        } label: {
-                            V02GlassIconLabel(systemName: "line.3.horizontal")
-                        }
-                        .accessibilityLabel("构思集菜单")
-                        Spacer()
-                        V02GlassIconButton(systemName: "clock.arrow.circlepath", label: "构思历程") {
-                            isShowingHistory = true
-                        }
-                    }
-                }
-                .frame(height: NoteTheme.topBarHeight)
                 Text("你的灵感容器 · 持续积累，随时启发")
                     .noteFont(size: 13, relativeTo: .caption)
                     .foregroundStyle(NoteTheme.secondaryInk)
@@ -114,6 +95,38 @@ struct V02CollectionListView: View {
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(2)
             }
+          }
+          .navigationTitle("构思集")
+          .navigationBarTitleDisplayMode(.inline)
+          .toolbarBackground(.hidden, for: .navigationBar)
+          .toolbar(workingCollection == nil ? .visible : .hidden, for: .navigationBar)
+          .toolbar {
+              if workingCollection == nil {
+                  ToolbarItem(placement: .topBarLeading) {
+                      Menu {
+                          Button("新建构思集", systemImage: "plus", action: requestNewCollection)
+                          Button("构思历程", systemImage: "clock.arrow.circlepath") { isShowingHistory = true }
+                      } label: {
+                          Image(systemName: "line.3.horizontal")
+                              .fontWeight(.semibold)
+                              .frame(minWidth: 44, minHeight: 44)
+                              .contentShape(Rectangle())
+                      }
+                      .accessibilityLabel("构思集菜单")
+                  }
+                  ToolbarItem(placement: .topBarTrailing) {
+                      Button {
+                          isShowingHistory = true
+                      } label: {
+                          Image(systemName: "clock.arrow.circlepath")
+                              .fontWeight(.semibold)
+                              .frame(minWidth: 44, minHeight: 44)
+                              .contentShape(Rectangle())
+                      }
+                      .accessibilityLabel("构思历程")
+                  }
+              }
+          }
         }
         .alert("结束本轮构思？", isPresented: Binding(
             get: { endingRound != nil },
