@@ -80,7 +80,7 @@ struct V02AppShellView: View {
         .overlay(alignment: .bottomTrailing) {
             if V02NavigationLayoutPolicy.showsFloatingComposer(
                 on: page,
-                isOverlayPresented: isPresentingComposer || isPresentingSearch || isManagingSelection || isCollectionWorkbenchPresented || isChildEditorPresented
+                isOverlayPresented: isPresentingComposer || isPresentingSearch || isManagingSelection || isCollectionWorkbenchPresented || isChildEditorPresented || generatedReceipt != nil
             ) {
                 V02FloatingComposerButton(
                     action: {
