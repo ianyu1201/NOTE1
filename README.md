@@ -1,63 +1,80 @@
 # NOTE1 iOS App
 
-NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App。
+NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App。产品主张是“简单记，快速看”。
 
-当前工程使用 SwiftUI，不包含浏览器版本、PWA、WebView、后端、登录、云同步、
-AI 或备份。
+当前工程使用原生 SwiftUI，最低 iOS 17，不包含浏览器版本、PWA、WebView、后端、登录、云同步或 AI。
+
+## 当前状态
+
+- V0.1 历史封存：`v0.1.0`
+- V0.2 最新代码来源：`codex/note1-v02@b7a4e0744861`
+- V0.3 产品阶段封存入口：`v0.3-product-start-20260803`
+- V0.3 交接入口：`docs/V0.3/NOTE1_V0.3产品会话交接与启动说明.md`
+
+V0.2 已形成可运行的功能闭环和自动化基础，但当前 UI 只作为功能测试与 V0.3 设计起点，不代表最终产品视觉。
 
 ## 当前产品闭环
 
 ```text
-快速记录 → 最近灵感续写 → 卡片回看 → 专注编辑
-→ 加入灵感组 → 完成 → 历史查询 → 恢复或删除
+记录灵感
+→ 灵感时间流
+→ 卡片预览
+→ 收起或归入构思集
+→ 在构思集继续构思
+→ 结束本轮构思
+→ 生成构思小票
+→ 在小票册浏览、导出或分享
 ```
 
-卡片回看采用：
+四个一级页面固定为：
 
-- 上下滑动：切换上一条或下一条
-- 左右滑动：完成当前想法或灵感组
-- 点按卡片：进入编辑或灵感组
-- 点按 / 向上拖动底部灵感组按钮：归入现有组或新建组
+```text
+灵感｜卡片预览｜构思集｜小票册
+```
 
 ## 项目结构
 
 ```text
 NOTE1/
-├── AGENTS.md
-├── README.md
+├── AGENTS.md                       # 全局项目规则、术语和开发约束
+├── README.md                       # 当前仓库入口
 ├── docs/
-│   ├── 产品文档/
-│   │   └── NOTE1_PRD_V2.6.md
-│   ├── 技术决策/
-│   │   └── ADR-001-本机数据损坏保护.md
-│   └── 推广资料/
-│       ├── NOTE1_公众号文章.md
-│       └── NOTE1_抖音口播稿.md
+│   ├── 产品文档/                   # V0.1/V0.2 PRD、设计规格和视觉基线
+│   ├── 开发文档/                   # 开发准则、ISSUE、任务单和验收证据
+│   ├── 技术决策/                   # ADR
+│   ├── V0.3/                       # V0.3 复盘、交接和产品阶段参考
+│   └── 推广资料/                   # 不参与产品需求裁决
 ├── ios/App/
 │   ├── App.xcodeproj
-│   ├── App/
-│   └── AppTests/
-├── media/demo/
-│   ├── 01-home.png
-│   ├── 02-review.png
-│   ├── 03-editor.png
-│   ├── 04-group.png
-│   ├── 05-history.png
-│   └── 06-group-picker.png
-└── 可删除文件/（本机清理候选，不进入 Git）
+│   ├── App/                        # SwiftUI 源码
+│   └── AppTests/                   # XCTest
+└── media/demo/                     # 历史真实运行演示素材
 ```
 
 ## 产品与开发依据
 
-- `docs/产品文档/NOTE1_PRD_V2.6.md`：当前唯一 PRD 和产品基线。
-- `docs/技术决策/`：记录需要长期保持一致的重要技术选择及原因。
-- `docs/推广资料/`：公众号文章与抖音口播稿，不参与产品需求裁决。
-- `ios/App/App/`：当前真实功能、UI 和交互实现。
-- `ios/App/AppTests/`：数据规则、持久化保护、选择范围与手势判定自动化测试。
-- `media/demo/`：从当前模拟器运行态生成的公众号演示图。
+按以下优先级阅读：
 
-旧 UI 参考图、设计对比图、启动验证中间物和未使用占位素材统一放在
-`可删除文件/`。该目录仅供用户本机复核和删除，不进入 Git，也不参与开发或验收。
+1. `AGENTS.md`
+2. `docs/产品文档/NOTE1_PRD_V0.2.md`
+3. `docs/产品文档/NOTE1_V0.2_产品设计与交互规格.md`
+4. `docs/开发文档/NOTE1_V0.1到V0.2能力非回归矩阵.md`
+5. `docs/产品文档/NOTE1_PRD_V2.6.md`
+6. `docs/开发文档/NOTE1_V0.2_UI优化ISSUE.md`
+7. `docs/V0.3/NOTE1_V0.3产品会话交接与启动说明.md`
+
+代码说明当前实现事实，不自动覆盖产品文档。候选图和外部参考不等于确认稿。
+
+## 当前代码入口
+
+- App：`ios/App/App/NOTE1App.swift`
+- 一级外壳：`ios/App/App/V02AppShellView.swift`
+- 设计系统：`ios/App/App/DesignSystem.swift`
+- 领域与持久化：`ios/App/App/V02Store.swift`、`ios/App/App/ModelStore.swift`
+- 四个核心页面：`V02InspirationViews.swift`、`V02CardPreviewViews.swift`、`V02CollectionViews.swift`、`V02ReceiptBookView.swift`
+- 测试：`ios/App/AppTests/`
+
+V0.1 与 V0.2 文件目前同时存在。未经能力映射、测试和用户授权，不得删除旧实现。
 
 ## Xcode 运行
 
@@ -70,16 +87,12 @@ ios/App/App.xcodeproj
 打开工程：
 
 ```bash
-cd "/Users/yusiyuan/Documents/NOTE1"
 open "ios/App/App.xcodeproj"
 ```
 
-打开后选择 `App` Scheme 和目标模拟器或自己的 iPhone，点击运行。
-
-命令行构建模拟器版本：
+模拟器构建：
 
 ```bash
-cd "/Users/yusiyuan/Documents/NOTE1"
 xcodebuild \
   -project "ios/App/App.xcodeproj" \
   -scheme "App" \
@@ -91,7 +104,6 @@ xcodebuild \
 运行测试：
 
 ```bash
-cd "/Users/yusiyuan/Documents/NOTE1"
 xcodebuild \
   -project "ios/App/App.xcodeproj" \
   -scheme "App" \
@@ -100,18 +112,21 @@ xcodebuild \
   test
 ```
 
-## 当前验证
+## 当前验证边界
 
-- 平台：iPhone 17 Pro 模拟器，iOS 26.5
-- 构建：成功，0 个错误，0 个警告
-- XCTest：38 项通过，0 项失败，0 项跳过（2026-08-01）
-- 动态字体：默认字号与系统最大辅助字号均已检查首页、卡片回看和历史列表；
-  最大辅助字号下内容可重排，测试后已恢复默认字号
-- VoiceOver：已核对模拟器运行时无障碍树中的中文名称、卡片位置、完成状态和选择状态
-- iOS 17：部署目标和编译兼容已确认；当前机器没有 iOS 17–25 模拟器运行时，
-  尚未执行对应系统版本的材质降级运行验收
-- 演示图：1206×2622 PNG，来自当前 App 真实运行态
+2026-08-03 在 `b7a4e0744861` 上独立运行 86 项 XCTest，通过 86、失败 0。该结果不替代：
 
-用户此前已使用 Personal Team 测试开发者身份在自己的 iPhone 上运行。本轮验收时
-目标 iPhone 处于离线状态，因此未重新执行真机安装、VoiceOver 语音导航和完整业务
-闭环。免费 Personal Team 只适合个人设备测试，不用于 App Store 或 TestFlight 分发。
+- 真机完整闭环；
+- VoiceOver 真实语音导航；
+- 最大辅助字号；
+- 中文输入与权限；
+- iOS 17–25 材质降级；
+- 文件提供器和最终分享投递；
+- 大附件备份恢复与失败回滚。
+
+## V0.3 工作方式
+
+V0.3 产品会话先完整理解仓库，与用户冻结产品方案、视觉和交互，再产出完整开发基准。独立开发会话可调用多个子智能体实施、测试和收集证据，最终将 App 与报告返回产品会话验收。
+
+在 V0.3 产品基准冻结前，不进行大范围业务代码修改。
+
