@@ -44,7 +44,8 @@
 - `2467f8a`：出票反馈期间隐藏全局浮动新增入口，避免“+”盖住准备/出票/收束反馈层。
 - `eb81346`：卡片预览编辑改用与灵感列表一致的 `fullScreenCover(item:)`，移除嵌套 `NavigationStack`，保留完整编辑、系统返回和原卡片位置恢复。
 - 当前补丁：卡片预览页浮动“+”的操作标签改为“新增卡片”，并用策略测试锁定三页新增入口文案与 PRD 一致。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release4 test`，86 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release4/Logs/Test/Test-App-2026.08.04_00-29-12-+0800.xcresult`。
+- 当前补丁：构思集工作台结束本轮时先发布出票层再关闭工作台，避免根页面浮动“+”在状态切换中闪现。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release5 test`，86 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release5/Logs/Test/Test-App-2026.08.04_00-32-10-+0800.xcresult`。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 

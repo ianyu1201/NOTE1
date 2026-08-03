@@ -712,10 +712,10 @@ private struct V02CollectionWorkbenchView: View {
         do {
             let receipt = try store.endRound(round.id)
             isEnding = false
+            // Publish the generation overlay before leaving the workbench so
+            // the root-page composer cannot flash during the transition.
+            showGeneration(receipt)
             onClose()
-            DispatchQueue.main.async {
-                showGeneration(receipt)
-            }
         } catch { reportError(error) }
     }
 
