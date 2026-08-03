@@ -435,6 +435,38 @@ final class V02Store: ObservableObject {
         return created
     }
 
+    @discardableResult
+    func createCollectionAndRoundAndAssign(
+        inspirationID: UUID,
+        name: String? = nil,
+        now: Date = .now
+    ) throws -> V02ThinkingCollection {
+        var created: V02ThinkingCollection?
+        try transact { state in
+            let collection = try V02DomainEngine.createCollection(
+                in: &state,
+                name: name,
+                now: now
+            )
+            _ = try V02DomainEngine.startRound(
+                collectionID: collection.id,
+                in: &state,
+                now: now
+            )
+            try V02DomainEngine.assign(
+                inspirationID: inspirationID,
+                to: collection.id,
+                in: &state,
+                now: now
+            )
+            created = collection
+        }
+        guard let created else {
+            throw NoteStoreError.invalidOperation("构思集创建未完成。")
+        }
+        return created
+    }
+
     func assign(_ inspirationID: UUID, to collectionID: UUID) throws {
         try transact { state in
             try V02DomainEngine.assign(

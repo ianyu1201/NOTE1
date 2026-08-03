@@ -374,8 +374,10 @@ struct V02CardPreviewView: View {
         guard let inspirationID = pendingInspirationID else { return }
         do {
             let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let collection = try store.createCollectionAndRound(name: trimmed.isEmpty ? nil : trimmed)
-            try store.assign(inspirationID, to: collection.id)
+            _ = try store.createCollectionAndRoundAndAssign(
+                inspirationID: inspirationID,
+                name: trimmed.isEmpty ? nil : trimmed
+            )
             pendingInspirationID = nil
         } catch {
             reportError(error)

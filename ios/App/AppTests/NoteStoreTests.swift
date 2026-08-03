@@ -468,6 +468,22 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.state.rounds.first?.memberIDs, [created.id])
     }
 
+    func testV02CreateCollectionAndAssignIsAtomic() throws {
+        let v02Directory = directory.appendingPathComponent("v02-atomic")
+        let store = V02Store(storageDirectory: v02Directory)
+        let inspiration = try store.createInspiration(text: "待归入")
+
+        let created = try store.createCollectionAndRoundAndAssign(inspirationID: inspiration.id)
+        XCTAssertEqual(store.activeCollections.map(\.id), [created.id])
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, created.id)
+
+        let activeCount = store.activeCollections.count
+        XCTAssertThrowsError(
+            try store.createCollectionAndRoundAndAssign(inspirationID: UUID())
+        )
+        XCTAssertEqual(store.activeCollections.count, activeCount)
+    }
+
     func testV02ContinueThinkingKeepsOldReceiptSnapshotAndRestoresMembers() throws {
         let v02Directory = directory.appendingPathComponent("continue")
         let store = V02Store(storageDirectory: v02Directory)
