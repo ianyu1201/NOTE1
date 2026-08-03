@@ -38,7 +38,8 @@
 - `2cc1be2`：构思集与小票册入口带入并锁定对应搜索范围，灵感首页保持全局搜索。
 - `cc02cd0`：移除构思集页重复的“构思历程”菜单项，保留明确的右上入口。
 - `33cda3b`：将构思集工作台顶部改为系统 toolbar；工作台编辑态暂停卡片切换手势，避免 TextEditor 滚动被抢占；卡片预览按对象显示“收起 / 结束本轮构思”，并隐藏构思集卡片上的独立归组入口；归组托盘改为锚定来源按钮；构思历程补齐搜索入口；小票册根页移除多余副标题，出票反馈移除伪造的搜索/更多按钮。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-audit test`，86 项测试、0 失败，`** TEST SUCCEEDED **`。
+- `f306b01`：工作台结束动作采用系统 toolbar 的可见文字与旗帜图标，保持确认稿的可发现性。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-audit2 test`，86 项测试、0 失败，`** TEST SUCCEEDED **`。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 
