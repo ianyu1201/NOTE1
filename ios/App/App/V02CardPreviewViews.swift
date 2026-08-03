@@ -68,7 +68,7 @@ struct V02CardPreviewView: View {
                 VStack(spacing: 6) {
                     Group {
                         if cards.indices.contains(index), case .inspiration = cards[index] {
-                            V02GroupEntryButton(count: activeMemberCount, action: {
+                            V02GroupEntryButton(action: {
                                 beginGroupPicker(for: cards)
                             }, onDrag: { location, translation, ended in
                                 if translation.height < -18 {
@@ -391,14 +391,6 @@ struct V02CardPreviewView: View {
         } catch { reportError(error) }
     }
 
-    private var activeMemberCount: Int {
-        store.activeCollections.reduce(into: 0) { total, collection in
-            guard let roundID = collection.currentRoundID,
-                  let round = store.state.rounds.first(where: { $0.id == roundID }) else { return }
-            total += round.memberIDs.count
-        }
-    }
-
     private func memberCount(for collection: V02ThinkingCollection) -> Int {
         guard let roundID = collection.currentRoundID,
               let round = store.state.rounds.first(where: { $0.id == roundID }) else { return 0 }
@@ -480,7 +472,6 @@ struct V02CardPreviewView: View {
     }
 }
 private struct V02GroupEntryButton: View {
-    let count: Int
     let action: () -> Void
     var onDrag: (CGPoint, CGSize, Bool) -> Void = { _, _, _ in }
 
@@ -492,10 +483,10 @@ private struct V02GroupEntryButton: View {
                     .frame(width: 52, height: 52)
                     .background(Color.white.opacity(0.72), in: Circle())
                     .overlay { Circle().stroke(Color.white.opacity(0.9), lineWidth: 1) }
-                Text("\(count)")
-                    .noteFontCapped(size: 11, maximumScale: 1.2, weight: .bold, relativeTo: .caption2)
+                Image(systemName: "plus")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(minWidth: 19, minHeight: 19)
+                    .frame(width: 18, height: 18)
                     .background(NoteTheme.ink, in: Circle())
                     .offset(x: 4, y: -3)
         }
@@ -516,7 +507,7 @@ private struct V02GroupEntryButton: View {
                 }
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("归入构思集，当前 \(count) 个构思集")
+        .accessibilityLabel("归入构思集")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { action() }
     }
