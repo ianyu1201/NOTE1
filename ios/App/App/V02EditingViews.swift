@@ -116,7 +116,11 @@ struct V02InspirationEditorView: View {
                 .frame(minHeight: 48)
         }.buttonStyle(.plain).accessibilityIdentifier("v02.editor.addAttachment")
         Spacer()
-        Button { saveNow(); focused = false } label: {
+        Button {
+            saveNow()
+            focused = false
+            dismiss()
+        } label: {
             Text("完成")
                 .noteFontCapped(size: 15, maximumScale: 1.25, weight: .semibold, relativeTo: .subheadline)
                 .frame(minWidth: 76, minHeight: 48)
