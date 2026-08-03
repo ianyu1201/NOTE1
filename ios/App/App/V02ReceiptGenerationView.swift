@@ -151,7 +151,7 @@ struct V02ReceiptGenerationView: View {
     private func startUndoCountdown() {
         guard undoRemaining > 0 else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            guard phase == .settled, undoRemaining > 0 else { return }
+            guard didStart, phase == .settled, undoRemaining > 0 else { return }
             undoRemaining = max(0, undoRemaining - 0.1)
             startUndoCountdown()
         }
