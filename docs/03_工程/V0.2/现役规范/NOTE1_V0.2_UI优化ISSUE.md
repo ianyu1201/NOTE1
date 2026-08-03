@@ -41,7 +41,7 @@
 - `f306b01`：工作台结束动作采用系统 toolbar 的可见文字与旗帜图标，保持确认稿的可发现性。
 - `b7e3a4e`：卡片预览移除会扩张到整屏的弹性空白，改为受控操作间距，并取消重复的整栏底部预留；页码和构思集入口回到主卡下方的操作区。
 - `fe1a70f`：构思集新建入口移回 App shell 的 viewport overlay，避免长列表按内容高度把“+”压到卡片中部；同步更新导航策略测试，构思集恢复为有浮动新建入口。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-audit2 test`，86 项测试、0 失败，`** TEST SUCCEEDED **`。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-governance test`，86 项测试、0 失败，`** TEST SUCCEEDED **`。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 
