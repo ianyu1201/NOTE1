@@ -137,7 +137,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         // Keep the operation slot and page indicator visible at the largest
         // sizes. The paper itself remains readable through wrapping; extra
         // vertical space belongs to the scrollable page, not the fixed deck.
-        .frame(height: dynamicTypeSize.isAccessibilitySize ? max(deckHeight, 360) : deckHeight)
+        .frame(height: dynamicTypeSize.isAccessibilitySize ? max(deckHeight, 520) : deckHeight)
         .onChange(of: cards.map(\.id)) { _, ids in
             index = min(index, max(ids.count - 1, 0))
         }

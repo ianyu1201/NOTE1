@@ -154,13 +154,11 @@ struct V02InspirationListView: View {
                 Button("回收站", systemImage: "trash", action: showTrash)
                 Button("设置", systemImage: "gearshape", action: showSettings)
             } label: {
-                Image(systemName: "line.3.horizontal")
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
+                V02GlassIconLabel(systemName: "line.3.horizontal")
             }
             .accessibilityLabel("本机功能与设置")
         }
+        .noteSharedBackgroundHidden()
         ToolbarItem(placement: .principal) {
             Menu {
                 Button("创建时间从新到旧") { isAscending = false }
@@ -179,13 +177,11 @@ struct V02InspirationListView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button(action: showSearch) {
-                Image(systemName: "magnifyingglass")
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .contentShape(Rectangle())
+                V02GlassIconLabel(systemName: "magnifyingglass")
             }
             .accessibilityLabel("搜索")
         }
+        .noteSharedBackgroundHidden()
     }
 
     private var selectionToolbar: some View {

@@ -47,7 +47,6 @@ struct V02ReceiptBookView: View {
                                 ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
                         }
                     )
-                    .padding(.horizontal, NoteTheme.horizontalPadding)
                     .zIndex(1)
                     Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
                         .noteFont(size: 13, relativeTo: .caption)
@@ -66,15 +65,20 @@ struct V02ReceiptBookView: View {
         }
           .scrollIndicators(.hidden)
           .background(NoteTheme.background.ignoresSafeArea())
-          .navigationTitle("小票册")
           .navigationBarTitleDisplayMode(.inline)
           .toolbarBackground(.hidden, for: .navigationBar)
           .toolbar {
+              ToolbarItem(placement: .principal) {
+                  Text("小票册")
+                      .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                      .foregroundStyle(NoteTheme.ink)
+                      .accessibilityAddTraits(.isHeader)
+              }
               ToolbarItemGroup(placement: .topBarTrailing) {
                   Button {
                       isPresentingSearch = true
                   } label: {
-                      Image(systemName: "magnifyingglass")
+                      V02GlassIconLabel(systemName: "magnifyingglass")
                   }
                   .accessibilityLabel("搜索小票")
                   Menu {
@@ -97,10 +101,11 @@ struct V02ReceiptBookView: View {
                           if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
                       }
                   } label: {
-                      Image(systemName: "ellipsis")
+                      V02GlassIconLabel(systemName: "ellipsis")
                   }
                   .accessibilityLabel("更多小票册操作")
               }
+              .noteSharedBackgroundHidden()
           }
         }
         .onChange(of: receipts.map(\.id)) { _, ids in

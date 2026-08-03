@@ -54,9 +54,10 @@ struct V02ReceiptDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { Image(systemName: "chevron.left") }
+                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
                         .accessibilityLabel("返回小票册")
                 }
+                .noteSharedBackgroundHidden()
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Menu("切换模板", systemImage: "rectangle.2.swap") {
@@ -87,9 +88,10 @@ struct V02ReceiptDetailView: View {
                         Button("删除小票", role: .destructive) {
                             isConfirmingDelete = true
                         }
-                    } label: { Image(systemName: "ellipsis") }
+                    } label: { V02GlassIconLabel(systemName: "ellipsis") }
                     .accessibilityLabel("小票更多操作")
                 }
+                .noteSharedBackgroundHidden()
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if isSearching {

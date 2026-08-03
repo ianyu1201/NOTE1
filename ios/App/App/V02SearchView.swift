@@ -130,6 +130,13 @@ struct V02SearchView: View {
             isSelecting = false
             selectedIDs.removeAll()
         }
+        .onChange(of: query) { _, _ in
+            // A new query can remove previously selected rows from the
+            // result set. Never keep hidden IDs actionable in the selection
+            // toolbar after the visible result set changes.
+            isSelecting = false
+            selectedIDs.removeAll()
+        }
         .sheet(isPresented: Binding(get: { !shareURLs.isEmpty }, set: { if !$0 { shareURLs.removeAll() } })) {
             NavigationStack {
                 List(shareURLs, id: \.self) { url in ShareLink(item: url) { Label(url.lastPathComponent, systemImage: "square.and.arrow.up") } }

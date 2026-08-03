@@ -60,13 +60,12 @@ struct V02InspirationEditorView: View {
                         focused = false
                         dismiss()
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 17, weight: .semibold))
-                            .frame(width: 44, height: 44)
+                        V02GlassIconLabel(systemName: "chevron.left")
                     }
                     .accessibilityLabel("返回")
                     .accessibilityHint("保存后返回上一页")
                 }
+                .noteSharedBackgroundHidden()
             }
             .safeAreaInset(edge: .bottom) { bottomBar }
         }

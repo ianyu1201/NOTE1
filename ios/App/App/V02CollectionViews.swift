@@ -83,43 +83,41 @@ struct V02CollectionListView: View {
                 .zIndex(2)
             }
           }
-          .navigationTitle("构思集")
           .navigationBarTitleDisplayMode(.inline)
           .toolbarBackground(.hidden, for: .navigationBar)
           .toolbar(workingCollection == nil ? .visible : .hidden, for: .navigationBar)
           .toolbar {
               if workingCollection == nil {
+                  ToolbarItem(placement: .principal) {
+                      Text("构思集")
+                          .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                          .foregroundStyle(NoteTheme.ink)
+                          .accessibilityAddTraits(.isHeader)
+                  }
                   ToolbarItem(placement: .topBarLeading) {
                       Menu {
                           Button("新建构思集", systemImage: "plus", action: requestNewCollection)
                       } label: {
-                          Image(systemName: "line.3.horizontal")
-                              .fontWeight(.semibold)
-                              .frame(minWidth: 44, minHeight: 44)
-                              .contentShape(Rectangle())
+                          V02GlassIconLabel(systemName: "line.3.horizontal")
                       }
                       .accessibilityLabel("构思集菜单")
                   }
+                  .noteSharedBackgroundHidden()
                   ToolbarItemGroup(placement: .topBarTrailing) {
                       Button {
                           isPresentingSearch = true
                       } label: {
-                          Image(systemName: "magnifyingglass")
-                              .fontWeight(.semibold)
-                              .frame(minWidth: 44, minHeight: 44)
-                              .contentShape(Rectangle())
+                          V02GlassIconLabel(systemName: "magnifyingglass")
                       }
                       .accessibilityLabel("搜索构思集")
                       Button {
                           isShowingHistory = true
                       } label: {
-                          Image(systemName: "clock.arrow.circlepath")
-                              .fontWeight(.semibold)
-                              .frame(minWidth: 44, minHeight: 44)
-                              .contentShape(Rectangle())
+                          V02GlassIconLabel(systemName: "clock.arrow.circlepath")
                       }
                       .accessibilityLabel("构思历程")
                   }
+                  .noteSharedBackgroundHidden()
               }
           }
         }
@@ -459,13 +457,11 @@ private struct V02CollectionWorkbenchView: View {
                         persistEditingMember()
                         onClose()
                     } label: {
-                        Image(systemName: "chevron.left")
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
+                        V02GlassIconLabel(systemName: "chevron.left")
                     }
                     .accessibilityLabel("返回构思集")
                 }
+                .noteSharedBackgroundHidden()
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 2) {
                         Text(collection?.name ?? "构思集")

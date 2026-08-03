@@ -61,43 +61,36 @@ struct V02CardPreviewView: View {
                 }
                 .padding(.horizontal, 2)
 
-                // Keep a measured operation gap below the paper. A flexible
-                // Spacer here expands to the whole remaining viewport and
-                // recreates the empty band this screen is meant to avoid.
+                // Keep a compact, controlled operation gap below the paper.
+                // The collection card has no grouping action, so it must not
+                // reserve a hidden 52pt button slot just to align the page
+                // indicator with the inspiration-card state.
                 Color.clear
-                    .frame(height: 64)
-                VStack(spacing: 6) {
-                    Group {
-                        if cards.indices.contains(index), case .inspiration = cards[index] {
-                            V02GroupEntryButton(action: {
-                                beginGroupPicker(for: cards)
-                            }, onDrag: { location, translation, ended in
-                                if translation.height < -18 {
-                                    isShowingGroupTray = true
-                                    isDraggingGroup = true
-                                }
-                                // V02GroupEntryButton reports its drag in the same global
-                                // coordinate space as the tray frames, so the final
-                                // location is compared directly without frame-offset
-                                // guesses that drift when the overlay reflows.
-                                let point = location
-                                activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                                if ended {
-                                    let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                                    defer { activeGroupTargetID = nil; isShowingGroupTray = false; isDraggingGroup = false }
-                                    guard translation.height < -50,
-                                          case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                          let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
-                                    pendingInspirationID = inspiration.id
-                                    handleGroupOperation(target)
-                                }
-                            })
-                        } else {
-                            Color.clear
-                                .frame(width: 52, height: 52)
-                                .accessibilityHidden(true)
+                    .frame(height: V02NavigationLayoutPolicy.cardOperationGap)
+                if cards.indices.contains(index), case .inspiration = cards[index] {
+                    V02GroupEntryButton(action: {
+                        beginGroupPicker(for: cards)
+                    }, onDrag: { location, translation, ended in
+                        if translation.height < -18 {
+                            isShowingGroupTray = true
+                            isDraggingGroup = true
                         }
-                    }
+                        // V02GroupEntryButton reports its drag in the same global
+                        // coordinate space as the tray frames, so the final
+                        // location is compared directly without frame-offset
+                        // guesses that drift when the overlay reflows.
+                        let point = location
+                        activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                        if ended {
+                            let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                            defer { activeGroupTargetID = nil; isShowingGroupTray = false; isDraggingGroup = false }
+                            guard translation.height < -50,
+                                  case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                  let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                            pendingInspirationID = inspiration.id
+                            handleGroupOperation(target)
+                        }
+                    })
                     .background(GeometryReader { proxy in
                         Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
                     })
@@ -106,6 +99,8 @@ struct V02CardPreviewView: View {
                     // to begin from the same fixed button after the tray is open.
                     .zIndex(isShowingGroupTray ? 6 : 0)
                     .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
+                }
+                VStack(spacing: 6) {
                     Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
                         .noteFontCapped(size: 13, maximumScale: 1.25, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
@@ -213,11 +208,9 @@ struct V02CardPreviewView: View {
         } message: {
             Text(capacityError ?? "")
         }
-        // Keep the undo affordance in the page content area. The app shell
-        // owns the bottom navigation safe-area inset; nesting another inset
-        // here can place the button below the visible viewport and let the
-        // navigation hit targets win. An anchored overlay preserves the
-        // navigation bar and leaves the card flow usable underneath.
+        // Keep the undo affordance in the page content area. The native
+        // TabView owns the navigation surface; an anchored overlay preserves
+        // its hit targets and leaves the card flow usable underneath.
         .overlay(alignment: .bottom) {
             undoBannerContent
                 .padding(.horizontal, 16)
@@ -232,13 +225,11 @@ struct V02CardPreviewView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .fontWeight(.semibold)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
+                    V02GlassIconLabel(systemName: "chevron.left")
                 }
                 .accessibilityLabel("返回灵感")
             }
+            .noteSharedBackgroundHidden()
             ToolbarItem(placement: .principal) {
                 Text("NOTE1")
                     .noteFontCapped(
@@ -254,13 +245,11 @@ struct V02CardPreviewView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: onHistory) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .fontWeight(.semibold)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
+                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
                 }
                 .accessibilityLabel("历史记录")
             }
+            .noteSharedBackgroundHidden()
         }
         }
         .background(NoteTheme.background.ignoresSafeArea())

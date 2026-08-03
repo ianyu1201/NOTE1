@@ -37,14 +37,15 @@ enum V02NavigationLayoutPolicy {
     static let barHeight: CGFloat = 76
     static let barHorizontalInset: CGFloat = 18
     static let composerBottomGap: CGFloat = 16
-    /// The primary shell owns the bottom navigation safe-area inset. Content
-    /// gets this small optical breathing room through that same inset rather
-    /// than each page reserving a second, fixed-height slot.
+    /// All primary scroll containers use the same bottom inset policy so the
+    /// native TabView bar and page content do not drift apart.
     static let primaryContentSpacing: CGFloat = 12
-    /// Scroll content keeps a full navigation-height breathing room in addition
-    /// to the shell's safe-area inset, so the final row can clear the floating
-    /// navigation surface when the page is hosted inside GeometryReader.
+    /// Keep enough breathing room for the floating system navigation surface
+    /// when a page is hosted inside the shell's GeometryReader.
     static let primaryContentBottomPadding: CGFloat = barHeight + primaryContentSpacing
+    /// Compact gap between the card paper and its page-local operation row.
+    /// The row must not become a flexible blank band on sparse collection cards.
+    static let cardOperationGap: CGFloat = 24
     /// Shared optical anchor for root-page floating actions. The workbench
     /// uses a higher anchor because its card owns a bottom action row.
     static let floatingComposerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
@@ -217,6 +218,17 @@ struct V02GlassIconLabel: View {
             }
             .shadow(color: NoteTheme.ink.opacity(0.055), radius: 8, y: 3)
             .contentShape(Circle())
+    }
+}
+
+extension ToolbarContent {
+    @ToolbarContentBuilder
+    func noteSharedBackgroundHidden() -> some ToolbarContent {
+        if #available(iOS 26.0, *) {
+            sharedBackgroundVisibility(.hidden)
+        } else {
+            self
+        }
     }
 }
 
