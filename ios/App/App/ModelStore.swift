@@ -1451,6 +1451,7 @@ struct V02DomainEngine {
         let round = state.rounds[index]
         guard !round.memberIDs.isEmpty else { throw V02DomainError.emptyRound }
         guard let collectionIndex = state.collections.firstIndex(where: { $0.id == round.collectionID }) else { throw V02DomainError.collectionNotFound }
+        guard state.collections[collectionIndex].currentRoundID == roundID else { throw V02DomainError.activeRoundRequired }
         let members = try round.memberIDs.map { id -> V02ReceiptSnapshot.Member in
             guard let item = state.inspirations.first(where: { $0.id == id }) else { throw V02DomainError.inspirationNotFound }
             let attachments = item.resourceIDs.compactMap { resourceID in
@@ -1549,6 +1550,10 @@ struct V02DomainEngine {
               state.collections[collectionIndex].currentRoundID == nil else {
             throw V02DomainError.roundNotFound
         }
+        let activeCount = state.collections.filter { $0.currentRoundID != nil }.count
+        guard activeCount < maximumActiveCollections else {
+            throw V02DomainError.collectionLimit
+        }
         state.receipts.remove(at: receiptIndex)
         state.rounds[roundIndex].state = .thinking
         state.rounds[roundIndex].endedAt = nil
@@ -1556,6 +1561,18 @@ struct V02DomainEngine {
             state.rounds[roundIndex].events.removeLast()
         }
         state.collections[collectionIndex].currentRoundID = state.rounds[roundIndex].id
+        // The receipt can be undone after a member was assigned to another
+        // active collection. Move it out of that live round first so one
+        // inspiration never belongs to two active rounds at once.
+        for memberID in state.rounds[roundIndex].memberIDs {
+            guard let inspirationIndex = state.inspirations.firstIndex(where: { $0.id == memberID }) else { continue }
+            guard let oldCollectionID = state.inspirations[inspirationIndex].collectionID,
+                  oldCollectionID != receipt.collectionID,
+                  let oldRoundID = state.collections.first(where: { $0.id == oldCollectionID })?.currentRoundID,
+                  let oldRoundIndex = state.rounds.firstIndex(where: { $0.id == oldRoundID && $0.state == .thinking }) else { continue }
+            state.rounds[oldRoundIndex].memberIDs.removeAll { $0 == memberID }
+            state.rounds[oldRoundIndex].events.append(.init(id: UUID(), kind: .memberRemoved, occurredAt: now, inspirationID: memberID))
+        }
         for index in state.inspirations.indices where state.rounds[roundIndex].memberIDs.contains(state.inspirations[index].id) {
             state.inspirations[index].collectionID = receipt.collectionID
             state.inspirations[index].cardFlowState = .visible
@@ -1571,7 +1588,7 @@ struct V02DomainEngine {
         guard let inspirationIndex = state.inspirations.firstIndex(where: { $0.id == inspirationID }),
               let collectionID = state.inspirations[inspirationIndex].collectionID,
               let roundID = state.collections.first(where: { $0.id == collectionID })?.currentRoundID,
-              let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID }) else {
+              let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID && $0.state == .thinking }) else {
             throw V02DomainError.inspirationNotFound
         }
         state.rounds[roundIndex].memberIDs.removeAll { $0 == inspirationID }
@@ -1607,6 +1624,7 @@ struct V02DomainEngine {
         guard let index = state.inspirations.firstIndex(where: { $0.id == inspirationID }) else {
             throw V02DomainError.inspirationNotFound
         }
+        let ownedCollectionID = state.inspirations[index].collectionID
         var deleted = state.inspirations.remove(at: index)
         deleted.collectionID = nil
         deleted.cardFlowState = .visible
@@ -1614,11 +1632,14 @@ struct V02DomainEngine {
         for index in state.rounds.indices {
             state.rounds[index].memberIDs.removeAll { $0 == inspirationID }
         }
-        let emptyCollectionIDs = Set(state.collections.compactMap { collection in
-            state.inspirations.contains(where: { $0.collectionID == collection.id }) ? nil : collection.id
-        })
-        state.rounds.removeAll { emptyCollectionIDs.contains($0.collectionID) }
-        state.collections.removeAll { emptyCollectionIDs.contains($0.id) }
+        // Only the collection that owned the deleted inspiration may become
+        // empty as a result of this transaction. Do not sweep unrelated empty
+        // draft collections when deleting an independent inspiration.
+        if let collectionID = ownedCollectionID,
+           !state.inspirations.contains(where: { $0.collectionID == collectionID }) {
+            state.rounds.removeAll { $0.collectionID == collectionID }
+            state.collections.removeAll { $0.id == collectionID }
+        }
     }
 
     static func deleteReceipt(

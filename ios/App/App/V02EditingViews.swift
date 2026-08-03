@@ -184,6 +184,7 @@ struct V02ComposerView: View {
     @State private var isConfirmingDiscard = false
     @State private var textBeforeVoiceRecording = ""
     @State private var appliedTranscript = ""
+    @State private var didCommitDraft = false
 
     var body: some View {
         NavigationStack {
@@ -343,6 +344,14 @@ struct V02ComposerView: View {
         } message: {
             Text("尚未保存的文字、录音和附件将被移除。")
         }
+        .onDisappear {
+            // A sheet can also be dismissed by a swipe or system-driven
+            // dismissal, bypassing the explicit cancel confirmation. Any
+            // resources created while composing are still unreferenced until
+            // save succeeds, so reclaim them at the lifecycle boundary.
+            guard !didCommitDraft else { return }
+            discardDraft()
+        }
         .presentationDetents([.medium])
     }
 
@@ -403,6 +412,7 @@ struct V02ComposerView: View {
                 throw error
             }
             recorder.consumeTemporaryRecording()
+            didCommitDraft = true
             dismiss()
         } catch { reportError(error) }
     }

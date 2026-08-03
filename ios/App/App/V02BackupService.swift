@@ -90,7 +90,11 @@ enum V02BackupService {
         guard Set(resourceIDs).count == resourceIDs.count else {
             throw V02BackupError.invalidArchive("存在重复的附件 ID。")
         }
-        guard Set(payload.state.resources.map(\.id)) == Set(resourceIDs) else {
+        let stateResourceIDs = payload.state.resources.map(\.id)
+        guard Set(stateResourceIDs).count == stateResourceIDs.count else {
+            throw V02BackupError.invalidArchive("数据状态中存在重复的附件 ID。")
+        }
+        guard Set(stateResourceIDs) == Set(resourceIDs) else {
             throw V02BackupError.invalidArchive("附件元数据与数据内容不一致。")
         }
         let resourceIDSet = Set(resourceIDs)
@@ -106,6 +110,31 @@ enum V02BackupService {
         )
         guard referencedIDs.isSubset(of: resourceIDSet) else {
             throw V02BackupError.invalidArchive("有内容引用了不存在的附件。")
+        }
+        let resourcesByID = Dictionary(uniqueKeysWithValues: payload.state.resources.map { ($0.id, $0) })
+        for receipt in payload.state.receipts {
+            for member in receipt.snapshot.members {
+                let memberResourceIDs = Set(member.resourceIDs)
+                guard memberResourceIDs.count == member.resourceIDs.count else {
+                    throw V02BackupError.invalidArchive("构思小票中存在重复的附件引用。")
+                }
+                let attachmentIDs = member.attachments.map(\.id)
+                guard Set(attachmentIDs).count == attachmentIDs.count,
+                      Set(attachmentIDs).isSubset(of: memberResourceIDs) else {
+                    throw V02BackupError.invalidArchive("构思小票附件快照与成员引用不一致。")
+                }
+                for attachment in member.attachments {
+                    guard let resource = resourcesByID[attachment.id],
+                          resource.source == attachment.source,
+                          resource.filename == attachment.filename,
+                          resource.mimeType == attachment.mimeType,
+                          resource.relativePath == attachment.relativePath,
+                          resource.size == attachment.size,
+                          resource.createdAt == attachment.createdAt else {
+                        throw V02BackupError.invalidArchive("构思小票附件快照与本机附件元数据不一致。")
+                    }
+                }
+            }
         }
         var paths = Set<String>()
         var totalSize = 0

@@ -306,9 +306,13 @@ final class V02Store: ObservableObject {
                   resourceIDs.allSatisfy({ resourceID in state.resources.contains { $0.id == resourceID } }) else {
                 throw V02DomainError.resourceNotFound
             }
-            guard let collection = state.collections.first(where: { $0.id == collectionID }),
-                  let roundIndex = state.rounds.firstIndex(where: { $0.id == collection.currentRoundID && $0.state == .thinking }),
-                  state.rounds[roundIndex].memberIDs.count < V02DomainEngine.maximumMembersPerCollection else {
+            guard let collection = state.collections.first(where: { $0.id == collectionID }) else {
+                throw V02DomainError.collectionNotFound
+            }
+            guard let roundIndex = state.rounds.firstIndex(where: { $0.id == collection.currentRoundID && $0.state == .thinking }) else {
+                throw V02DomainError.activeRoundRequired
+            }
+            guard state.rounds[roundIndex].memberIDs.count < V02DomainEngine.maximumMembersPerCollection else {
                 throw V02DomainError.collectionCapacity
             }
             state.inspirations.append(inspiration)

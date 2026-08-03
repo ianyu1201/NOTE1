@@ -574,6 +574,58 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: target.resourceURL(restoredResource)), Data([0, 1, 2]))
     }
 
+    func testV02BackupRejectsReceiptAttachmentSnapshotMismatch() throws {
+        let source = V02Store(storageDirectory: directory.appendingPathComponent("invalid-receipt-snapshot"))
+        let resource = try source.saveVoiceInspirationAudio(filename: "snapshot.m4a", m4aData: Data([0, 1, 2]))
+        let inspiration = try source.createInspiration(text: "需要冻结附件", resourceIDs: [resource.id])
+        let collection = try source.createCollectionAndRound()
+        try source.assign(inspiration.id, to: collection.id)
+        _ = try source.endRound(try XCTUnwrap(source.state.rounds.first(where: { $0.collectionID == collection.id && $0.state == .thinking })?.id))
+
+        let backupData = try source.exportBackupData()
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var payload = try decoder.decode(V02BackupPayload.self, from: backupData)
+        var state = payload.state
+        let receiptIndex = try XCTUnwrap(state.receipts.indices.first)
+        let member = try XCTUnwrap(state.receipts[receiptIndex].snapshot.members.first)
+        let forged = V02ReceiptSnapshot.Attachment(
+            id: resource.id,
+            source: .importedAttachment,
+            filename: "被篡改.m4a",
+            mimeType: resource.mimeType,
+            relativePath: resource.relativePath,
+            size: resource.size,
+            createdAt: resource.createdAt
+        )
+        let forgedMember = V02ReceiptSnapshot.Member(
+            inspirationID: member.inspirationID,
+            text: member.text,
+            resourceIDs: member.resourceIDs,
+            attachments: [forged]
+        )
+        let snapshot = state.receipts[receiptIndex].snapshot
+        let forgedSnapshot = V02ReceiptSnapshot(
+            collectionName: snapshot.collectionName,
+            startedAt: snapshot.startedAt,
+            endedAt: snapshot.endedAt,
+            effectiveEditCount: snapshot.effectiveEditCount,
+            members: [forgedMember],
+            events: snapshot.events
+        )
+        let receipt = state.receipts[receiptIndex]
+        state.receipts[receiptIndex] = V02Receipt(
+            id: receipt.id,
+            roundID: receipt.roundID,
+            collectionID: receipt.collectionID,
+            createdAt: receipt.createdAt,
+            snapshot: forgedSnapshot
+        )
+        payload = V02BackupPayload(exportedAt: payload.exportedAt, state: state, resources: payload.resources)
+
+        XCTAssertThrowsError(try V02BackupService.encode(payload))
+    }
+
     func testV02InvalidBackupDoesNotChangeCurrentData() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("invalid-v02-backup"))
         let original = try store.createInspiration(text: "保留原数据")
@@ -885,6 +937,54 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(reopenedReceipt.snapshot.events.filter { $0.kind == .ended }.count, 1)
     }
 
+    func testV02UndoEndRoundMovesMembersOutOfAnotherActiveRound() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-round-ownership"))
+        let inspiration = try store.createInspiration(text: "撤回后仍只能属于一轮")
+        let original = try store.createCollectionAndRound(name: "原构思集")
+        try store.assign(inspiration.id, to: original.id)
+        let originalRoundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == original.id })?.currentRoundID)
+        let receipt = try store.endRound(originalRoundID)
+
+        let other = try store.createCollectionAndRound(name: "另一构思集")
+        try store.assign(inspiration.id, to: other.id)
+        try store.undoEndRound(receipt.id)
+
+        let originalRound = try XCTUnwrap(store.state.rounds.first(where: { $0.collectionID == original.id && $0.state == .thinking }))
+        let otherRound = try XCTUnwrap(store.state.rounds.first(where: { $0.collectionID == other.id && $0.state == .thinking }))
+        XCTAssertEqual(originalRound.memberIDs, [inspiration.id])
+        XCTAssertTrue(otherRound.memberIDs.isEmpty)
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, original.id)
+    }
+
+    func testV02UndoEndRoundRespectsActiveCollectionLimit() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-collection-limit"))
+        let inspiration = try store.createInspiration(text: "不能恢复成第六个活动构思集")
+        let original = try store.createCollectionAndRound(name: "已结束构思集")
+        try store.assign(inspiration.id, to: original.id)
+        let originalRoundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == original.id })?.currentRoundID)
+        let receipt = try store.endRound(originalRoundID)
+        for index in 0..<V02DomainEngine.maximumActiveCollections {
+            _ = try store.createCollectionAndRound(name: "活动构思集 \(index + 1)")
+        }
+
+        XCTAssertThrowsError(try store.undoEndRound(receipt.id)) { error in
+            XCTAssertEqual(error as? V02DomainError, .collectionLimit)
+        }
+        XCTAssertEqual(store.state.receipts.map(\.id), [receipt.id])
+        XCTAssertEqual(store.activeCollections.count, V02DomainEngine.maximumActiveCollections)
+    }
+
+    func testV02DeletingIndependentInspirationDoesNotRemoveEmptyDraftCollection() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("delete-independent"))
+        let emptyCollection = try store.createCollectionAndRound(name: "保留空构思集")
+        let inspiration = try store.createInspiration(text: "独立灵感")
+
+        _ = try store.deleteInspiration(inspiration.id)
+
+        XCTAssertTrue(store.state.collections.contains { $0.id == emptyCollection.id })
+        XCTAssertTrue(store.state.rounds.contains { $0.collectionID == emptyCollection.id && $0.state == .thinking })
+    }
+
     func testV02ContinueThinkingMovesMembersOutOfAnotherActiveRound() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("continue-round-ownership"))
         let inspiration = try store.createInspiration(text: "只能属于一个活动轮次")
@@ -952,6 +1052,21 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertThrowsError(try store.createInspiration(text: "不应写入", in: collection.id))
         XCTAssertEqual(store.state.inspirations.count, V02DomainEngine.maximumMembersPerCollection)
         XCTAssertFalse(store.state.inspirations.contains { $0.text == "不应写入" })
+    }
+
+    func testV02CreateInspirationInMissingOrEndedCollectionReportsTheActualConstraint() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("create-in-invalid-collection"))
+        XCTAssertThrowsError(try store.createInspiration(text: "不存在", in: UUID())) { error in
+            XCTAssertEqual(error as? V02DomainError, .collectionNotFound)
+        }
+
+        let collection = try store.createCollectionAndRound()
+        let roundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == collection.id })?.currentRoundID)
+        _ = try store.createInspiration(text: "结束前的灵感", in: collection.id)
+        _ = try store.endRound(roundID)
+        XCTAssertThrowsError(try store.createInspiration(text: "不能加入已结束构思集", in: collection.id)) { error in
+            XCTAssertEqual(error as? V02DomainError, .activeRoundRequired)
+        }
     }
 
     func testV02EmptyRoundCannotGenerateAnEmptyReceipt() throws {
