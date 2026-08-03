@@ -122,6 +122,9 @@ struct V02AppShellView: View {
         .tint(NoteTheme.ink)
         .noteErrorAlert($error)
         .onChange(of: page) { _, newPage in
+            // Selection is local to the page that owns it; never carry a
+            // hidden selection mode into another primary destination.
+            isManagingSelection = false
             if newPage != .collections {
                 isCollectionWorkbenchPresented = false
             }
