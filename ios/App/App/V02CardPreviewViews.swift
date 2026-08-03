@@ -8,6 +8,7 @@ struct V02CardPreviewView: View {
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     let onEditingChange: (Bool) -> Void
+    let onOverlayChange: (Bool) -> Void
     @State private var index = 0
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
     @State private var endingRound: V02ThinkingRound?
@@ -126,6 +127,10 @@ struct V02CardPreviewView: View {
             guard cards.indices.contains(newIndex) else { return }
             persistedCardID = cards[newIndex].id.uuidString
         }
+        .onChange(of: localOverlayPresented) { _, presented in
+            onOverlayChange(presented)
+        }
+        .onDisappear { onOverlayChange(false) }
         .alert("结束本轮构思？", isPresented: Binding(
             get: { endingRound != nil }, set: { if !$0 { endingRound = nil } }
         ), presenting: endingRound) { round in
@@ -344,6 +349,10 @@ struct V02CardPreviewView: View {
         default:
             break
         }
+    }
+
+    private var localOverlayPresented: Bool {
+        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection || endingRound != nil || capacityError != nil
     }
 
     private func beginGroupPicker(for cards: [V02CardPreviewEntry]) {

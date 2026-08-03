@@ -36,6 +36,7 @@ struct V02AppShellView: View {
     @State private var isCollectionWorkbenchPresented = false
     @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
+    @State private var isCardOverlayPresented = false
 
     var body: some View {
         ZStack {
@@ -88,6 +89,7 @@ struct V02AppShellView: View {
                     || isManagingSelection
                     || isCollectionWorkbenchPresented
                     || isChildEditorPresented
+                    || isCardOverlayPresented
                     || generatedReceipt != nil
                     || presentedReceipt != nil
             ) {
@@ -163,7 +165,8 @@ struct V02AppShellView: View {
                 reportError: { error in
                 self.error = UserFacingAlert(error: error)
                 },
-                onEditingChange: { isChildEditorPresented = $0 }
+                onEditingChange: { isChildEditorPresented = $0 },
+                onOverlayChange: { isCardOverlayPresented = $0 }
             )
         case .collections:
             V02CollectionListView(
