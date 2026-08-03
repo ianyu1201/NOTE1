@@ -157,6 +157,22 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
 
+    func testV02CollectionPreviewUsesShorterPaperFloorThanIndependentInspiration() {
+        let collection = V02ThinkingCollection(
+            id: UUID(),
+            name: "构思集（1）",
+            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            currentRoundID: UUID()
+        )
+
+        let collectionHeight = V02CardPreviewLayoutPolicy.deckHeight(
+            for: .collection(collection, memberCount: 1)
+        )
+
+        XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.collectionHeight)
+        XCTAssertLessThan(collectionHeight, V02CardPreviewLayoutPolicy.compactHeight)
+    }
+
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
         let first = UUID(), second = UUID(), third = UUID()
         XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [first, second, third]), 1)

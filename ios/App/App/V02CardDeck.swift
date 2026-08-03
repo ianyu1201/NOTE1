@@ -41,6 +41,10 @@ enum V02CardPreviewLayoutPolicy {
     /// content and attachment metadata without turning the paper into a
     /// large empty rectangle. Longer text grows from this floor below.
     static let compactHeight: CGFloat = 196
+    /// A collection card has a fixed label, name and short guidance copy but
+    /// no date or attachment row. Keeping its floor separate avoids carrying
+    /// the independent-inspiration breathing room into a sparse group card.
+    static let collectionHeight: CGFloat = 176
     static let maximumHeight: CGFloat = 360
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
@@ -48,7 +52,7 @@ enum V02CardPreviewLayoutPolicy {
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
         switch entry {
         case .collection:
-            return compactHeight
+            return collectionHeight
         case .inspiration(let inspiration):
             let characterCount = max(inspiration.text.trimmingCharacters(in: .whitespacesAndNewlines).count, 1)
             let lineCount = min(

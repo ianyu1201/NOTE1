@@ -55,6 +55,7 @@
 - 当前补丁：小票生成完成态的“查看小票 / 返回 / 撤回”操作使用 `ViewThatFits`，窄屏或最大辅助字号空间不足时自动改为纵向排列，避免三按钮横排挤压、截断或不可点。
 - 当前补丁：卡片预览无可用卡片时，空态改为在剩余首屏区域居中，不再贴在标题下方留下失衡的整页空白。
 - 当前补丁：短内容卡片的纸张最小高度从 232pt 收紧为 196pt；长文本仍按内容增长并受 360pt 上限约束，减少短卡内部无意义留白。
+- 当前补丁：构思集卡片按自身三行内容使用独立 176pt 纸张下限，不再继承独立灵感卡片的 196pt 空间，进一步消除构思集卡片内部空白。
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 当前补丁：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；短卡不再被固定 360pt 纸张撑出大块内部空白，长文本仍限制在可读上限，最大辅助字号由共享 deck 下限兜底。
 - 当前补丁：结束本轮前的强制保存失败时中止出票，避免以旧文字生成错误小票。
@@ -85,6 +86,7 @@
 - 本次响应式出票操作修复的模拟器构建：`/tmp/note1-v03-generic49`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze49`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests49`，97 项测试、0 失败，`** TEST SUCCEEDED **`；该变更仍需在最大辅助字号和真机上完成最终视觉/手感复验。
 - 本次短卡纸张高度收紧后的正式目录验证：`/tmp/note1-v03-generic51`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze51`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests51`，97 项测试、0 失败，`** TEST SUCCEEDED **`。视觉抽样仅用于确认短卡高度和操作区间距，未作为编译、静态分析或单元测试的固定步骤；设备级复验仍待补齐。
 - 本次低风险稳定性收口后的正式目录验证：`/tmp/note1-v03-generic52`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze52`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests52`，98 项测试、0 失败，`** TEST SUCCEEDED **`。新增测试覆盖构思集名称空白裁剪与默认编号；未增加截图步骤。
+- 本次构思集卡片高度收口后的正式目录验证：`/tmp/note1-v03-generic53`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze53`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests53`，99 项测试、0 失败，`** TEST SUCCEEDED **`。`/tmp/note1-v03-collection-compact-check.png` 仅为一次临时入口视觉抽样，临时入口已从源代码移除，不替代最终设备证据。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
