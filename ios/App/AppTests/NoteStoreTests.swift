@@ -646,6 +646,10 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 10, extent: 0), 1, accuracy: 0.001)
         XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(70))
         XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(120))
+        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 72)))
+        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 96)))
+        XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 97)))
+        XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 420)))
     }
 
     func testV02ReceiptCandidateAndProgressAreAvailableBeforeCommitThreshold() {

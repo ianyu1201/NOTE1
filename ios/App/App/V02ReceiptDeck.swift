@@ -6,6 +6,7 @@ enum V02ReceiptGesturePolicy {
     static let lockDistance: CGFloat = 16
     static let horizontalThreshold: CGFloat = 88
     static let downwardThreshold: CGFloat = 104
+    static let extractionHandleHeight: CGFloat = 96
 
     static func axis(for translation: CGSize) -> V02ReceiptGestureAxis {
         let x = abs(translation.width), y = abs(translation.height)
@@ -32,6 +33,10 @@ enum V02ReceiptGesturePolicy {
     }
 
     static func shouldExtract(_ translation: CGFloat) -> Bool { translation >= downwardThreshold }
+
+    static func canStartExtraction(at location: CGPoint) -> Bool {
+        location.y <= extractionHandleHeight
+    }
 }
 
 /// P0-C2 会在此容器加入统一的水平/向下手势状态；C1 先固定层级与纸边，避免正文穿透。
@@ -48,6 +53,7 @@ struct V02ReceiptDeck: View {
     @State private var translation: CGSize = .zero
     @State private var axis: V02ReceiptGestureAxis = .none
     @State private var gestureStartedAtEdge = false
+    @State private var gestureStartedAtExtractionHandle = false
 
     private var currentReceipt: V02Receipt? {
         guard receipts.indices.contains(index) else { return nil }
@@ -130,12 +136,20 @@ struct V02ReceiptDeck: View {
                             return
                         }
                         guard !gestureStartedAtEdge else { return }
-                        if axis == .none { axis = V02ReceiptGesturePolicy.axis(for: value.translation) }
+                        if axis == .none {
+                            let proposedAxis = V02ReceiptGesturePolicy.axis(for: value.translation)
+                            if proposedAxis == .downward {
+                                gestureStartedAtExtractionHandle = V02ReceiptGesturePolicy.canStartExtraction(at: value.startLocation)
+                                guard gestureStartedAtExtractionHandle else { return }
+                            }
+                            axis = proposedAxis
+                        }
                         translation = value.translation
                     }
                     .onEnded { value in
                         guard !gestureStartedAtEdge else {
                             gestureStartedAtEdge = false
+                            gestureStartedAtExtractionHandle = false
                             axis = .none
                             translation = .zero
                             return
@@ -149,18 +163,34 @@ struct V02ReceiptDeck: View {
                                     index = target
                                     translation = .zero
                                     axis = .none
+                                    gestureStartedAtExtractionHandle = false
                                 }
                             } else {
-                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) { translation = .zero; axis = .none }
+                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                                    translation = .zero
+                                    axis = .none
+                                    gestureStartedAtExtractionHandle = false
+                                }
                             }
                         case .downward:
-                            if V02ReceiptGesturePolicy.shouldExtract(value.translation.height) {
+                            if gestureStartedAtExtractionHandle,
+                               V02ReceiptGesturePolicy.shouldExtract(value.translation.height) {
                                 withAnimation(.easeIn(duration: reduceMotion ? 0.16 : 0.28)) { translation.height = extractionDistance }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.18 : 0.3)) { openReceipt(receipt); translation = .zero; axis = .none }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.18 : 0.3)) {
+                                    openReceipt(receipt)
+                                    translation = .zero
+                                    axis = .none
+                                    gestureStartedAtExtractionHandle = false
+                                }
                             } else {
-                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) { translation = .zero; axis = .none }
+                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                                    translation = .zero
+                                    axis = .none
+                                    gestureStartedAtExtractionHandle = false
+                                }
                             }
-                        case .none: break
+                        case .none:
+                            gestureStartedAtExtractionHandle = false
                         }
                     }
                 )
