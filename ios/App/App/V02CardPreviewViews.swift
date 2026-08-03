@@ -136,18 +136,8 @@ struct V02CardPreviewView: View {
         } message: { _ in
             Text("确认后会为这一轮构思生成一张固定小票。")
         }
-        .navigationDestination(isPresented: Binding(
-            get: { editingInspiration != nil },
-            set: {
-                if !$0 {
-                    editingInspiration = nil
-                    onEditingChange(false)
-                }
-            }
-        )) {
-            if let inspiration = editingInspiration {
-                V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
-            }
+        .fullScreenCover(item: $editingInspiration, onDismiss: { onEditingChange(false) }) { inspiration in
+            V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
         }
         .coordinateSpace(name: "cardPreview")
         .simultaneousGesture(
