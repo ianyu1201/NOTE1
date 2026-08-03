@@ -377,9 +377,24 @@ struct V02ComposerView: View {
 
     private func saveDraft() {
         do {
-            let resourceIDs = (voiceResourceID.map { [$0] } ?? []) + attachmentResourceIDs
-            if let initialCollectionID { _ = try store.createInspiration(text: text, resourceIDs: resourceIDs, in: initialCollectionID) }
-            else { _ = try store.createInspiration(text: text, resourceIDs: resourceIDs) }
+            var resourceIDs = (voiceResourceID.map { [$0] } ?? []) + attachmentResourceIDs
+            var autoPersistedVoiceID: UUID?
+            if voiceResourceID == nil, let temporaryURL = recorder.temporaryURL {
+                let resource = try store.persistVoiceRecording(at: temporaryURL)
+                autoPersistedVoiceID = resource.id
+                resourceIDs.insert(resource.id, at: 0)
+            }
+            do {
+                if let initialCollectionID {
+                    _ = try store.createInspiration(text: text, resourceIDs: resourceIDs, in: initialCollectionID)
+                } else {
+                    _ = try store.createInspiration(text: text, resourceIDs: resourceIDs)
+                }
+            } catch {
+                if let autoPersistedVoiceID { try? store.discardUnreferencedResource(autoPersistedVoiceID) }
+                throw error
+            }
+            recorder.consumeTemporaryRecording()
             dismiss()
         } catch { reportError(error) }
     }
