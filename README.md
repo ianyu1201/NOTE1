@@ -7,7 +7,7 @@ NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App�
 ## 当前状态
 
 - V0.1 历史封存：`v0.1.0`
-- V0.2 当前正式目录治理分支：`codex/note1-current-folder-governance@91c665d`
+- V0.2 当前正式目录治理分支：`codex/note1-current-folder-governance@af0ba1f`
 - V0.3 产品阶段封存入口：`v0.3-product-start-20260803`
 - V0.3 交接入口：`docs/00_项目治理/NOTE1_V0.3产品会话交接与启动说明.md`
 
