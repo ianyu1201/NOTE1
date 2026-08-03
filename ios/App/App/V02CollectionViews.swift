@@ -106,7 +106,6 @@ struct V02CollectionListView: View {
                   ToolbarItem(placement: .topBarLeading) {
                       Menu {
                           Button("新建构思集", systemImage: "plus", action: requestNewCollection)
-                          Button("构思历程", systemImage: "clock.arrow.circlepath") { isShowingHistory = true }
                       } label: {
                           Image(systemName: "line.3.horizontal")
                               .fontWeight(.semibold)
