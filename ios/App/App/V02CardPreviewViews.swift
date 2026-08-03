@@ -67,12 +67,11 @@ struct V02CardPreviewView: View {
                 }
                 .padding(.horizontal, 2)
 
-                // Keep a compact, controlled operation gap below the paper.
-                // The collection card has no grouping action, so it must not
-                // reserve a hidden 52pt button slot just to align the page
-                // indicator with the inspiration-card state.
-                Color.clear
-                    .frame(height: V02NavigationLayoutPolicy.cardOperationGap)
+                // Keep the paper near the title while the operation slot stays
+                // anchored above the shared TabView. A flexible gap belongs
+                // here, not inside the paper, so sparse cards never push the
+                // source button into the middle of the screen.
+                Spacer(minLength: V02NavigationLayoutPolicy.cardOperationGap)
                 if cards.indices.contains(index), case .inspiration = cards[index] {
                     V02GroupEntryButton(action: {
                         beginGroupPicker(for: cards)
@@ -89,7 +88,7 @@ struct V02CardPreviewView: View {
                         activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
                         if ended {
                             let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                            defer { activeGroupTargetID = nil; isShowingGroupTray = false; isDraggingGroup = false }
+                            defer { activeTargetReset() }
                             guard translation.height < -50,
                                   case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
                                   let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
@@ -223,7 +222,7 @@ struct V02CardPreviewView: View {
                 // The shell's four-item navigation occupies roughly 76pt at
                 // the bottom. Keep the banner above that stable hit region so
                 // its action cannot be mistaken for a tab tap.
-                .padding(.bottom, 152)
+                .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
         }
         .background(NoteTheme.background.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
@@ -344,6 +343,12 @@ struct V02CardPreviewView: View {
         default:
             break
         }
+    }
+
+    private func activeTargetReset() {
+        activeGroupTargetID = nil
+        isShowingGroupTray = false
+        isDraggingGroup = false
     }
 
     private var localOverlayPresented: Bool {

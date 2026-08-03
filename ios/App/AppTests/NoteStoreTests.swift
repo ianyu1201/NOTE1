@@ -1289,6 +1289,10 @@ final class NoteStoreTests: XCTestCase {
             V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding,
             V02NavigationLayoutPolicy.floatingComposerBottomPadding
         )
+        XCTAssertEqual(
+            V02NavigationLayoutPolicy.transientBannerBottomPadding,
+            NoteTheme.navigationHeight + V02NavigationLayoutPolicy.composerBottomGap
+        )
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .inspirations, isOverlayPresented: false))
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
@@ -1314,6 +1318,9 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02CardDeckPolicy.tuckPromptOpacity(for: -36), 0, accuracy: 0.001)
         XCTAssertGreaterThan(V02CardDeckPolicy.tuckPromptOpacity(for: -80), 0)
         XCTAssertEqual(V02CardDeckPolicy.tuckPromptOpacity(for: -160), 1, accuracy: 0.001)
+        XCTAssertEqual(V02CardDeckPolicy.tuckBackgroundOpacity(for: -36), 0, accuracy: 0.001)
+        XCTAssertGreaterThan(V02CardDeckPolicy.tuckBackgroundOpacity(for: -80), 0)
+        XCTAssertLessThanOrEqual(V02CardDeckPolicy.tuckBackgroundOpacity(for: -160), 0.161)
         XCTAssertFalse(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 20, translation: CGSize(width: -120, height: 0)))
         XCTAssertTrue(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 80, translation: CGSize(width: -120, height: 0)))
     }

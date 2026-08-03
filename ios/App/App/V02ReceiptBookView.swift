@@ -105,10 +105,11 @@ struct V02ReceiptBookView: View {
         } message: {
             Text("删除后可在回收站中恢复。")
         }
-        .safeAreaInset(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             V02ReceiptUndoTrashBanner(store: store, entryIDs: $undoTrashEntryIDs) { error in
                 self.error = UserFacingAlert(error: error)
             }
+            .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
         }
         .noteErrorAlert($error)
     }

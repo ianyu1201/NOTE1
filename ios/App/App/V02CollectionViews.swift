@@ -133,7 +133,7 @@ struct V02CollectionListView: View {
                     }
             }
         }
-        .safeAreaInset(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             if let undoReceipt {
                 HStack {
                     Text("本轮构思已结束，\(undoReceipt.snapshot.members.count) 条灵感已收录。")
@@ -159,6 +159,7 @@ struct V02CollectionListView: View {
                     guard !Task.isCancelled else { return }
                     self.undoReceipt = nil
                 }
+                .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
             }
         }
         .alert("删除构思集？", isPresented: Binding(

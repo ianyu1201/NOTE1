@@ -55,7 +55,9 @@ struct V02InspirationListView: View {
                     Text(recentSummary)
                         .noteFontCapped(size: 15, maximumScale: 1.3, relativeTo: .subheadline)
                         .foregroundStyle(NoteTheme.secondaryInk)
-                        .lineLimit(2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                        .allowsTightening(true)
                         .padding(.top, 10)
                         .padding(.bottom, 22)
                 }
@@ -138,8 +140,9 @@ struct V02InspirationListView: View {
         .fullScreenCover(item: $editingInspiration, onDismiss: { onEditingChange(false) }) { inspiration in
             V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
         }
-        .safeAreaInset(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             V02UndoTrashBanner(store: store, entryIDs: $undoTrashEntryIDs, noun: "灵感", reportError: reportError)
+                .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
         }
     }
 

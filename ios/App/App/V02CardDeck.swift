@@ -8,6 +8,11 @@ enum V02CardDeckPolicy {
         return Double(min(max((-horizontalOffset - 36) / 88, 0), 1))
     }
 
+    static func tuckBackgroundOpacity(for horizontalOffset: CGFloat) -> Double {
+        let progress = tuckPromptOpacity(for: horizontalOffset)
+        return progress * 0.16
+    }
+
     static func acceptsHorizontalTuck(startX: CGFloat, translation: CGSize) -> Bool {
         startX > 24 && translation.width < 0
     }
@@ -118,6 +123,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             let resolvedIndex = min(max(index, 0), max(cards.count - 1, 0))
             ZStack {
                 if horizontalOffset < -36, onTuck != nil, !cards.isEmpty {
+                    RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
+                        .fill(NoteTheme.secondaryInk.opacity(V02CardDeckPolicy.tuckBackgroundOpacity(for: horizontalOffset)))
+                        .padding(.horizontal, paperHorizontalPadding)
+                        .accessibilityHidden(true)
                     HStack {
                         Spacer()
                         Label(tuckPrompt(cards[resolvedIndex]), systemImage: "archivebox.fill")

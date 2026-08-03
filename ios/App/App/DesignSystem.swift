@@ -55,6 +55,9 @@ enum V02NavigationLayoutPolicy {
     /// composer in the space above the shared TabView instead of over that
     /// row. It follows the same safe-area anchor as the root-page composer.
     static let workbenchFloatingComposerBottomPadding: CGFloat = floatingComposerBottomPadding
+    /// Transient undo banners float above the shared navigation surface and
+    /// must not participate in the page's scroll layout.
+    static let transientBannerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
 
     static func showsFloatingComposer(on page: V02PrimaryPage, isOverlayPresented: Bool) -> Bool {
         // The shell owns the shared floating component for every page that
