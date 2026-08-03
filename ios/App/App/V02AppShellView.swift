@@ -1,0 +1,198 @@
+import SwiftUI
+import UniformTypeIdentifiers
+import UIKit
+import PhotosUI
+
+enum V02PrimaryPage: String, CaseIterable, Identifiable {
+    case inspirations = "灵感"
+    case cards = "卡片预览"
+    case collections = "构思集"
+    case receipts = "小票册"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .inspirations: "sparkles"
+        case .cards: "rectangle.on.rectangle"
+        case .collections: "folder"
+        case .receipts: "ticket"
+        }
+    }
+}
+
+struct V02AppShellView: View {
+    @ObservedObject var store: V02Store
+    @State private var page: V02PrimaryPage = .inspirations
+    @State private var isPresentingComposer = false
+    @State private var isPresentingSettings = false
+    @State private var isPresentingTrash = false
+    @State private var isPresentingSearch = false
+    @State private var isPresentingHistory = false
+    @State private var isManagingSelection = false
+    @State private var error: UserFacingAlert?
+    @State private var generatedReceipt: V02Receipt?
+    @State private var presentedReceipt: V02Receipt?
+    @State private var isCollectionWorkbenchPresented = false
+    @State private var isChildEditorPresented = false
+
+    var body: some View {
+        ZStack {
+            NoteTheme.background.ignoresSafeArea()
+            GeometryReader { proxy in
+                pageContent
+                    .simultaneousGesture(primaryPageEdgeGesture(width: proxy.size.width))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            if let generatedReceipt {
+                V02ReceiptGenerationView(
+                    store: store,
+                    receipt: generatedReceipt,
+                    onView: { receipt in
+                        presentedReceipt = receipt
+                        self.generatedReceipt = nil
+                    },
+                    onReturn: { self.generatedReceipt = nil },
+                    onUndo: {
+                        do {
+                            try store.undoEndRound(generatedReceipt.id)
+                            self.generatedReceipt = nil
+                        } catch let caughtError { self.error = UserFacingAlert(error: caughtError) }
+                    }
+                )
+                .padding(.bottom, V02ReceiptGenerationLayoutPolicy.bottomPadding(navigationHeight: NoteTheme.navigationHeight))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .transition(.opacity)
+                .zIndex(V02ReceiptGenerationLayoutPolicy.generationZIndex)
+            }
+        }
+        // The primary bar is a real safe-area inset rather than a sibling at
+        // the bottom of an unconstrained VStack. This keeps every 44pt hit
+        // cell inside the viewport (including the home-indicator area) while
+        // leaving the content and floating composer in a stable coordinate
+        // space.
+        .safeAreaInset(edge: .bottom, spacing: V02NavigationLayoutPolicy.primaryContentSpacing) {
+            if !isChildEditorPresented {
+                V02BottomNavigation(selection: $page)
+                    .padding(.bottom, 4)
+                    .zIndex(V02ReceiptGenerationLayoutPolicy.primaryNavigationZIndex)
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if V02NavigationLayoutPolicy.showsFloatingComposer(
+                on: page,
+                isOverlayPresented: isPresentingComposer || isPresentingSearch || isManagingSelection || isCollectionWorkbenchPresented || isChildEditorPresented
+            ) {
+                V02FloatingComposerButton(
+                    action: { isPresentingComposer = true },
+                    label: V02NavigationLayoutPolicy.composerLabel(for: page)
+                )
+                    .padding(.trailing, NoteTheme.horizontalPadding)
+                    .padding(.bottom, V02NavigationLayoutPolicy.floatingComposerBottomPadding)
+                    .zIndex(V02ReceiptGenerationLayoutPolicy.composerZIndex)
+            }
+        }
+        .sheet(isPresented: $isPresentingComposer) {
+            V02ComposerView(store: store) { error in
+                self.error = UserFacingAlert(error: error)
+            }
+        }
+        .sheet(isPresented: $isPresentingSettings) {
+            V02SettingsView(store: store)
+        }
+        .sheet(isPresented: $isPresentingTrash) {
+            V02TrashView(store: store)
+        }
+        .sheet(isPresented: $isPresentingSearch) {
+            V02SearchView(store: store)
+        }
+        .sheet(isPresented: $isPresentingHistory) {
+            V02CollectionHistoryView(store: store) { error in
+                self.error = UserFacingAlert(error: error)
+            }
+        }
+        .sheet(item: $presentedReceipt) { receipt in
+            V02ReceiptDetailView(store: store, receipt: receipt)
+        }
+        .tint(NoteTheme.ink)
+        .noteErrorAlert($error)
+        .onChange(of: page) { _, newPage in
+            if newPage != .collections {
+                isCollectionWorkbenchPresented = false
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var pageContent: some View {
+        switch page {
+        case .inspirations:
+            V02InspirationListView(
+                store: store,
+                isSelecting: $isManagingSelection,
+                showSettings: { isPresentingSettings = true },
+                showTrash: { isPresentingTrash = true },
+                showSearch: { isPresentingSearch = true },
+                onEditingChange: { isChildEditorPresented = $0 }
+            ) { error in
+                self.error = UserFacingAlert(error: error)
+            }
+        case .cards:
+            V02CardPreviewView(
+                store: store,
+                onBack: { page = .inspirations },
+                onHistory: { isPresentingHistory = true },
+                showGeneration: { receipt in generatedReceipt = receipt },
+                reportError: { error in
+                self.error = UserFacingAlert(error: error)
+                },
+                onEditingChange: { isChildEditorPresented = $0 }
+            )
+        case .collections:
+            V02CollectionListView(
+                store: store,
+                isWorkbenchPresented: $isCollectionWorkbenchPresented,
+                showGeneration: { receipt in generatedReceipt = receipt }
+            ) { error in
+                self.error = UserFacingAlert(error: error)
+            }
+        case .receipts:
+            V02ReceiptBookView(store: store, isSelecting: $isManagingSelection)
+        }
+    }
+
+    private func primaryPageEdgeGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 18)
+            .onEnded { value in
+                let startsAtLeadingEdge = value.startLocation.x <= 24
+                let startsAtTrailingEdge = value.startLocation.x >= width - 24
+                guard abs(value.translation.width) > abs(value.translation.height),
+                      abs(value.translation.width) >= 72 else { return }
+                if startsAtTrailingEdge, value.translation.width < 0 {
+                    page = page.after
+                } else if startsAtLeadingEdge, value.translation.width > 0 {
+                    page = page.before
+                }
+            }
+    }
+}
+
+private extension V02PrimaryPage {
+    var before: V02PrimaryPage {
+        switch self {
+        case .inspirations: self
+        case .cards: .inspirations
+        case .collections: .cards
+        case .receipts: .collections
+        }
+    }
+
+    var after: V02PrimaryPage {
+        switch self {
+        case .inspirations: .cards
+        case .cards: .collections
+        case .collections: .receipts
+        case .receipts: self
+        }
+    }
+}

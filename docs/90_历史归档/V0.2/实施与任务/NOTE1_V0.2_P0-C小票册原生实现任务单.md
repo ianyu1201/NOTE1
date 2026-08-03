@@ -2,7 +2,7 @@
 
 > 状态：P0-C 唯一执行任务单  
 > 适用工程：`/Users/yusiyuan/.codex/worktrees/e54d/NOTE1`，分支 `codex/note1-v02`  
-> 产品基线：`../产品文档/NOTE1_PRD_V0.2.md`  
+> 产品基线：`docs/01_产品/V0.2/NOTE1_PRD_V0.2.md`
 > 强制视觉基线：`NOTE1_V0.2_小票册视觉参考与实现对照.md`  
 > 共用 UI 基线：`NOTE1_V0.2_UI二次优化手册.md`  
 > 非回归基线：`NOTE1_V0.1到V0.2能力非回归矩阵.md`

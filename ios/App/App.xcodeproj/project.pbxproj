@@ -30,6 +30,28 @@
 		A10000000000000000000018 /* HomeComposerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* HomeComposerState.swift */; };
 		A10000000000000000000019 /* SpeechTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* SpeechTranscriptionService.swift */; };
 		A1000000000000000000001A /* HomeComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* HomeComposerView.swift */; };
+		A1000000000000000000001B /* V02Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* V02Store.swift */; };
+		A1000000000000000000001C /* V02AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* V02AppShellView.swift */; };
+		A10000000000000000000025 /* V02CardDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* V02CardDeck.swift */; };
+		A1000000000000000000001D /* V02ReceiptExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* V02ReceiptExport.swift */; };
+		A1000000000000000000001E /* V02VoiceRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* V02VoiceRecorder.swift */; };
+		A1000000000000000000001F /* V02AudioPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* V02AudioPlayback.swift */; };
+		A10000000000000000000020 /* V02BackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* V02BackupService.swift */; };
+		A10000000000000000000021 /* V02SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* V02SettingsView.swift */; };
+		A10000000000000000000022 /* V02TrashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* V02TrashView.swift */; };
+		A10000000000000000000023 /* V02SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* V02SearchView.swift */; };
+		A10000000000000000000024 /* V02ReceiptExportFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* V02ReceiptExportFile.swift */; };
+		A10000000000000000000028 /* V02TicketClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000028 /* V02TicketClip.swift */; };
+		A10000000000000000000029 /* V02ReceiptPaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000029 /* V02ReceiptPaper.swift */; };
+		A1000000000000000000002A /* V02ReceiptDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002A /* V02ReceiptDeck.swift */; };
+		A1000000000000000000002B /* V02ReceiptBookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002B /* V02ReceiptBookView.swift */; };
+		A1000000000000000000002C /* V02ReceiptDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002C /* V02ReceiptDetailView.swift */; };
+		A1000000000000000000002D /* V02ReceiptGenerationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000002D /* V02ReceiptGenerationView.swift */; };
+		A10000000000000000000030 /* V02InspirationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* V02InspirationViews.swift */; };
+		A10000000000000000000031 /* V02CardPreviewViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* V02CardPreviewViews.swift */; };
+		A10000000000000000000032 /* V02CollectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* V02CollectionViews.swift */; };
+		A10000000000000000000033 /* V02EditingViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* V02EditingViews.swift */; };
+		A10000000000000000000034 /* V02CollectionAttachmentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* V02CollectionAttachmentView.swift */; };
 		A10000000000000000000007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* Assets.xcassets */; };
 		A10000000000000000000008 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* LaunchScreen.storyboard */; };
 		A10000000000000000000009 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* Localizable.strings */; };
@@ -81,6 +103,28 @@
 		A2000000000000000000001A /* HomeComposerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerState.swift; sourceTree = "<group>"; };
 		A2000000000000000000001B /* SpeechTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriptionService.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* HomeComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerView.swift; sourceTree = "<group>"; };
+		A2000000000000000000001D /* V02Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02Store.swift; sourceTree = "<group>"; };
+		A2000000000000000000001E /* V02AppShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02AppShellView.swift; sourceTree = "<group>"; };
+		A20000000000000000000027 /* V02CardDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CardDeck.swift; sourceTree = "<group>"; };
+		A2000000000000000000001F /* V02ReceiptExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptExport.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* V02VoiceRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02VoiceRecorder.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* V02AudioPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02AudioPlayback.swift; sourceTree = "<group>"; };
+		A20000000000000000000022 /* V02BackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02BackupService.swift; sourceTree = "<group>"; };
+		A20000000000000000000023 /* V02SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02SettingsView.swift; sourceTree = "<group>"; };
+		A20000000000000000000024 /* V02TrashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02TrashView.swift; sourceTree = "<group>"; };
+		A20000000000000000000025 /* V02SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02SearchView.swift; sourceTree = "<group>"; };
+		A20000000000000000000026 /* V02ReceiptExportFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptExportFile.swift; sourceTree = "<group>"; };
+		A20000000000000000000028 /* V02TicketClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02TicketClip.swift; sourceTree = "<group>"; };
+		A20000000000000000000029 /* V02ReceiptPaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptPaper.swift; sourceTree = "<group>"; };
+		A2000000000000000000002A /* V02ReceiptDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptDeck.swift; sourceTree = "<group>"; };
+		A2000000000000000000002B /* V02ReceiptBookView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptBookView.swift; sourceTree = "<group>"; };
+		A2000000000000000000002C /* V02ReceiptDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptDetailView.swift; sourceTree = "<group>"; };
+		A2000000000000000000002D /* V02ReceiptGenerationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02ReceiptGenerationView.swift; sourceTree = "<group>"; };
+		A20000000000000000000030 /* V02InspirationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02InspirationViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000031 /* V02CardPreviewViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CardPreviewViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000032 /* V02CollectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CollectionViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000033 /* V02EditingViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02EditingViews.swift; sourceTree = "<group>"; };
+		A20000000000000000000034 /* V02CollectionAttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CollectionAttachmentView.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* NoteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStoreTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B20000000000000000000003 /* NoteStorePersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStorePersistenceTests.swift; sourceTree = "<group>"; };
@@ -121,6 +165,28 @@
 				A2000000000000000000001A /* HomeComposerState.swift */,
 				A2000000000000000000001B /* SpeechTranscriptionService.swift */,
 				A2000000000000000000001C /* HomeComposerView.swift */,
+				A2000000000000000000001D /* V02Store.swift */,
+				A2000000000000000000001E /* V02AppShellView.swift */,
+				A20000000000000000000030 /* V02InspirationViews.swift */,
+				A20000000000000000000031 /* V02CardPreviewViews.swift */,
+				A20000000000000000000032 /* V02CollectionViews.swift */,
+				A20000000000000000000034 /* V02CollectionAttachmentView.swift */,
+				A20000000000000000000033 /* V02EditingViews.swift */,
+				A20000000000000000000027 /* V02CardDeck.swift */,
+				A2000000000000000000001F /* V02ReceiptExport.swift */,
+				A20000000000000000000020 /* V02VoiceRecorder.swift */,
+				A20000000000000000000021 /* V02AudioPlayback.swift */,
+				A20000000000000000000022 /* V02BackupService.swift */,
+				A20000000000000000000023 /* V02SettingsView.swift */,
+				A20000000000000000000024 /* V02TrashView.swift */,
+				A20000000000000000000025 /* V02SearchView.swift */,
+				A20000000000000000000026 /* V02ReceiptExportFile.swift */,
+				A20000000000000000000028 /* V02TicketClip.swift */,
+				A20000000000000000000029 /* V02ReceiptPaper.swift */,
+				A2000000000000000000002A /* V02ReceiptDeck.swift */,
+				A2000000000000000000002B /* V02ReceiptBookView.swift */,
+				A2000000000000000000002C /* V02ReceiptDetailView.swift */,
+				A2000000000000000000002D /* V02ReceiptGenerationView.swift */,
 				A20000000000000000000004 /* AppShellView.swift */,
 				A20000000000000000000005 /* HomeView.swift */,
 				A2000000000000000000000E /* ReviewView.swift */,
@@ -293,6 +359,28 @@
 				A10000000000000000000018 /* HomeComposerState.swift in Sources */,
 				A10000000000000000000019 /* SpeechTranscriptionService.swift in Sources */,
 				A1000000000000000000001A /* HomeComposerView.swift in Sources */,
+				A1000000000000000000001B /* V02Store.swift in Sources */,
+				A1000000000000000000001C /* V02AppShellView.swift in Sources */,
+				A10000000000000000000030 /* V02InspirationViews.swift in Sources */,
+				A10000000000000000000031 /* V02CardPreviewViews.swift in Sources */,
+				A10000000000000000000032 /* V02CollectionViews.swift in Sources */,
+				A10000000000000000000034 /* V02CollectionAttachmentView.swift in Sources */,
+				A10000000000000000000033 /* V02EditingViews.swift in Sources */,
+				A10000000000000000000025 /* V02CardDeck.swift in Sources */,
+				A1000000000000000000001D /* V02ReceiptExport.swift in Sources */,
+				A1000000000000000000001E /* V02VoiceRecorder.swift in Sources */,
+				A1000000000000000000001F /* V02AudioPlayback.swift in Sources */,
+				A10000000000000000000020 /* V02BackupService.swift in Sources */,
+				A10000000000000000000021 /* V02SettingsView.swift in Sources */,
+				A10000000000000000000022 /* V02TrashView.swift in Sources */,
+				A10000000000000000000023 /* V02SearchView.swift in Sources */,
+				A10000000000000000000024 /* V02ReceiptExportFile.swift in Sources */,
+				A10000000000000000000028 /* V02TicketClip.swift in Sources */,
+				A10000000000000000000029 /* V02ReceiptPaper.swift in Sources */,
+				A1000000000000000000002A /* V02ReceiptDeck.swift in Sources */,
+				A1000000000000000000002B /* V02ReceiptBookView.swift in Sources */,
+				A1000000000000000000002C /* V02ReceiptDetailView.swift in Sources */,
+				A1000000000000000000002D /* V02ReceiptGenerationView.swift in Sources */,
 				A10000000000000000000004 /* AppShellView.swift in Sources */,
 				A10000000000000000000005 /* HomeView.swift in Sources */,
 				A1000000000000000000000C /* ReviewView.swift in Sources */,

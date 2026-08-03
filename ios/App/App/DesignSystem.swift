@@ -4,14 +4,19 @@ import UIKit
 enum NoteTheme {
     static let ink = Color(red: 0.035, green: 0.105, blue: 0.205)
     static let secondaryInk = Color(red: 0.48, green: 0.54, blue: 0.67)
-    static let accent = Color(red: 0.20, green: 0.45, blue: 0.95)
+    static let accent = ink
     static let danger = Color(red: 0.91, green: 0.24, blue: 0.27)
     static let canvas = Color(red: 0.955, green: 0.955, blue: 1.0)
+    static let paper = Color(red: 0.988, green: 0.987, blue: 0.998)
     static let divider = Color.white.opacity(0.72)
 
-    static let horizontalPadding: CGFloat = 24
-    static let topBarHeight: CGFloat = 58
+    static let horizontalPadding: CGFloat = 22
+    static let topBarHeight: CGFloat = 72
     static let controlSize: CGFloat = 48
+    static let controlVisualSize: CGFloat = 46
+    static let floatingComposerSize: CGFloat = 56
+    static let floatingComposerVisualSize: CGFloat = 48
+    static let navigationHeight: CGFloat = 78
     static let cornerRadius: CGFloat = 30
 
     static let background = LinearGradient(
@@ -22,6 +27,44 @@ enum NoteTheme {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+}
+
+/// Shared geometry decisions for the four primary destinations. Keeping these
+/// values in one place prevents the visual bar and its hit targets drifting
+/// apart on the narrow 368pt viewport.
+enum V02NavigationLayoutPolicy {
+    static let cellMinHeight: CGFloat = 72
+    static let barHeight: CGFloat = 76
+    static let barHorizontalInset: CGFloat = 18
+    static let composerBottomGap: CGFloat = 16
+    /// The primary shell owns the bottom navigation safe-area inset. Content
+    /// gets this small optical breathing room through that same inset rather
+    /// than each page reserving a second, fixed-height slot.
+    static let primaryContentSpacing: CGFloat = 12
+    /// Scroll content keeps a full navigation-height breathing room in addition
+    /// to the shell's safe-area inset, so the final row can clear the floating
+    /// navigation surface when the page is hosted inside GeometryReader.
+    static let primaryContentBottomPadding: CGFloat = barHeight + primaryContentSpacing
+    /// Shared optical anchor for root-page floating actions. The workbench
+    /// uses a higher anchor because its card owns a bottom action row.
+    static let floatingComposerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
+    static let workbenchFloatingComposerBottomPadding: CGFloat = 168
+
+    static func showsFloatingComposer(on page: V02PrimaryPage, isOverlayPresented: Bool) -> Bool {
+        // The collection root owns the shared floating component locally so
+        // its action can open collection creation instead of the inspiration
+        // composer. The receipt book deliberately has no global plus.
+        !isOverlayPresented && page != .receipts && page != .collections
+    }
+
+    static func composerLabel(for page: V02PrimaryPage) -> String {
+        switch page {
+        case .inspirations: "记录灵感"
+        case .cards: "新增灵感"
+        case .collections: "新建构思集"
+        case .receipts: ""
+        }
+    }
 }
 
 struct GlassSurface: ViewModifier {
@@ -129,8 +172,8 @@ struct RoundGlassButton: View {
                 if selected {
                     Circle().fill(NoteTheme.ink)
                 } else {
-                    Circle()
-                        .fill(Color.white.opacity(0.46))
+                        Circle()
+                        .fill(Color.white.opacity(0.24))
                         .overlay {
                             Circle()
                                 .fill(NoteTheme.ink.opacity(0.014))
@@ -138,6 +181,113 @@ struct RoundGlassButton: View {
                 }
             }
             .contentShape(Circle())
+    }
+}
+
+struct V02GlassIconButton: View {
+    let systemName: String
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) { V02GlassIconLabel(systemName: systemName) }
+            .buttonStyle(RoundGlassPressButtonStyle())
+            .accessibilityLabel(label)
+    }
+}
+
+struct V02GlassIconLabel: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(NoteTheme.ink)
+            .frame(width: NoteTheme.controlSize, height: NoteTheme.controlSize)
+            .background {
+                if #available(iOS 26.0, *) {
+                    Color.clear.frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize).glassEffect(.regular.interactive(), in: .circle)
+                } else {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize)
+                        .overlay { Circle().fill(Color.white.opacity(0.28)) }
+                        .overlay { Circle().stroke(Color.white.opacity(0.78), lineWidth: 1) }
+                }
+            }
+            .shadow(color: NoteTheme.ink.opacity(0.055), radius: 8, y: 3)
+            .contentShape(Circle())
+    }
+}
+
+struct V02FloatingComposerButton: View {
+    let action: () -> Void
+    var label: String = "记录灵感"
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 21, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: NoteTheme.floatingComposerVisualSize, height: NoteTheme.floatingComposerVisualSize)
+                .background(NoteTheme.ink, in: Circle())
+                .overlay { Circle().stroke(Color.white.opacity(0.28), lineWidth: 1) }
+                .frame(width: NoteTheme.floatingComposerSize, height: NoteTheme.floatingComposerSize)
+                .shadow(color: NoteTheme.ink.opacity(0.11), radius: 9, y: 5)
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel(label)
+    }
+}
+
+/// A single safe-area container owns both the painted bar and the full-width
+/// button cells. This keeps accessibility frames inside the viewport and
+/// makes the selected state a visual detail rather than the hit target.
+struct V02BottomNavigation: View {
+    @Binding var selection: V02PrimaryPage
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(V02PrimaryPage.allCases) { destination in
+                Button {
+                    selection = destination
+                } label: {
+                    VStack(spacing: 3) {
+                        Group {
+                            if destination == .receipts {
+                                V02ReceiptTabSymbol(isSelected: selection == destination)
+                            } else {
+                                    Image(systemName: destination.symbol)
+                                    .font(.system(size: 19, weight: .semibold))
+                                    .foregroundStyle(selection == destination ? .white : NoteTheme.secondaryInk)
+                                }
+                        }
+                        .frame(width: 34, height: 34)
+                        .background(
+                            selection == destination ? NoteTheme.ink : .clear,
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                        Text(destination.rawValue)
+                            .noteFontCapped(size: 13, maximumScale: 1.25, weight: .medium, relativeTo: .caption)
+                            .foregroundStyle(selection == destination ? NoteTheme.ink : NoteTheme.secondaryInk)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .minimumScaleFactor(0.84)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: V02NavigationLayoutPolicy.cellMinHeight)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v02.primary.\(destination.rawValue)")
+                .accessibilityLabel(destination.rawValue)
+                .accessibilityAddTraits(selection == destination ? .isSelected : [])
+            }
+        }
+        .frame(height: V02NavigationLayoutPolicy.barHeight)
+        .padding(.horizontal, 10)
+        .noteGlass(cornerRadius: NoteTheme.cornerRadius, castsShadow: false)
+        .padding(.horizontal, V02NavigationLayoutPolicy.barHorizontalInset)
     }
 }
 
@@ -191,8 +341,9 @@ struct SharedTopBar: View {
     var body: some View {
         ZStack {
             Text("NOTE1")
-                .noteFont(
+                .noteFontCapped(
                     size: 22,
+                    maximumScale: 1.3,
                     weight: .medium,
                     design: .rounded,
                     relativeTo: .title3
@@ -295,6 +446,13 @@ enum NoteDateFormatter {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "M月d日 HH:mm"
+        return formatter
+    }()
+
+    static let group: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日 EEEE"
         return formatter
     }()
 

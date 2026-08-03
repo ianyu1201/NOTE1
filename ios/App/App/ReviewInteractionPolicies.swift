@@ -82,6 +82,53 @@ enum ReviewGroupDropTarget: Equatable {
     case new
 }
 
+enum V02GroupTargetPolicy {
+    static func activeTarget(at point: CGPoint, frames: [String: CGRect]) -> String? {
+        // When the transparent halos overlap at the center line, prefer the
+        // existing-collection target. The visible targets remain distinct;
+        // this only makes a straight vertical release deterministic.
+        if let existing = frames["existing"], existing.contains(point) {
+            return "existing"
+        }
+        return frames.first(where: { $0.value.contains(point) })?.key
+    }
+
+    static func commitTarget(finalActiveTarget: String?) -> String? {
+        finalActiveTarget
+    }
+}
+
+enum V02GroupOperationPolicy {
+    static func targetIDs(activeCollectionCount: Int) -> [String] {
+        let count = max(0, activeCollectionCount)
+        if count == 0 { return ["new"] }
+        if count >= 5 { return ["existing"] }
+        return ["new", "existing"]
+    }
+
+    static func canAccept(memberCount: Int) -> Bool {
+        memberCount < 10
+    }
+
+    static func capacityLabel(memberCount: Int) -> String {
+        canAccept(memberCount: memberCount) ? "\(memberCount)/10" : "已满 10 条"
+    }
+}
+
+enum V02CollectionOperationPolicy {
+    static func showsEmptyState(activeCollectionCount: Int) -> Bool {
+        activeCollectionCount <= 0
+    }
+
+    static func canCreate(activeCollectionCount: Int) -> Bool {
+        max(0, activeCollectionCount) < V02DomainEngine.maximumActiveCollections
+    }
+
+    static func canAddMember(memberCount: Int) -> Bool {
+        max(0, memberCount) < V02DomainEngine.maximumMembersPerCollection
+    }
+}
+
 struct ReviewGroupDropClassifier {
     static func target(
         at location: CGPoint,

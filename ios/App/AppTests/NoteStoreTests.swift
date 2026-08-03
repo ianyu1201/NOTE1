@@ -87,6 +87,90 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
+    func testV02CardDeckKeepsTheLeadingEdgeForPrimaryPageNavigation() {
+        XCTAssertFalse(
+            V02CardDeckPolicy.acceptsHorizontalTuck(
+                startX: 18,
+                translation: CGSize(width: -180, height: 4)
+            )
+        )
+        XCTAssertTrue(
+            V02CardDeckPolicy.acceptsHorizontalTuck(
+                startX: 72,
+                translation: CGSize(width: -180, height: 4)
+            )
+        )
+        XCTAssertFalse(
+            V02CardDeckPolicy.acceptsHorizontalTuck(
+                startX: 72,
+                translation: CGSize(width: 180, height: 4)
+            )
+        )
+    }
+
+    func testV02CardDeckPagesOnlyAfterVerticalThreshold() {
+        let axis = ReviewGestureClassifier.axis(for: CGSize(width: 8, height: -108))
+        XCTAssertEqual(
+            V02CardDeckPolicy.pageDirection(
+                axis: axis,
+                translation: CGSize(width: 8, height: -108),
+                predictedEndTranslation: CGSize(width: 10, height: -140)
+            ),
+            1
+        )
+        XCTAssertNil(
+            V02CardDeckPolicy.pageDirection(
+                axis: .vertical,
+                translation: CGSize(width: 5, height: 38),
+                predictedEndTranslation: CGSize(width: 5, height: 52)
+            )
+        )
+    }
+
+    func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
+        let first = UUID(), second = UUID(), third = UUID()
+        XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [first, second, third]), 1)
+        XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [third, first]), 0)
+        XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 9, ids: [third, second, first]), 1)
+        XCTAssertNil(V02CardPositionPolicy.resolvedIndex(preferredID: first, currentIndex: 0, ids: []))
+    }
+
+    func testV02TuckPolicyRejectsDuplicateCommitWhileExiting() {
+        XCTAssertTrue(V02TuckPolicy.mayBegin(isTucking: false))
+        XCTAssertFalse(V02TuckPolicy.mayBegin(isTucking: true))
+        XCTAssertEqual(V02TuckPolicy.commitDelay, 0.23)
+    }
+
+    func testV02GroupTargetUsesOnlyTheFinalLiveHit() {
+        let first = CGRect(x: 0, y: 0, width: 80, height: 80)
+        let second = CGRect(x: 100, y: 100, width: 80, height: 80)
+        let frames = ["group": first, "new": second]
+        XCTAssertEqual(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 40, y: 40), frames: frames), "group")
+        XCTAssertNil(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 90, y: 90), frames: frames))
+        XCTAssertEqual(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 40, y: 40), frames: frames), "group")
+        XCTAssertEqual(V02GroupTargetPolicy.commitTarget(finalActiveTarget: "group"), "group")
+        XCTAssertNil(V02GroupTargetPolicy.commitTarget(finalActiveTarget: nil))
+    }
+
+    func testV02GroupOperationTargetsRespectZeroFiveAndCapacityRules() {
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new"])
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 3), ["new", "existing"])
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 5), ["existing"])
+        XCTAssertTrue(V02GroupOperationPolicy.canAccept(memberCount: 9))
+        XCTAssertFalse(V02GroupOperationPolicy.canAccept(memberCount: 10))
+        XCTAssertEqual(V02GroupOperationPolicy.capacityLabel(memberCount: 9), "9/10")
+        XCTAssertEqual(V02GroupOperationPolicy.capacityLabel(memberCount: 10), "已满 10 条")
+    }
+
+    func testV02CollectionPresentationCoversZeroOneFiveAndMemberCapacity() {
+        XCTAssertTrue(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 0))
+        XCTAssertFalse(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 1))
+        XCTAssertTrue(V02CollectionOperationPolicy.canCreate(activeCollectionCount: 4))
+        XCTAssertFalse(V02CollectionOperationPolicy.canCreate(activeCollectionCount: 5))
+        XCTAssertTrue(V02CollectionOperationPolicy.canAddMember(memberCount: 9))
+        XCTAssertFalse(V02CollectionOperationPolicy.canAddMember(memberCount: 10))
+    }
+
     func testGroupDropOnlyUsesVisibleTargetFrames() {
         let groupID = UUID()
         let groupFrame = CGRect(x: 20, y: 100, width: 120, height: 62)
@@ -302,5 +386,647 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertNil(store.idea(id: current.id))
         XCTAssertNil(store.idea(id: grouped.id))
         XCTAssertNil(store.group(id: group.id))
+    }
+
+    func testV02RoundCreatesOneImmutableReceiptAndRejectsDuplicateEnd() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = V02DomainState()
+        let collection = try V02DomainEngine.createCollection(
+            in: &state,
+            now: now
+        )
+        let inspiration = V02Inspiration(
+            id: UUID(),
+            text: "最初的文字",
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: now,
+            updatedAt: now,
+            resourceIDs: []
+        )
+        state.inspirations.append(inspiration)
+        let round = try V02DomainEngine.startRound(
+            collectionID: collection.id,
+            in: &state,
+            now: now
+        )
+        try V02DomainEngine.assign(
+            inspirationID: inspiration.id,
+            to: collection.id,
+            in: &state,
+            now: now
+        )
+
+        let receipt = try V02DomainEngine.endRound(
+            roundID: round.id,
+            in: &state,
+            now: now.addingTimeInterval(60)
+        )
+        state.inspirations[0].text = "之后修改的文字"
+
+        XCTAssertEqual(receipt.snapshot.collectionName, "构思集（1）")
+        XCTAssertEqual(receipt.snapshot.members.map(\.text), ["最初的文字"])
+        XCTAssertEqual(receipt.snapshot.events.map(\.kind), [.started, .memberAdded, .ended])
+        XCTAssertEqual(receipt.snapshot.events.last?.occurredAt, now.addingTimeInterval(60))
+        XCTAssertEqual(state.receipts.count, 1)
+        XCTAssertThrowsError(
+            try V02DomainEngine.endRound(roundID: round.id, in: &state)
+        )
+    }
+
+    func testV02CollectionCapacityAndNameCounterAreDomainConstraints() throws {
+        var state = V02DomainState()
+        let collections = try (0 ..< 5).map { _ in
+            try V02DomainEngine.createCollection(in: &state)
+        }
+        XCTAssertEqual(collections.map(\.name), [
+            "构思集（1）", "构思集（2）", "构思集（3）", "构思集（4）", "构思集（5）"
+        ])
+        for collection in collections {
+            _ = try V02DomainEngine.startRound(
+                collectionID: collection.id,
+                in: &state
+            )
+        }
+        XCTAssertThrowsError(try V02DomainEngine.createCollection(in: &state)) {
+            XCTAssertEqual($0 as? V02DomainError, .collectionLimit)
+        }
+    }
+
+    func testV02StorePersistsAndDoesNotWriteEmptyInspirations() throws {
+        let v02Directory = directory.appendingPathComponent("v02")
+        let store = V02Store(storageDirectory: v02Directory)
+        XCTAssertThrowsError(try store.createInspiration(text: ""))
+
+        let created = try store.createInspiration(text: "本机保存")
+        let collection = try store.createCollectionAndRound()
+        try store.assign(created.id, to: collection.id)
+
+        let reloaded = V02Store(storageDirectory: v02Directory)
+        XCTAssertEqual(reloaded.state.inspirations.map(\.text), ["本机保存"])
+        XCTAssertEqual(reloaded.activeCollections.map(\.id), [collection.id])
+        XCTAssertEqual(reloaded.state.rounds.first?.memberIDs, [created.id])
+    }
+
+    func testV02ContinueThinkingKeepsOldReceiptSnapshotAndRestoresMembers() throws {
+        let v02Directory = directory.appendingPathComponent("continue")
+        let store = V02Store(storageDirectory: v02Directory)
+        let inspiration = try store.createInspiration(text: "第一轮")
+        let collection = try store.createCollectionAndRound()
+        try store.assign(inspiration.id, to: collection.id)
+        let firstRound = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        let receipt = try store.endRound(firstRound)
+
+        _ = try store.continueThinking(in: collection.id)
+        try store.updateInspiration(inspiration.id, text: "第二轮修改")
+
+        XCTAssertEqual(receipt.snapshot.members.map(\.text), ["第一轮"])
+        XCTAssertEqual(store.state.receipts.count, 1)
+        XCTAssertEqual(store.activeCollections.map(\.id), [collection.id])
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, collection.id)
+    }
+
+    func testV02TrashRestoresAnIndependentInspirationAndExpiresAtThirtyDays() throws {
+        let v02Directory = directory.appendingPathComponent("trash")
+        let store = V02Store(storageDirectory: v02Directory)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let resource = try store.saveVoiceInspirationAudio(filename: "expired.m4a", m4aData: Data([0, 1]))
+        let resourceURL = store.resourceURL(resource)
+        let inspiration = try store.createInspiration(text: "可以恢复", resourceIDs: [resource.id], now: now)
+        try store.deleteInspiration(inspiration.id, now: now)
+        let entry = try XCTUnwrap(store.state.trash.first)
+        try store.restoreTrash(entry.id, now: now.addingTimeInterval(10))
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, nil)
+        XCTAssertEqual(store.state.inspirations.first?.cardFlowState, .visible)
+
+        try store.deleteInspiration(inspiration.id, now: now)
+        try store.purgeExpiredTrash(now: now.addingTimeInterval(30 * 24 * 60 * 60))
+        XCTAssertTrue(store.state.trash.isEmpty)
+        XCTAssertTrue(store.state.resources.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resourceURL.path))
+    }
+
+    func testV02PermanentTrashDeleteKeepsResourceUntilLastReferenceIsGone() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("permanent-trash"))
+        let resource = try store.saveVoiceInspirationAudio(filename: "shared.m4a", m4aData: Data([0, 1]))
+        let resourceURL = store.resourceURL(resource)
+        let inspiration = try store.createInspiration(text: "共享附件", resourceIDs: [resource.id])
+        let collection = try store.createCollectionAndRound()
+        try store.assign(inspiration.id, to: collection.id)
+        let receipt = try store.endRound(try XCTUnwrap(store.activeCollections.first?.currentRoundID))
+        try store.deleteInspiration(inspiration.id)
+        try store.deleteReceipt(receipt.id)
+
+        let inspirationEntry = try XCTUnwrap(store.state.trash.first { entry in
+            if case .inspiration = entry.object { return true }
+            return false
+        })
+        let receiptEntry = try XCTUnwrap(store.state.trash.first { entry in
+            if case .receipt = entry.object { return true }
+            return false
+        })
+        try store.permanentlyDeleteTrash([inspirationEntry.id])
+        XCTAssertEqual(store.state.resources.map(\.id), [resource.id])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: resourceURL.path))
+
+        try store.permanentlyDeleteTrash([receiptEntry.id])
+        XCTAssertTrue(store.state.resources.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resourceURL.path))
+    }
+
+    func testV02BackupRestoresTrashReceiptsAndReferencedResources() throws {
+        let source = V02Store(storageDirectory: directory.appendingPathComponent("backup-source"))
+        let resource = try source.saveVoiceInspirationAudio(filename: "backup.m4a", m4aData: Data([0, 1, 2]))
+        let inspiration = try source.createInspiration(text: "备份内容", resourceIDs: [resource.id])
+        let collection = try source.createCollectionAndRound(name: "备份构思集")
+        try source.assign(inspiration.id, to: collection.id)
+        let receipt = try source.endRound(try XCTUnwrap(source.activeCollections.first?.currentRoundID))
+        try source.deleteInspiration(inspiration.id)
+        try source.deleteReceipt(receipt.id)
+        let backup = try source.exportBackupData()
+
+        let target = V02Store(storageDirectory: directory.appendingPathComponent("backup-target"))
+        _ = try target.createInspiration(text: "将被恢复替换")
+        try target.restoreBackupData(backup)
+
+        XCTAssertEqual(target.state.inspirations.count, 0)
+        XCTAssertEqual(target.state.receipts.count, 0)
+        XCTAssertEqual(target.state.trash.count, 2)
+        XCTAssertEqual(target.state.resources.map(\.id), [resource.id])
+        let restoredResource = try XCTUnwrap(target.state.resources.first)
+        XCTAssertEqual(try Data(contentsOf: target.resourceURL(restoredResource)), Data([0, 1, 2]))
+    }
+
+    func testV02InvalidBackupDoesNotChangeCurrentData() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("invalid-v02-backup"))
+        let original = try store.createInspiration(text: "保留原数据")
+
+        XCTAssertThrowsError(try store.restoreBackupData(Data("not-a-backup".utf8)))
+        XCTAssertEqual(store.state.inspirations.map(\.id), [original.id])
+        XCTAssertEqual(store.state.inspirations.first?.text, "保留原数据")
+    }
+
+    func testV02DeletedMemberDoesNotBreakLaterContinueThinking() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("deleted-member"))
+        let inspiration = try store.createInspiration(text: "将被删除")
+        let collection = try store.createCollectionAndRound()
+        try store.assign(inspiration.id, to: collection.id)
+        let firstRound = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        _ = try store.endRound(firstRound)
+        try store.deleteInspiration(inspiration.id)
+
+        XCTAssertFalse(store.state.collections.contains { $0.id == collection.id })
+        XCTAssertThrowsError(try store.continueThinking(in: collection.id))
+    }
+
+    func testV02ResourceWritesBeforeBeingReferencedAndSurvivesReload() throws {
+        let path = directory.appendingPathComponent("resources")
+        let store = V02Store(storageDirectory: path)
+        let resource = try store.createResource(
+            input: AttachmentInput(name: "reference.pdf", mimeType: "application/pdf", data: Data("pdf".utf8)),
+            source: .importedAttachment
+        )
+        let inspiration = try store.createInspiration(text: "带附件", resourceIDs: [resource.id])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.resourceURL(resource).path))
+
+        let reloaded = V02Store(storageDirectory: path)
+        XCTAssertEqual(reloaded.state.resources.map(\.id), [resource.id])
+        XCTAssertEqual(reloaded.state.inspirations.first?.id, inspiration.id)
+        XCTAssertThrowsError(try reloaded.createInspiration(text: "错误引用", resourceIDs: [UUID()]))
+    }
+
+    func testV02ReceiptExportAlwaysUsesTheFrozenSnapshot() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let receipt = V02Receipt(
+            id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: now,
+            snapshot: .init(collectionName: "文章构思", startedAt: now, endedAt: now, effectiveEditCount: 1,
+                            members: [.init(inspirationID: UUID(), text: "固定内容", resourceIDs: [])])
+        )
+        XCTAssertTrue(V02ReceiptExport.plainText(for: receipt).contains("固定内容"))
+        XCTAssertTrue(V02ReceiptExport.markdown(for: receipt).contains("# 文章构思"))
+        XCTAssertTrue(V02ReceiptExport.pdfData(for: receipt).starts(with: Data("%PDF".utf8)))
+    }
+
+    func testV02ReceiptTemplateFallsBackToClassicWithoutPhotosAndUsesFilmForThreePhotos() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("receipt-template"))
+        let receipt = V02Receipt(
+            id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: .now,
+            snapshot: .init(collectionName: "视觉构思", startedAt: .now, endedAt: .now, effectiveEditCount: 0,
+                            members: [.init(inspirationID: UUID(), text: "只有文字", resourceIDs: [])])
+        )
+        XCTAssertEqual(V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources), .classic)
+
+        let photos = try (0..<3).map { index in
+            try store.createResource(
+                input: AttachmentInput(name: "photo-\(index).jpg", mimeType: "image/jpeg", data: Data([0x00])),
+                source: .importedAttachment
+            )
+        }
+        let visualReceipt = V02Receipt(
+            id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: .now,
+            snapshot: .init(collectionName: "视觉构思", startedAt: .now, endedAt: .now, effectiveEditCount: 0,
+                            members: [.init(inspirationID: UUID(), text: "三张照片", resourceIDs: photos.map(\.id))])
+        )
+        XCTAssertEqual(V02ReceiptTemplate.recommended(for: visualReceipt, resources: store.state.resources), .film)
+    }
+
+    func testV02ReceiptGesturePolicyLocksAxesAndCommitsOnlyValidTargets() {
+        XCTAssertEqual(V02ReceiptGesturePolicy.axis(for: .init(width: 8, height: 7)), .none)
+        XCTAssertEqual(V02ReceiptGesturePolicy.axis(for: .init(width: -40, height: 12)), .horizontal)
+        XCTAssertEqual(V02ReceiptGesturePolicy.axis(for: .init(width: 10, height: 48)), .downward)
+        XCTAssertEqual(V02ReceiptGesturePolicy.axis(for: .init(width: 35, height: 35)), .none)
+        XCTAssertEqual(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -100), 2)
+        XCTAssertEqual(V02ReceiptGesturePolicy.candidateIndex(index: 1, count: 3, translation: -12), 2)
+        XCTAssertEqual(V02ReceiptGesturePolicy.candidateIndex(index: 1, count: 3, translation: 12), 0)
+        XCTAssertNil(V02ReceiptGesturePolicy.candidateIndex(index: 0, count: 3, translation: 12))
+        XCTAssertEqual(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 100), nil)
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: 30))
+        XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 90, extent: 360), 0.25, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 500, extent: 360), 1, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 10, extent: 0), 1, accuracy: 0.001)
+        XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(70))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(120))
+    }
+
+    func testV02ReceiptCandidateAndProgressAreAvailableBeforeCommitThreshold() {
+        XCTAssertEqual(V02ReceiptGesturePolicy.candidateIndex(index: 0, count: 2, translation: -8), 1)
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 2, translation: -8))
+        XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: -8, extent: 368), 8.0 / 368.0, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 184, extent: 368), 0.5, accuracy: 0.001)
+    }
+
+    func testV02ReceiptGenerationPolicyRevealsContentAfterPaperStarts() {
+        XCTAssertEqual(V02ReceiptGenerationPolicy.contentOpacity(for: 0), 0, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.contentOpacity(for: 0.18), 0, accuracy: 0.001)
+        XCTAssertGreaterThan(V02ReceiptGenerationPolicy.contentOpacity(for: 0.6), 0)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.contentOpacity(for: 1), 1, accuracy: 0.001)
+        XCTAssertLessThan(V02ReceiptGenerationPolicy.reducedMotionDuration, V02ReceiptGenerationPolicy.normalDuration)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.undoWindow, 2, accuracy: 0.001)
+    }
+
+    func testV02ReceiptGenerationReservesPrimaryNavigationLayer() {
+        XCTAssertEqual(
+            V02ReceiptGenerationLayoutPolicy.bottomPadding(navigationHeight: 72),
+            90,
+            accuracy: 0.001
+        )
+        XCTAssertLessThan(
+            V02ReceiptGenerationLayoutPolicy.generationZIndex,
+            V02ReceiptGenerationLayoutPolicy.primaryNavigationZIndex
+        )
+        XCTAssertLessThan(
+            V02ReceiptGenerationLayoutPolicy.primaryNavigationZIndex,
+            V02ReceiptGenerationLayoutPolicy.composerZIndex
+        )
+    }
+
+    func testV02ReceiptExportWritesIndividuallyShareableFiles() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let receipt = V02Receipt(
+            id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: now,
+            snapshot: .init(collectionName: "分享测试", startedAt: now, endedAt: now, effectiveEditCount: 0,
+                            members: [.init(inspirationID: UUID(), text: "可导出内容", resourceIDs: [])])
+        )
+        let pdfURL = try V02ReceiptExportFile.write(receipt, format: .pdf)
+        let markdownURL = try V02ReceiptExportFile.write(receipt, format: .markdown)
+        defer {
+            try? FileManager.default.removeItem(at: pdfURL)
+            try? FileManager.default.removeItem(at: markdownURL)
+        }
+
+        XCTAssertTrue(try Data(contentsOf: pdfURL).starts(with: Data("%PDF".utf8)))
+        XCTAssertTrue(try String(contentsOf: markdownURL).contains("# 分享测试"))
+    }
+
+    func testV02SearchFindsFrozenReceiptContentAfterOriginalIsEdited() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("search"))
+        let inspiration = try store.createInspiration(text: "原始火星")
+        let collection = try store.createCollectionAndRound(name: "行星")
+        try store.assign(inspiration.id, to: collection.id)
+        let roundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        _ = try store.endRound(roundID)
+        try store.updateInspiration(inspiration.id, text: "改成金星")
+
+        XCTAssertEqual(store.search("火星", scope: .receipts).count, 1)
+        XCTAssertTrue(store.search("火星", scope: .inspirations).isEmpty)
+        XCTAssertEqual(store.search("行星", scope: .collections).count, 1)
+    }
+
+    func testV02SearchFindsAttachmentFilenameInInspirationAndReceipt() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("attachment-search"))
+        let resource = try store.createResource(
+            input: AttachmentInput(name: "会议录音.m4a", mimeType: "audio/mp4", data: Data([0, 1])),
+            source: .importedAttachment
+        )
+        let inspiration = try store.createInspiration(text: "不含关键词", resourceIDs: [resource.id])
+        let collection = try store.createCollectionAndRound()
+        try store.assign(inspiration.id, to: collection.id)
+        _ = try store.endRound(try XCTUnwrap(store.activeCollections.first?.currentRoundID))
+
+        XCTAssertEqual(store.search("会议录音", scope: .inspirations).count, 1)
+        XCTAssertEqual(store.search("会议录音", scope: .receipts).count, 1)
+    }
+
+    func testV02BatchAssignIsAtomicWhenCapacityIsInsufficient() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("batch"))
+        let collection = try store.createCollectionAndRound()
+        for index in 0..<9 {
+            let item = try store.createInspiration(text: "已有 \(index)")
+            try store.assign(item.id, to: collection.id)
+        }
+        let first = try store.createInspiration(text: "候选一")
+        let second = try store.createInspiration(text: "候选二")
+        XCTAssertThrowsError(try store.batchAssign([first.id, second.id], to: collection.id))
+        XCTAssertNil(store.state.inspirations.first(where: { $0.id == first.id })?.collectionID)
+        XCTAssertNil(store.state.inspirations.first(where: { $0.id == second.id })?.collectionID)
+    }
+
+    func testV02BatchDeleteMovesEverySelectedInspirationToTrash() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("batch-delete"))
+        let first = try store.createInspiration(text: "第一条")
+        let second = try store.createInspiration(text: "第二条")
+        try store.batchDeleteInspirations([first.id, second.id])
+
+        XCTAssertTrue(store.state.inspirations.isEmpty)
+        XCTAssertEqual(store.state.trash.count, 2)
+    }
+
+    func testV02DeleteCollectionMovesMembersToTrashWithoutChangingReceipt() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("delete-collection"))
+        let inspiration = try store.createInspiration(text: "要删除的构思")
+        let collection = try store.createCollectionAndRound(name: "临时构思集")
+        try store.assign(inspiration.id, to: collection.id)
+        let round = try XCTUnwrap(
+            store.state.rounds.first(where: { $0.collectionID == collection.id && $0.state == .thinking })
+        )
+        let receipt = try store.endRound(round.id)
+
+        try store.deleteCollection(collection.id)
+
+        XCTAssertTrue(store.state.collections.isEmpty)
+        XCTAssertTrue(store.state.rounds.isEmpty)
+        XCTAssertTrue(store.state.inspirations.isEmpty)
+        XCTAssertEqual(store.state.receipts.map(\.id), [receipt.id])
+        let trashed = try XCTUnwrap(store.state.trash.first)
+        guard case .inspiration(let restored) = trashed.object else {
+            return XCTFail("构思集成员应作为独立灵感进入回收站")
+        }
+        XCTAssertNil(restored.collectionID)
+    }
+
+    func testV02UndoEndRoundRestoresCollectionAndRemovesOnlyNewReceipt() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-end-round"))
+        let inspiration = try store.createInspiration(text: "待撤回")
+        let collection = try store.createCollectionAndRound(name: "撤回构思集")
+        try store.assign(inspiration.id, to: collection.id)
+        let roundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        let receipt = try store.endRound(roundID)
+
+        try store.undoEndRound(receipt.id)
+
+        XCTAssertTrue(store.state.receipts.isEmpty)
+        XCTAssertEqual(store.activeCollections.map(\.id), [collection.id])
+        XCTAssertEqual(store.state.rounds.first?.state, .thinking)
+        XCTAssertNil(store.state.rounds.first?.endedAt)
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, collection.id)
+        XCTAssertEqual(store.state.inspirations.first?.cardFlowState, .visible)
+    }
+
+    func testV02RenameCollectionPersistsWithoutChangingDefaultNameCounter() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("rename-collection"))
+        let first = try store.createCollectionAndRound()
+        try store.renameCollection(first.id, name: "文章构思")
+        let second = try store.createCollectionAndRound()
+
+        XCTAssertEqual(store.state.collections.first(where: { $0.id == first.id })?.name, "文章构思")
+        XCTAssertEqual(second.name, "构思集（2）")
+    }
+
+    func testV02CreateInspirationInCollectionIsAtomicAtCapacity() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("create-in-collection"))
+        let collection = try store.createCollectionAndRound()
+        for index in 0..<V02DomainEngine.maximumMembersPerCollection {
+            _ = try store.createInspiration(text: "成员 \(index)", in: collection.id)
+        }
+
+        XCTAssertThrowsError(try store.createInspiration(text: "不应写入", in: collection.id))
+        XCTAssertEqual(store.state.inspirations.count, V02DomainEngine.maximumMembersPerCollection)
+        XCTAssertFalse(store.state.inspirations.contains { $0.text == "不应写入" })
+    }
+
+    func testV02EmptyRoundCannotGenerateAnEmptyReceipt() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("empty-round"))
+        let collection = try store.createCollectionAndRound()
+        let roundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+
+        XCTAssertThrowsError(try store.endRound(roundID)) { error in
+            XCTAssertEqual(error as? V02DomainError, .emptyRound)
+        }
+        XCTAssertTrue(store.state.receipts.isEmpty)
+        XCTAssertEqual(store.activeCollections.map(\.id), [collection.id])
+    }
+
+    func testV02RemovingOriginalAttachmentKeepsReceiptReferenceUntilReceiptIsGone() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("remove-attachment"))
+        let resource = try store.saveVoiceInspirationAudio(filename: "keep.m4a", m4aData: Data([0, 1]))
+        let resourceURL = store.resourceURL(resource)
+        let inspiration = try store.createInspiration(text: "带录音", resourceIDs: [resource.id])
+        let collection = try store.createCollectionAndRound()
+        try store.assign(inspiration.id, to: collection.id)
+        let receipt = try store.endRound(try XCTUnwrap(store.activeCollections.first?.currentRoundID))
+
+        try store.removeResource(resource.id, from: inspiration.id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: resourceURL.path))
+        XCTAssertNotNil(store.state.resources.first(where: { $0.id == resource.id }))
+
+        try store.deleteReceipt(receipt.id)
+        try store.permanentlyDeleteTrash(Set(store.state.trash.map(\.id)))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resourceURL.path))
+    }
+
+    func testV02ReceiptSnapshotFreezesAttachmentMetadataForLongDetail() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("frozen-detail-attachments"))
+        let resource = try store.createResource(
+            input: AttachmentInput(
+                name: "会议记录.pdf",
+                mimeType: "application/pdf",
+                data: Data([0x25, 0x50, 0x44, 0x46])
+            ),
+            source: .importedAttachment
+        )
+        let inspiration = try store.createInspiration(text: "保留这份附件快照", resourceIDs: [resource.id])
+        let collection = try store.createCollectionAndRound(name: "详情票")
+        try store.assign(inspiration.id, to: collection.id)
+        let roundID = try XCTUnwrap(store.activeCollections.first(where: { $0.id == collection.id })?.currentRoundID)
+        let receipt = try store.endRound(roundID)
+
+        let attachment = try XCTUnwrap(receipt.snapshot.members.first?.attachments.first)
+        XCTAssertEqual(attachment.id, resource.id)
+        XCTAssertEqual(attachment.filename, "会议记录.pdf")
+        XCTAssertEqual(attachment.mimeType, "application/pdf")
+        XCTAssertEqual(attachment.size, 4)
+        XCTAssertEqual(attachment.relativePath, resource.relativePath)
+
+        // Removing the source link must not erase the long receipt's metadata.
+        try store.removeResource(resource.id, from: inspiration.id)
+        let persistedReceipt = try XCTUnwrap(store.state.receipts.first)
+        let persistedAttachment = try XCTUnwrap(persistedReceipt.snapshot.members.first?.attachments.first)
+        XCTAssertEqual(persistedAttachment.filename, "会议记录.pdf")
+        XCTAssertEqual(persistedAttachment.mimeType, "application/pdf")
+        XCTAssertEqual(persistedAttachment.relativePath, resource.relativePath)
+    }
+
+    func testV02ReceiptDetailKeepsBothRealTemplatesAndSecondaryExportFormats() {
+        XCTAssertEqual(Set(V02ReceiptTemplate.allCases), [.classic, .film])
+        XCTAssertEqual(
+            V02ReceiptExportFormat.allCases.map(\.fileExtension),
+            ["pdf", "md", "txt"]
+        )
+    }
+
+    func testV02EditorImportsResourcesWithoutBreakingTheInspirationReference() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("editor-import"))
+        let inspiration = try store.createInspiration(text: "编辑中的灵感")
+
+        try store.addImportedResources([
+            AttachmentInput(name: "会议.pdf", mimeType: "application/pdf", data: Data([1, 2, 3]))
+        ], to: inspiration.id)
+
+        let saved = try XCTUnwrap(store.state.inspirations.first(where: { $0.id == inspiration.id }))
+        let resourceID = try XCTUnwrap(saved.resourceIDs.first)
+        let resource = try XCTUnwrap(store.state.resources.first(where: { $0.id == resourceID }))
+        XCTAssertEqual(resource.filename, "会议.pdf")
+        XCTAssertEqual(resource.source.rawValue, V02ResourceSource.importedAttachment.rawValue)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.resourceURL(resource).path))
+    }
+
+    func testV02EditorImportRollsBackResourcesWhenTheInspirationIsMissing() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("editor-import-rollback"))
+        XCTAssertThrowsError(try store.addImportedResources([
+            AttachmentInput(name: "orphan.pdf", mimeType: "application/pdf", data: Data([4, 5]))
+        ], to: UUID()))
+        XCTAssertTrue(store.state.resources.isEmpty)
+    }
+
+    func testV02EditorImportRejectsOversizedInputWithoutWritingAResource() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("editor-import-size"))
+        let inspiration = try store.createInspiration(text: "大小校验")
+        XCTAssertThrowsError(try store.addImportedResources([
+            AttachmentInput(name: "too-large.bin", data: Data(repeating: 0, count: V02Store.maximumResourceSize + 1))
+        ], to: inspiration.id))
+        XCTAssertTrue(store.state.resources.isEmpty)
+        XCTAssertTrue(try XCTUnwrap(store.state.inspirations.first).resourceIDs.isEmpty)
+    }
+
+    func testV02BatchRestoreAndEmptyTrashAreAtomicAndCleanResources() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("batch-trash"))
+        let resource = try store.saveVoiceInspirationAudio(filename: "batch.m4a", m4aData: Data([0, 1]))
+        let resourceURL = store.resourceURL(resource)
+        let first = try store.createInspiration(text: "第一条", resourceIDs: [resource.id])
+        let second = try store.createInspiration(text: "第二条")
+        try store.batchDeleteInspirations([first.id, second.id])
+        let entries = Set(store.state.trash.map(\.id))
+
+        try store.restoreTrash(entries)
+        XCTAssertEqual(Set(store.state.inspirations.map(\.id)), [first.id, second.id])
+        XCTAssertTrue(store.state.trash.isEmpty)
+
+        try store.batchDeleteInspirations([first.id, second.id])
+        try store.emptyTrash()
+        XCTAssertTrue(store.state.trash.isEmpty)
+        XCTAssertTrue(store.state.resources.isEmpty)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: resourceURL.path))
+    }
+
+    func testV02CardPreviewUsesOneCollectionCardInsteadOfDuplicatingMembers() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("card-preview"))
+        let independent = try store.createInspiration(text: "独立卡片")
+        let grouped = try store.createInspiration(text: "组内卡片")
+        let collection = try store.createCollectionAndRound()
+        try store.assign(grouped.id, to: collection.id)
+
+        XCTAssertEqual(store.cardPreviewEntries.count, 2)
+        XCTAssertTrue(store.cardPreviewEntries.contains { entry in
+            if case .inspiration(let inspiration) = entry { return inspiration.id == independent.id }
+            return false
+        })
+        XCTAssertTrue(store.cardPreviewEntries.contains { entry in
+            if case .collection(let cardCollection, let memberCount) = entry {
+                return cardCollection.id == collection.id && memberCount == 1
+            }
+            return false
+        })
+    }
+
+    func testV02VoiceAudioKeepsItsDistinctSourceType() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("voice"))
+        let voice = try store.saveVoiceInspirationAudio(filename: "voice.m4a", m4aData: Data([0, 1]))
+        XCTAssertEqual(voice.source, .voiceInspiration)
+        XCTAssertThrowsError(try store.saveVoiceInspirationAudio(filename: "voice.mp3", m4aData: Data()))
+    }
+
+    func testV02DiscardingUnreferencedVoiceResourceRemovesItsFile() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("discard-voice"))
+        let resource = try store.saveVoiceInspirationAudio(filename: "draft.m4a", m4aData: Data([0, 1]))
+        let url = store.resourceURL(resource)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        try store.discardUnreferencedResource(resource.id)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertTrue(store.state.resources.isEmpty)
+    }
+
+    func testV02DiscardDoesNotRemoveResourceReferencedByTrash() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("retain-trash-resource"))
+        let resource = try store.saveVoiceInspirationAudio(filename: "retained.m4a", m4aData: Data([0, 1]))
+        let url = store.resourceURL(resource)
+        let inspiration = try store.createInspiration(text: "有录音", resourceIDs: [resource.id])
+        try store.deleteInspiration(inspiration.id)
+
+        XCTAssertThrowsError(try store.discardUnreferencedResource(resource.id))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertEqual(store.state.resources.map(\.id), [resource.id])
+    }
+
+    func testV02PrimaryNavigationUsesFourFullWidthCellsAndReceiptPageHidesComposer() {
+        XCTAssertEqual(V02PrimaryPage.allCases.count, 4)
+        XCTAssertGreaterThanOrEqual(V02NavigationLayoutPolicy.cellMinHeight, 44)
+        XCTAssertGreaterThanOrEqual(V02NavigationLayoutPolicy.barHeight, V02NavigationLayoutPolicy.cellMinHeight)
+        XCTAssertGreaterThanOrEqual(V02NavigationLayoutPolicy.primaryContentSpacing, 0)
+        XCTAssertGreaterThan(
+            V02NavigationLayoutPolicy.primaryContentBottomPadding,
+            V02NavigationLayoutPolicy.primaryContentSpacing
+        )
+        XCTAssertEqual(
+            V02NavigationLayoutPolicy.floatingComposerBottomPadding,
+            NoteTheme.navigationHeight + V02NavigationLayoutPolicy.composerBottomGap
+        )
+        XCTAssertGreaterThan(
+            V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding,
+            V02NavigationLayoutPolicy.floatingComposerBottomPadding
+        )
+        XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .inspirations, isOverlayPresented: false))
+        XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
+        XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
+        XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .cards, isOverlayPresented: true))
+    }
+
+    func testV02SearchScopeOrderMatchesPrimarySearchCopy() {
+        XCTAssertEqual(V02SearchScope.allCases, [.all, .inspirations, .collections, .receipts])
+        XCTAssertEqual(V02SearchScope.allCases.map(\.title), ["全部", "灵感", "构思集", "小票"])
+    }
+
+    func testV02TuckAnimationGuardsDuplicateCommitUntilVisualExit() {
+        XCTAssertTrue(V02TuckPolicy.commitDelay >= 0.22)
+        XCTAssertTrue(V02TuckPolicy.mayBegin(isTucking: false))
+        XCTAssertFalse(V02TuckPolicy.mayBegin(isTucking: true))
+    }
+
+    func testV02TuckPromptFadesInOnlyAfterLeftwardIntent() {
+        XCTAssertEqual(V02CardDeckPolicy.tuckPromptOpacity(for: 0), 0, accuracy: 0.001)
+        XCTAssertEqual(V02CardDeckPolicy.tuckPromptOpacity(for: -36), 0, accuracy: 0.001)
+        XCTAssertGreaterThan(V02CardDeckPolicy.tuckPromptOpacity(for: -80), 0)
+        XCTAssertEqual(V02CardDeckPolicy.tuckPromptOpacity(for: -160), 1, accuracy: 0.001)
+        XCTAssertFalse(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 20, translation: CGSize(width: -120, height: 0)))
+        XCTAssertTrue(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 80, translation: CGSize(width: -120, height: 0)))
     }
 }
