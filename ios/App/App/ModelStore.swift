@@ -1489,6 +1489,24 @@ struct V02DomainEngine {
             .filter({ $0.collectionID == collectionID && $0.state == .ended })
             .sorted(by: { ($0.endedAt ?? .distantPast) > ($1.endedAt ?? .distantPast) })
             .first else { throw V02DomainError.roundNotFound }
+        guard previous.memberIDs.allSatisfy({ memberID in
+            state.inspirations.contains { $0.id == memberID }
+        }) else {
+            throw V02DomainError.inspirationNotFound
+        }
+        // A member can have been moved into another active collection after
+        // this receipt was created. Continuing the old collection must move
+        // that member out of the other active round first, otherwise the same
+        // inspiration would exist in two live rounds.
+        for memberID in previous.memberIDs {
+            guard let inspirationIndex = state.inspirations.firstIndex(where: { $0.id == memberID }) else { continue }
+            guard let oldCollectionID = state.inspirations[inspirationIndex].collectionID,
+                  oldCollectionID != collectionID,
+                  let oldRoundID = state.collections.first(where: { $0.id == oldCollectionID })?.currentRoundID,
+                  let oldRoundIndex = state.rounds.firstIndex(where: { $0.id == oldRoundID && $0.state == .thinking }) else { continue }
+            state.rounds[oldRoundIndex].memberIDs.removeAll { $0 == memberID }
+            state.rounds[oldRoundIndex].events.append(.init(id: UUID(), kind: .memberRemoved, occurredAt: now, inspirationID: memberID))
+        }
         let round = V02ThinkingRound(
             id: UUID(),
             collectionID: collectionID,

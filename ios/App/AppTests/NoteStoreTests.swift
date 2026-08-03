@@ -885,6 +885,25 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(reopenedReceipt.snapshot.events.filter { $0.kind == .ended }.count, 1)
     }
 
+    func testV02ContinueThinkingMovesMembersOutOfAnotherActiveRound() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("continue-round-ownership"))
+        let inspiration = try store.createInspiration(text: "只能属于一个活动轮次")
+        let original = try store.createCollectionAndRound(name: "原构思集")
+        try store.assign(inspiration.id, to: original.id)
+        let originalRoundID = try XCTUnwrap(store.activeCollections.first(where: { $0.id == original.id })?.currentRoundID)
+        _ = try store.endRound(originalRoundID)
+
+        let other = try store.createCollectionAndRound(name: "另一构思集")
+        try store.assign(inspiration.id, to: other.id)
+        _ = try store.continueThinking(in: original.id)
+
+        let originalRound = try XCTUnwrap(store.state.rounds.first(where: { $0.collectionID == original.id && $0.state == .thinking }))
+        let otherRound = try XCTUnwrap(store.state.rounds.first(where: { $0.collectionID == other.id && $0.state == .thinking }))
+        XCTAssertEqual(originalRound.memberIDs, [inspiration.id])
+        XCTAssertTrue(otherRound.memberIDs.isEmpty)
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, original.id)
+    }
+
     func testV02BatchDeleteReceiptsIsAtomicWhenOneReceiptIsMissing() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("batch-delete-receipts"))
         func makeReceipt(_ text: String, offset: TimeInterval) throws -> V02Receipt {
