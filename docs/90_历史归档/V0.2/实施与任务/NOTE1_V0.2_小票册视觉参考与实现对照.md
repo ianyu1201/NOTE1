@@ -20,7 +20,7 @@
 
 ## 2. 当前实现：明确不通过
 
-![当前实现：普通卡片列表、通用小票图标和被新增按钮挤压的底栏](视觉参考/V0.2小票册/00-当前实现-不符合确认稿.png)
+![当前实现：普通卡片列表、通用小票图标和被新增按钮挤压的底栏](../../../../evidence/references/V0.2小票册/00-当前实现-不符合确认稿.png)
 
 上图只证明数据和入口已经存在，不证明小票册视觉已经完成。以下问题全部关闭前，不得把小票册标记为完成：
 
@@ -38,29 +38,29 @@
 
 | 参考来源 | 负责解决 | NOTE1 必须采用 | 不得照搬 |
 | --- | --- | --- | --- |
-| [Uiverse · Print Receipt Card](https://uiverse.io/dexter-st/friendly-cow-59) | 出票对象关系 | 固定出纸口、纸张连续送出、内容随纸张出现、末尾停止收束 | 米黄色写实打印机、网页像素字体、网页按钮外观 |
-| [Dribbble · New Payment Receipt](https://dribbble.com/shots/15488388-New-Payment-Receipt) | 出票后的结果确认 | 结果清楚落位、短促满足感、细节逐步可读、克制的结束反馈 | 支付金额、商户、金融紫色、验真涟漪业务含义 |
-| [Vimeo · Ticket Stub Cards Microinteraction](https://vimeo.com/1061847322) | 小票之间的层级和换票 | 当前票在前、目标票从后方进入、纸张孔/边缘强化“票”的物理感 | 电影评分、人物头像、红色评分系统和黑色舞台背景 |
-| [YouTube · SwiftUI Stacked Carousel](https://www.youtube.com/watch?v=af889OfDg-g) | SwiftUI 叠层与吸附实现 | `zIndex`、缩放、位移、透明度由同一手势进度驱动，松手连续吸附 | 3D 翻转、无限轮播、彩色资讯卡样式 |
-| [Reddit · Smooth SwiftUI stacked card interaction](https://www.reddit.com/r/iosdev/comments/1t5ffnm/smooth_swiftui_stacked_card_interaction_with_a/) | 向下抽取的物理响应 | 当前票向下离开时后方纸张同步补位，未过阈值自然回弹 | 夸张橡胶抖动、玩具感过强的回弹和多次震动 |
+| https: | 出票对象关系 | 固定出纸口、纸张连续送出、内容随纸张出现、末尾停止收束 | 米黄色写实打印机、网页像素字体、网页按钮外观 |
+| https: | 出票后的结果确认 | 结果清楚落位、短促满足感、细节逐步可读、克制的结束反馈 | 支付金额、商户、金融紫色、验真涟漪业务含义 |
+| https: | 小票之间的层级和换票 | 当前票在前、目标票从后方进入、纸张孔/边缘强化“票”的物理感 | 电影评分、人物头像、红色评分系统和黑色舞台背景 |
+| https: | SwiftUI 叠层与吸附实现 | `zIndex`、缩放、位移、透明度由同一手势进度驱动，松手连续吸附 | 3D 翻转、无限轮播、彩色资讯卡样式 |
+| https: | 向下抽取的物理响应 | 当前票向下离开时后方纸张同步补位，未过阈值自然回弹 | 夸张橡胶抖动、玩具感过强的回弹和多次震动 |
 
 ## 4. 本地参考图
 
 ### 4.1 出纸装置与固定锚点
 
-![Uiverse Print Receipt Card：固定出纸口和纸张来源](视觉参考/V0.2小票册/01-Uiverse-Print-Receipt-Card.png)
+![Uiverse Print Receipt Card：固定出纸口和纸张来源](../../../../evidence/references/V0.2小票册/01-Uiverse-Print-Receipt-Card.png)
 
 只提取“纸从固定夹口出现”的关系。NOTE1 的夹口应使用浅亮玻璃和深蓝细节，不做写实打印机。
 
 ### 4.2 小票纸张轮廓和连续层级
 
-![Ticket Stub Cards：锯齿纸边、前后连续票和纸张层级](视觉参考/V0.2小票册/03-Ticket-Stub-Cards-Microinteraction.jpg)
+![Ticket Stub Cards：锯齿纸边、前后连续票和纸张层级](../../../../evidence/references/V0.2小票册/03-Ticket-Stub-Cards-Microinteraction.jpg)
 
 这张图约束纸张轮廓和前后关系，不约束业务内容。经典票与胶卷票都应看起来是同一本小票册里的纸张，而不是两套普通圆角卡片。
 
 ### 4.3 SwiftUI 叠卡实现关系
 
-![SwiftUI Stacked Carousel：当前卡片与后方卡片的层级](视觉参考/V0.2小票册/04-SwiftUI-Stacked-Carousel.jpg)
+![SwiftUI Stacked Carousel：当前卡片与后方卡片的层级](../../../../evidence/references/V0.2小票册/04-SwiftUI-Stacked-Carousel.jpg)
 
 后方小票只露边和轻微层级，不显示一整张可读正文；任何相邻小票正文穿透都直接判定不通过。
 
@@ -80,7 +80,7 @@
 
 - 最终 A 级目标图：
 
-![已确认的小票册档案导轨、经典票、胶卷票、换票与右上更多菜单](../产品文档/视觉基线/V0.2/22-已确认-小票册档案导轨与更多菜单状态图.png)
+![已确认的小票册档案导轨、经典票、胶卷票、换票与右上更多菜单](../../../02_设计/V0.2/视觉基线/22-已确认-小票册档案导轨与更多菜单状态图.png)
 
 - 页面中心只有一个主对象：固定票据夹中的当前小票。
 - 当前小票后方露出 1–2 层窄纸边，提示可左右切换；不改成列表、网格、瀑布流或普通卡片轮播。
@@ -94,7 +94,7 @@
 
 最终 A 级关键帧：
 
-![已确认的结束本轮构思、准备、连续出纸与停止收束](../产品文档/视觉基线/V0.2/23-已确认-结束本轮构思与小票生成关键帧.png)
+![已确认的结束本轮构思、准备、连续出纸与停止收束](../../../02_设计/V0.2/视觉基线/23-已确认-结束本轮构思与小票生成关键帧.png)
 
 动画顺序固定：
 

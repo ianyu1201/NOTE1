@@ -21,12 +21,12 @@
 按以下顺序完整阅读：
 
 1. `AGENTS.md`
-2. `docs/产品文档/NOTE1_PRD_V0.2.md`
-3. `docs/开发文档/NOTE1_V0.2_开发准则与注意事项.md`
-4. `docs/开发文档/NOTE1_V0.1到V0.2能力非回归矩阵.md`
-5. `docs/开发文档/NOTE1_V0.2_UI二次优化手册.md`
-6. `docs/开发文档/NOTE1_V0.2_UI问题清单_2026-08-02.md`
-7. `docs/产品文档/NOTE1_PRD_V2.6.md`
+2. `docs/01_产品/V0.2/NOTE1_PRD_V0.2.md`
+3. `docs/03_工程/V0.2/现役规范/NOTE1_V0.2_开发准则与注意事项.md`
+4. `docs/03_工程/V0.2/现役规范/NOTE1_V0.1到V0.2能力非回归矩阵.md`
+5. `docs/90_历史归档/V0.2/实施与任务/NOTE1_V0.2_UI二次优化手册.md`
+6. `docs/90_历史归档/V0.2/实施与任务/NOTE1_V0.2_UI问题清单_2026-08-02.md`
+7. `docs/01_产品/V0.1/NOTE1_PRD_V2.6.md`
 8. V0.1 当前源码与 `media/demo/` 真实运行证据
 
 发生冲突时，以 V0.2 PRD 中明确改变的产品语义为准；其余基础交互质量以 V0.1 已运行实现为非回归基线。
@@ -170,8 +170,8 @@ BR1、BR2 完成后，按非回归矩阵逐页检查：
 
 只有 BR1、BR2 和 BR3 的 P0 项关闭后才能进入。小票册必须另行完整读取：
 
-- `docs/开发文档/NOTE1_V0.2_小票册视觉参考与实现对照.md`
-- `docs/开发文档/视觉参考/V0.2小票册/`
+- `docs/90_历史归档/V0.2/实施与任务/NOTE1_V0.2_小票册视觉参考与实现对照.md`
+- `evidence/references/V0.2小票册/`
 
 强制参考：New Payment Receipt、Uiverse Print Receipt Card、Ticket Stub Cards Microinteraction、SwiftUI Stacked Carousel、SwiftUI soft physical deck interaction。不得以普通白色列表卡片和“上一张 / 下一张”按钮代替确认方案。
 

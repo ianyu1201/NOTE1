@@ -41,14 +41,14 @@
 
 1. `AGENTS.md`；
 2. `README.md`；
-3. `docs/产品文档/NOTE1_PRD_V0.2.md`；
-4. `docs/产品文档/NOTE1_V0.2_产品设计与交互规格.md`；
-5. `docs/开发文档/NOTE1_V0.1到V0.2能力非回归矩阵.md`；
-6. `docs/开发文档/NOTE1_V0.2_开发准则与注意事项.md`；
-7. `docs/产品文档/NOTE1_V0.2_待讨论清单.md`；
-8. `docs/开发文档/NOTE1_V0.2_UI优化ISSUE.md`；
-9. `docs/产品文档/NOTE1_PRD_V2.6.md`；
-10. `docs/技术决策/` 下全部现役 ADR；
+3. `docs/01_产品/V0.2/NOTE1_PRD_V0.2.md`；
+4. `docs/02_设计/V0.2/NOTE1_V0.2_产品设计与交互规格.md`；
+5. `docs/03_工程/V0.2/现役规范/NOTE1_V0.1到V0.2能力非回归矩阵.md`；
+6. `docs/03_工程/V0.2/现役规范/NOTE1_V0.2_开发准则与注意事项.md`；
+7. `docs/01_产品/V0.2/NOTE1_V0.2_待讨论清单.md`；
+8. `docs/03_工程/V0.2/现役规范/NOTE1_V0.2_UI优化ISSUE.md`；
+9. `docs/01_产品/V0.1/NOTE1_PRD_V2.6.md`；
+10. `docs/04_技术决策/` 下全部现役 ADR；
 11. 本轮涉及的 Swift 源码、测试和工程配置。
 
 开工前还必须检查 Git 分支、远端同步状态、未提交修改、现有标签和当前测试基线。不得覆盖其他对话或用户留下的改动。
