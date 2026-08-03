@@ -1012,6 +1012,9 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .cards, isOverlayPresented: true))
+        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .inspirations), "记录灵感")
+        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .cards), "新增卡片")
+        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .collections), "新建构思集")
     }
 
     func testV02SearchScopeOrderMatchesPrimarySearchCopy() {

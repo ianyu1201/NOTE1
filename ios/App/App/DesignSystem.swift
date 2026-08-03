@@ -60,7 +60,7 @@ enum V02NavigationLayoutPolicy {
     static func composerLabel(for page: V02PrimaryPage) -> String {
         switch page {
         case .inspirations: "记录灵感"
-        case .cards: "新增灵感"
+        case .cards: "新增卡片"
         case .collections: "新建构思集"
         case .receipts: ""
         }
