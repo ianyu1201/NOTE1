@@ -60,11 +60,11 @@ struct V02CardPreviewView: View {
                 }
                 .padding(.horizontal, 2)
 
-                // Anchor the paper directly below the system navigation bar,
-                // then assign only the remaining space to the gap above the
-                // bottom operation. This keeps the first screen dense without
-                // letting the group action collide with primary navigation.
-                Spacer(minLength: 18)
+                // Keep a measured operation gap below the paper. A flexible
+                // Spacer here expands to the whole remaining viewport and
+                // recreates the empty band this screen is meant to avoid.
+                Color.clear
+                    .frame(height: 64)
                 VStack(spacing: 6) {
                     Group {
                         if cards.indices.contains(index), case .inspiration = cards[index] {
@@ -112,12 +112,11 @@ struct V02CardPreviewView: View {
                 .padding(.bottom, 8)
                 }
             }
-            // `NavigationStack` does not automatically propagate the shell's
-            // custom safe-area inset into this page-local flexible spacer.
-            // Reserve exactly one navigation-bar height so the centered group
-            // action remains in the same operation band as the floating plus,
-            // never underneath the four primary destinations.
-            .padding(.bottom, V02NavigationLayoutPolicy.barHeight)
+            // The tab bar already owns the system safe-area boundary. Keep a
+            // small optical gap here rather than reserving a second full bar
+            // height, which would recreate the empty band this page is meant
+            // to avoid.
+            .padding(.bottom, 0)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .padding(.bottom, 22)
