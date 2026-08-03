@@ -32,7 +32,7 @@ enum V02CardDeckPolicy {
 /// every sparse card occupy the same tall rectangle. The deck still keeps a
 /// stable upper bound so long text and gesture physics remain predictable.
 enum V02CardPreviewLayoutPolicy {
-    static let compactHeight: CGFloat = 276
+    static let compactHeight: CGFloat = 232
     static let maximumHeight: CGFloat = 360
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
