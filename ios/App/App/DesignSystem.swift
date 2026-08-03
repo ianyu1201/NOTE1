@@ -51,10 +51,10 @@ enum V02NavigationLayoutPolicy {
     static let workbenchFloatingComposerBottomPadding: CGFloat = 168
 
     static func showsFloatingComposer(on page: V02PrimaryPage, isOverlayPresented: Bool) -> Bool {
-        // The collection root owns the shared floating component locally so
-        // its action can open collection creation instead of the inspiration
-        // composer. The receipt book deliberately has no global plus.
-        !isOverlayPresented && page != .receipts && page != .collections
+        // The shell owns the shared floating component for every page that
+        // supports creation. Collection creation is routed back into the
+        // collection root, while the receipt book deliberately has no plus.
+        !isOverlayPresented && page != .receipts
     }
 
     static func composerLabel(for page: V02PrimaryPage) -> String {

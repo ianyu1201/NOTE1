@@ -4,6 +4,7 @@ import UIKit
 struct V02CollectionListView: View {
     @ObservedObject var store: V02Store
     @Binding var isWorkbenchPresented: Bool
+    @Binding var isRequestingNewCollection: Bool
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     @State private var endingRound: V02ThinkingRound?
@@ -67,21 +68,6 @@ struct V02CollectionListView: View {
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
 
-            if workingCollection == nil {
-                V02FloatingComposerButton(
-                    action: requestNewCollection,
-                    label: "新建构思集"
-                )
-                .padding(.trailing, NoteTheme.horizontalPadding)
-                // The collection root owns its own composer while the shell
-                // keeps the four primary destinations in the safe-area inset.
-                // Keep the plus in the content operation zone, immediately
-                // above navigation, instead of floating over a card.
-                .padding(.bottom, V02NavigationLayoutPolicy.floatingComposerBottomPadding)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .zIndex(1)
-            }
-
             if let collection = workingCollection {
                 V02CollectionWorkbenchView(
                     store: store,
@@ -136,6 +122,11 @@ struct V02CollectionListView: View {
                   }
               }
           }
+        }
+        .onChange(of: isRequestingNewCollection) { _, requested in
+            guard requested else { return }
+            isRequestingNewCollection = false
+            requestNewCollection()
         }
         .alert("结束本轮构思？", isPresented: Binding(
             get: { endingRound != nil },

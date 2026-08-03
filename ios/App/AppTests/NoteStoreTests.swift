@@ -1009,7 +1009,7 @@ final class NoteStoreTests: XCTestCase {
             V02NavigationLayoutPolicy.floatingComposerBottomPadding
         )
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .inspirations, isOverlayPresented: false))
-        XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
+        XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .cards, isOverlayPresented: true))
     }

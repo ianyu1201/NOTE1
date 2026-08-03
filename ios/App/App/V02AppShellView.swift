@@ -34,6 +34,7 @@ struct V02AppShellView: View {
     @State private var generatedReceipt: V02Receipt?
     @State private var presentedReceipt: V02Receipt?
     @State private var isCollectionWorkbenchPresented = false
+    @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
 
     var body: some View {
@@ -82,7 +83,13 @@ struct V02AppShellView: View {
                 isOverlayPresented: isPresentingComposer || isPresentingSearch || isManagingSelection || isCollectionWorkbenchPresented || isChildEditorPresented
             ) {
                 V02FloatingComposerButton(
-                    action: { isPresentingComposer = true },
+                    action: {
+                        if page == .collections {
+                            isRequestingNewCollection = true
+                        } else {
+                            isPresentingComposer = true
+                        }
+                    },
                     label: V02NavigationLayoutPolicy.composerLabel(for: page)
                 )
                     .padding(.trailing, NoteTheme.horizontalPadding)
@@ -150,6 +157,7 @@ struct V02AppShellView: View {
             V02CollectionListView(
                 store: store,
                 isWorkbenchPresented: $isCollectionWorkbenchPresented,
+                isRequestingNewCollection: $isRequestingNewCollection,
                 showGeneration: { receipt in generatedReceipt = receipt }
             ) { error in
                 self.error = UserFacingAlert(error: error)
