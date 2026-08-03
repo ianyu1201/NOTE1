@@ -40,6 +40,7 @@ struct V02CardPreviewView: View {
             VStack(spacing: 10) {
                 if cards.isEmpty {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: "收起的灵感仍可在“灵感”中找到。")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                 V02CardDeck(
                     cards: cards,
