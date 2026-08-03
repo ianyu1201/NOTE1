@@ -111,23 +111,54 @@ struct V02ReceiptGenerationView: View {
     }
 
     private var settledActions: some View {
-        HStack(spacing: 8) {
-            Button("查看小票") { onView(receipt) }
-                .buttonStyle(V02ReceiptGenerationActionStyle(prominent: true))
-                .accessibilityIdentifier("v02.receipt.generation.view")
-            Button("返回") { onReturn() }
-                .buttonStyle(V02ReceiptGenerationActionStyle(prominent: false))
-                .accessibilityIdentifier("v02.receipt.generation.return")
+        ViewThatFits(in: .horizontal) {
+            generationActionRow(axis: .horizontal)
+            generationActionRow(axis: .vertical)
+        }
+        .frame(maxWidth: .infinity, minHeight: 46)
+        .onAppear { startUndoCountdown() }
+    }
 
-            if undoRemaining > 0 {
-                Button("撤回（\(Int(ceil(undoRemaining)))s）") { onUndo() }
-                    .buttonStyle(V02ReceiptGenerationActionStyle(prominent: false))
-                    .accessibilityLabel("撤回刚生成的小票")
-                    .accessibilityIdentifier("v02.receipt.generation.undo")
+    private enum GenerationActionAxis { case horizontal, vertical }
+
+    @ViewBuilder
+    private func generationActionRow(axis: GenerationActionAxis) -> some View {
+        let buttons = [
+            (title: "查看小票", prominent: true, identifier: "v02.receipt.generation.view"),
+            (title: "返回", prominent: false, identifier: "v02.receipt.generation.return")
+        ]
+
+        if axis == .horizontal {
+            HStack(spacing: 8) {
+                Button(buttons[0].title) { onView(receipt) }
+                    .buttonStyle(V02ReceiptGenerationActionStyle(prominent: buttons[0].prominent))
+                    .accessibilityIdentifier(buttons[0].identifier)
+                Button(buttons[1].title) { onReturn() }
+                    .buttonStyle(V02ReceiptGenerationActionStyle(prominent: buttons[1].prominent))
+                    .accessibilityIdentifier(buttons[1].identifier)
+                undoButton
+            }
+        } else {
+            VStack(spacing: 8) {
+                Button(buttons[0].title) { onView(receipt) }
+                    .buttonStyle(V02ReceiptGenerationActionStyle(prominent: buttons[0].prominent))
+                    .accessibilityIdentifier(buttons[0].identifier)
+                Button(buttons[1].title) { onReturn() }
+                    .buttonStyle(V02ReceiptGenerationActionStyle(prominent: buttons[1].prominent))
+                    .accessibilityIdentifier(buttons[1].identifier)
+                undoButton
             }
         }
-        .frame(minHeight: 46)
-        .onAppear { startUndoCountdown() }
+    }
+
+    @ViewBuilder
+    private var undoButton: some View {
+        if undoRemaining > 0 {
+            Button("撤回（\(Int(ceil(undoRemaining)))s）") { onUndo() }
+                .buttonStyle(V02ReceiptGenerationActionStyle(prominent: false))
+                .accessibilityLabel("撤回刚生成的小票")
+                .accessibilityIdentifier("v02.receipt.generation.undo")
+        }
     }
 
     private func startAnimationIfNeeded() {

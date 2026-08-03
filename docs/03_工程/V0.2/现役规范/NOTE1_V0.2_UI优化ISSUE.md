@@ -52,6 +52,7 @@
 - 当前补丁：小票册未锁定方向的短拖手势统一回弹并清零位移，避免取消手势后纸张残留偏移。
 - 当前补丁：系统 toolbar 在 iOS 26 隐藏共享玻璃背景后复用 NOTE1 圆形玻璃控件，保留原生导航语义与整格命中区，避免顶部按钮出现额外胶囊外框；卡片页按卡片类型移除隐藏的构思集按钮占位并缩短操作间距；小票册移除重复横向内边距，恢复长票可读宽度；搜索条件变化时清除失效的多选状态。
 - 当前补丁：构思集改用 toolbar principal 标题，避免 iOS 26 将页面标题排到左侧；卡片在最大辅助字号下提高纸张高度，避免构思集名称和说明被截断。小票册在 iOS 26 同时放置搜索与更多操作时改用页面级安全区头部，避免系统 toolbar 的不对称排布把标题推到左侧或截断。
+- 当前补丁：小票生成完成态的“查看小票 / 返回 / 撤回”操作使用 `ViewThatFits`，窄屏或最大辅助字号空间不足时自动改为纵向排列，避免三按钮横排挤压、截断或不可点。
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 当前补丁：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；短卡不再被固定 360pt 纸张撑出大块内部空白，长文本仍限制在可读上限，最大辅助字号由共享 deck 下限兜底。
 - 当前补丁：结束本轮前的强制保存失败时中止出票，避免以旧文字生成错误小票。
@@ -78,6 +79,7 @@
 - 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-ids48-generic build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
 - 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-ids48-analyze analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
 - 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-ids48 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-ids48/Logs/Test/Test-App-2026.08.04_05-38-47-+0800.xcresult`。
+- 本次响应式出票操作修复的模拟器构建：`/tmp/note1-v03-generic49`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze49`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests49`，97 项测试、0 失败，`** TEST SUCCEEDED **`；该变更仍需在最大辅助字号和真机上完成最终视觉/手感复验。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
