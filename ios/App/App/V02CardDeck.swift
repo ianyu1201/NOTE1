@@ -28,6 +28,34 @@ enum V02CardDeckPolicy {
     }
 }
 
+/// Card-preview papers should follow the amount of content instead of making
+/// every sparse card occupy the same tall rectangle. The deck still keeps a
+/// stable upper bound so long text and gesture physics remain predictable.
+enum V02CardPreviewLayoutPolicy {
+    static let compactHeight: CGFloat = 276
+    static let maximumHeight: CGFloat = 360
+    private static let textCharactersPerLine = 18
+    private static let maximumTextLines = 7
+
+    static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
+        switch entry {
+        case .collection:
+            return compactHeight
+        case .inspiration(let inspiration):
+            let characterCount = max(inspiration.text.trimmingCharacters(in: .whitespacesAndNewlines).count, 1)
+            let lineCount = min(
+                maximumTextLines,
+                max(1, (characterCount + textCharactersPerLine - 1) / textCharactersPerLine)
+            )
+            let attachmentAllowance: CGFloat = inspiration.resourceIDs.isEmpty ? 0 : 26
+            return min(
+                maximumHeight,
+                max(compactHeight, 164 + CGFloat(lineCount) * 24 + attachmentAllowance)
+            )
+        }
+    }
+}
+
 enum V02CardPositionPolicy {
     static func resolvedIndex(preferredID: UUID?, currentIndex: Int, ids: [UUID]) -> Int? {
         guard !ids.isEmpty else { return nil }

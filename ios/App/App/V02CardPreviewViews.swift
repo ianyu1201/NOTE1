@@ -26,9 +26,15 @@ struct V02CardPreviewView: View {
     @State private var newCollectionName = ""
     @State private var capacityError: String?
 
+    private var cards: [V02CardPreviewEntry] { store.cardPreviewEntries }
+
+    private var currentDeckHeight: CGFloat {
+        guard cards.indices.contains(index) else { return V02CardPreviewLayoutPolicy.compactHeight }
+        return V02CardPreviewLayoutPolicy.deckHeight(for: cards[index])
+    }
+
     var body: some View {
         NavigationStack {
-        let cards = store.cardPreviewEntries
         ZStack(alignment: .top) {
             NoteTheme.background.ignoresSafeArea()
             VStack(spacing: 10) {
@@ -38,7 +44,7 @@ struct V02CardPreviewView: View {
                 V02CardDeck(
                     cards: cards,
                     index: $index,
-                    height: 360,
+                    height: currentDeckHeight,
                     tuckPrompt: { card in
                         switch card {
                         case .inspiration: "收起"

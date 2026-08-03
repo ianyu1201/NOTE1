@@ -128,6 +128,35 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
+    func testV02CardPreviewCompactsSparsePapersButCapsLongText() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let sparse = V02Inspiration(
+            id: UUID(),
+            text: "短",
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: now,
+            updatedAt: now,
+            resourceIDs: []
+        )
+        let long = V02Inspiration(
+            id: UUID(),
+            text: String(repeating: "长", count: 180),
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: now,
+            updatedAt: now,
+            resourceIDs: []
+        )
+
+        let sparseHeight = V02CardPreviewLayoutPolicy.deckHeight(for: .inspiration(sparse))
+        let longHeight = V02CardPreviewLayoutPolicy.deckHeight(for: .inspiration(long))
+
+        XCTAssertEqual(sparseHeight, V02CardPreviewLayoutPolicy.compactHeight)
+        XCTAssertGreaterThan(longHeight, sparseHeight)
+        XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
+    }
+
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
         let first = UUID(), second = UUID(), third = UUID()
         XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [first, second, third]), 1)
