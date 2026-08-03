@@ -51,6 +51,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     let paperCornerRadius: CGFloat
     let paperHorizontalPadding: CGFloat
     let showsLayeredPaper: Bool
+    let isGestureEnabled: Bool
+    let tuckPrompt: (Card) -> String
     let content: (Card) -> CardContent
     let onTuck: ((Card) -> Void)?
 
@@ -66,6 +68,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         cornerRadius: CGFloat = 30,
         horizontalPadding: CGFloat = 32,
         showsLayeredPaper: Bool = false,
+        isGestureEnabled: Bool = true,
+        tuckPrompt: @escaping (Card) -> String = { _ in "收起" },
         @ViewBuilder content: @escaping (Card) -> CardContent,
         onTuck: ((Card) -> Void)? = nil
     ) {
@@ -75,6 +79,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         paperCornerRadius = cornerRadius
         paperHorizontalPadding = horizontalPadding
         self.showsLayeredPaper = showsLayeredPaper
+        self.isGestureEnabled = isGestureEnabled
+        self.tuckPrompt = tuckPrompt
         self.content = content
         self.onTuck = onTuck
     }
@@ -83,10 +89,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         GeometryReader { proxy in
             let resolvedIndex = min(max(index, 0), max(cards.count - 1, 0))
             ZStack {
-                if horizontalOffset < -36 {
+                if horizontalOffset < -36, onTuck != nil, !cards.isEmpty {
                     HStack {
                         Spacer()
-                        Label("收起", systemImage: "archivebox.fill")
+                        Label(tuckPrompt(cards[resolvedIndex]), systemImage: "archivebox.fill")
                             .noteFontCapped(size: 17, maximumScale: 1.2, weight: .semibold)
                             .foregroundStyle(NoteTheme.secondaryInk)
                             .padding(.trailing, 38)
@@ -114,20 +120,15 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                             .offset(x: 7, y: 4)
                             .opacity(0.54)
                     }
-                    paper(cards[resolvedIndex])
-                        .offset(x: horizontalOffset, y: verticalOffset)
-                        .rotationEffect(.degrees(Double(horizontalOffset / 26)))
-                        // Let the deck claim a directional drag before the
-                        // inner editor button, while a short tap still reaches
-                        // the button's focus-edit action.
-                        .highPriorityGesture(deckGesture(height: proxy.size.height))
-                        .accessibilityElement(children: .contain)
-                        .accessibilityValue("第 \(resolvedIndex + 1) 张，共 \(cards.count) 张")
-                        .accessibilityAction(named: "上一张") { page(by: -1) }
-                        .accessibilityAction(named: "下一张") { page(by: 1) }
-                        .accessibilityAction(named: "收起") {
-                            if let onTuck { onTuck(cards[resolvedIndex]) }
-                        }
+                    if onTuck != nil {
+                        deckPaper(cards[resolvedIndex], resolvedIndex: resolvedIndex, height: proxy.size.height)
+                            .accessibilityAction(named: tuckPrompt(cards[resolvedIndex])) {
+                                if let onTuck { onTuck(cards[resolvedIndex]) }
+                            }
+                    } else {
+                        deckPaper(cards[resolvedIndex], resolvedIndex: resolvedIndex, height: proxy.size.height)
+                            .accessibilityHint("向上下拖动切换卡片")
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -153,6 +154,26 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             }
             .shadow(color: NoteTheme.ink.opacity(0.10), radius: 22, y: 12)
             .padding(.horizontal, paperHorizontalPadding)
+    }
+
+    @ViewBuilder
+    private func deckPaper(_ card: Card, resolvedIndex: Int, height: CGFloat) -> some View {
+        if isGestureEnabled {
+            deckPaperBase(card, resolvedIndex: resolvedIndex, height: height)
+                .highPriorityGesture(deckGesture(height: height))
+        } else {
+            deckPaperBase(card, resolvedIndex: resolvedIndex, height: height)
+        }
+    }
+
+    private func deckPaperBase(_ card: Card, resolvedIndex: Int, height: CGFloat) -> some View {
+        paper(card)
+            .offset(x: horizontalOffset, y: verticalOffset)
+            .rotationEffect(.degrees(Double(horizontalOffset / 26)))
+            .accessibilityElement(children: .contain)
+            .accessibilityValue("第 \(resolvedIndex + 1) 张，共 \(cards.count) 张")
+            .accessibilityAction(named: "上一张") { page(by: -1) }
+            .accessibilityAction(named: "下一张") { page(by: 1) }
     }
 
     private var paperLayer: some View {

@@ -34,7 +34,17 @@ struct V02CardPreviewView: View {
                 if cards.isEmpty {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: "收起的灵感仍可在“灵感”中找到。")
                 } else {
-                V02CardDeck(cards: cards, index: $index, height: 360) { card in
+                V02CardDeck(
+                    cards: cards,
+                    index: $index,
+                    height: 360,
+                    tuckPrompt: { card in
+                        switch card {
+                        case .inspiration: "收起"
+                        case .collection: "结束本轮构思"
+                        }
+                    }
+                ) { card in
                     cardContent(card)
                 } onTuck: { card in
                     switch card {
@@ -56,29 +66,37 @@ struct V02CardPreviewView: View {
                 // letting the group action collide with primary navigation.
                 Spacer(minLength: 18)
                 VStack(spacing: 6) {
-                    V02GroupEntryButton(count: activeMemberCount, action: {
-                        beginGroupPicker(for: cards)
-                    }, onDrag: { location, translation, ended in
-                    if translation.height < -18 {
-                        isShowingGroupTray = true
-                        isDraggingGroup = true
+                    Group {
+                        if cards.indices.contains(index), case .inspiration = cards[index] {
+                            V02GroupEntryButton(count: activeMemberCount, action: {
+                                beginGroupPicker(for: cards)
+                            }, onDrag: { location, translation, ended in
+                                if translation.height < -18 {
+                                    isShowingGroupTray = true
+                                    isDraggingGroup = true
+                                }
+                                // V02GroupEntryButton reports its drag in the same global
+                                // coordinate space as the tray frames, so the final
+                                // location is compared directly without frame-offset
+                                // guesses that drift when the overlay reflows.
+                                let point = location
+                                activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                                if ended {
+                                    let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                                    defer { activeGroupTargetID = nil; isShowingGroupTray = false; isDraggingGroup = false }
+                                    guard translation.height < -50,
+                                          case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                          let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                                    pendingInspirationID = inspiration.id
+                                    handleGroupOperation(target)
+                                }
+                            })
+                        } else {
+                            Color.clear
+                                .frame(width: 52, height: 52)
+                                .accessibilityHidden(true)
+                        }
                     }
-                    // V02GroupEntryButton reports its drag in the same global
-                    // coordinate space as the tray frames, so the final
-                    // location is compared directly without frame-offset
-                    // guesses that drift when the overlay reflows.
-                    let point = location
-                    activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                    if ended {
-                        let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                        defer { activeGroupTargetID = nil; isShowingGroupTray = false; isDraggingGroup = false }
-                        guard translation.height < -50,
-                              case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                              let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
-                        pendingInspirationID = inspiration.id
-                        handleGroupOperation(target)
-                    }
-                    })
                     .background(GeometryReader { proxy in
                         Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
                     })
@@ -161,12 +179,11 @@ struct V02CardPreviewView: View {
                     .frame(width: min(350, proxy.size.width - 24))
                     .position(
                         x: proxy.size.width / 2,
-                        // Keep operation targets in the stable slot above
-                        // the group button and below the card. The button
-                        // stays fixed; the tray is only a visual/action
-                        // expansion and its real frames are reported from
-                        // this same named coordinate space.
-                        y: max(140, proxy.size.height + 105)
+                        // Anchor the expansion to the measured source button.
+                        // A page-height offset can put the tray below the
+                        // viewport on tall devices; the source frame keeps it
+                        // directly above the button on every size.
+                        y: max(120, groupButtonFrame.minY - 48)
                     )
                 }
                 .allowsHitTesting(!isDraggingGroup)

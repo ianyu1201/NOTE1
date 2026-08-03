@@ -30,9 +30,6 @@ struct V02ReceiptBookView: View {
         NavigationStack {
           ScrollView {
             VStack(spacing: 14) {
-                Text("每一轮构思，都留下一张存根")
-                    .noteFont(size: 12, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
                 if isSelecting { selectionToolbar }
                 if receipts.isEmpty {
                     emptyBook

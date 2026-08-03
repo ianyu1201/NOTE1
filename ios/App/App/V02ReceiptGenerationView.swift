@@ -94,19 +94,11 @@ struct V02ReceiptGenerationView: View {
     }
 
     private var generationHeader: some View {
-        ZStack {
-            Text("小票册")
-                .noteFont(size: 22, weight: .semibold, design: .rounded, relativeTo: .title2)
-                .foregroundStyle(NoteTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-            HStack {
-                Spacer()
-                V02GlassIconLabel(systemName: "magnifyingglass")
-                V02GlassIconLabel(systemName: "ellipsis")
-            }
-            .accessibilityHidden(true)
-        }
-        .frame(height: NoteTheme.topBarHeight)
+        Text("小票册")
+            .noteFont(size: 22, weight: .semibold, design: .rounded, relativeTo: .title2)
+            .foregroundStyle(NoteTheme.ink)
+            .accessibilityAddTraits(.isHeader)
+            .frame(maxWidth: .infinity, minHeight: NoteTheme.topBarHeight)
     }
 
     private var statusMessage: String {

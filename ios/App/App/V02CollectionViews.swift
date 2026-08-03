@@ -431,7 +431,6 @@ private struct V02CollectionWorkbenchView: View {
     @State private var editingMemberID: UUID?
     @State private var pendingMemberSave: Task<Void, Never>?
     @State private var isShowingOutline = false
-    @State private var isShowingMore = false
     @State private var isAdding = false
     @State private var renamingText = ""
     @State private var isRenaming = false
@@ -456,13 +455,64 @@ private struct V02CollectionWorkbenchView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 10) {
-                workbenchTopBar
                 workbenchContent
                 Spacer(minLength: 0)
             }
+            .padding(.top, 8)
             .background(NoteTheme.background.ignoresSafeArea())
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        persistEditingMember()
+                        onClose()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("返回构思集")
+                }
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 2) {
+                        Text(collection?.name ?? "构思集")
+                            .noteFontCapped(size: 17, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                            .foregroundStyle(NoteTheme.ink)
+                            .lineLimit(1)
+                        Text("\(members.count)/\(V02DomainEngine.maximumMembersPerCollection) 条灵感")
+                            .noteFontCapped(size: 11, maximumScale: 1.2, relativeTo: .caption)
+                            .foregroundStyle(NoteTheme.secondaryInk)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("\(collection?.name ?? "构思集")，\(members.count) 条灵感")
+                }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        isEnding = true
+                    } label: {
+                        Image(systemName: "flag")
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("结束本轮构思")
+                    Menu {
+                        Button("概览与排序", systemImage: "list.bullet") { isShowingOutline = true }
+                        Button("改名", systemImage: "pencil") { renamingText = collection?.name ?? ""; isRenaming = true }
+                        Button("删除构思集", systemImage: "trash", role: .destructive) {
+                            do { try store.deleteCollection(collectionID); onClose() }
+                            catch { reportError(error) }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("更多构思集操作")
+                }
                 ToolbarItemGroup(placement: .keyboard) {
                     Button("上一张卡片") { moveCard(by: -1) }
                         .disabled(index <= 0)
@@ -538,15 +588,6 @@ private struct V02CollectionWorkbenchView: View {
                 .toolbar { EditButton() }
             }
         }
-        .confirmationDialog("构思集操作", isPresented: $isShowingMore) {
-            Button("改名") { renamingText = collection?.name ?? ""; isRenaming = true }
-            Button("结束本轮构思") { isEnding = true }
-            Button("删除构思集", role: .destructive) {
-                do { try store.deleteCollection(collectionID); onClose() }
-                catch { reportError(error) }
-            }
-            Button("取消", role: .cancel) {}
-        }
         .alert("构思集名称", isPresented: $isRenaming) {
             TextField("构思集名称", text: $renamingText)
             Button("保存") { do { try store.renameCollection(collectionID, name: renamingText) } catch { reportError(error) } }
@@ -580,40 +621,6 @@ private struct V02CollectionWorkbenchView: View {
         }
     }
 
-    private var workbenchTopBar: some View {
-        ZStack {
-            HStack {
-                V02GlassIconButton(systemName: "chevron.left", label: "返回构思集") {
-                    persistEditingMember()
-                    onClose()
-                }
-                Spacer()
-                Button {
-                    isEnding = true
-                } label: {
-                    Label("结束本轮构思", systemImage: "flag")
-                        .noteFont(size: 13, weight: .medium, relativeTo: .subheadline)
-                        .foregroundStyle(NoteTheme.secondaryInk)
-                        .frame(minHeight: NoteTheme.controlSize)
-                }
-                .buttonStyle(PressScaleButtonStyle())
-            }
-            VStack(spacing: 3) {
-                Text(collection?.name ?? "构思集")
-                    .noteFont(size: 17, weight: .semibold, design: .rounded, relativeTo: .headline)
-                    .foregroundStyle(NoteTheme.ink)
-                    .lineLimit(1)
-                Text("\(members.count)/\(V02DomainEngine.maximumMembersPerCollection) 条灵感")
-                    .noteFont(size: 12, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-            }
-            .padding(.horizontal, 100)
-        }
-        .frame(height: NoteTheme.topBarHeight)
-        .padding(.horizontal, NoteTheme.horizontalPadding)
-        .padding(.top, 8)
-    }
-
     @ViewBuilder
     private var workbenchContent: some View {
         if collection == nil || round == nil {
@@ -627,12 +634,10 @@ private struct V02CollectionWorkbenchView: View {
                 height: 520,
                 cornerRadius: 18,
                 horizontalPadding: 26,
-                showsLayeredPaper: true
+                showsLayeredPaper: true,
+                isGestureEnabled: !editorFocused
             ) { member in
                 workbenchCard(member)
-            } onTuck: { member in
-                do { try store.removeFromCollection(member.id) }
-                catch { reportError(error) }
             }
         }
     }
@@ -778,6 +783,7 @@ struct V02CollectionHistoryView: View {
     @ObservedObject var store: V02Store
     let reportError: (Error) -> Void
     @Environment(\.dismiss) private var dismiss
+    @State private var isPresentingSearch = false
 
     private var collections: [V02ThinkingCollection] { store.state.collections.filter { $0.currentRoundID == nil } }
     var body: some View {
@@ -795,7 +801,22 @@ struct V02CollectionHistoryView: View {
                 }
             }
             .navigationTitle("构思历程")
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        isPresentingSearch = true
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("搜索构思历程")
+                    Button("完成") { dismiss() }
+                }
+            }
+            .sheet(isPresented: $isPresentingSearch) {
+                V02SearchView(store: store, initialScope: .collections, locksScope: true)
+            }
         }
     }
 }
