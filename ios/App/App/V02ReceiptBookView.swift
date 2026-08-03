@@ -191,12 +191,23 @@ struct V02ReceiptBookView: View {
     }
 
     private func export(_ receipt: V02Receipt, format: V02ReceiptExportFormat) {
-        do { shareURLs = [try V02ReceiptExportFile.write(receipt, format: format)] }
+        do {
+            shareURLs = [try V02ReceiptExportFile.write(
+                receipt,
+                format: format,
+                resourceURL: { store.resourceURL(relativePath: $0) }
+            )]
+        }
         catch { self.error = UserFacingAlert(error: error) }
     }
 
     private func exportSelectedPDFs() {
-        do { shareURLs = try V02ReceiptExportFile.writePDFs(selectedReceipts) }
+        do {
+            shareURLs = try V02ReceiptExportFile.writePDFs(
+                selectedReceipts,
+                resourceURL: { store.resourceURL(relativePath: $0) }
+            )
+        }
         catch { self.error = UserFacingAlert(error: error) }
     }
 

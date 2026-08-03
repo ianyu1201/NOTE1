@@ -352,12 +352,24 @@ struct V02ReceiptDetailView: View {
             export(receipt, format)
             return
         }
-        do { shareURLs = [try V02ReceiptExportFile.write(receipt, format: format)] }
+        do {
+            shareURLs = [try V02ReceiptExportFile.write(
+                receipt,
+                format: format,
+                resourceURL: { store.resourceURL(relativePath: $0) }
+            )]
+        }
         catch let caughtError { self.error = UserFacingAlert(error: caughtError) }
     }
 
     private func handleShare() {
-        do { shareURLs = [try V02ReceiptExportFile.write(receipt, format: .pdf)] }
+        do {
+            shareURLs = [try V02ReceiptExportFile.write(
+                receipt,
+                format: .pdf,
+                resourceURL: { store.resourceURL(relativePath: $0) }
+            )]
+        }
         catch let caughtError { self.error = UserFacingAlert(error: caughtError) }
     }
 

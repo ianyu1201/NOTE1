@@ -270,7 +270,12 @@ struct V02SearchView: View {
     }
 
     private func exportSelectedReceipts() {
-        do { shareURLs = try V02ReceiptExportFile.writePDFs(selectedReceipts) }
+        do {
+            shareURLs = try V02ReceiptExportFile.writePDFs(
+                selectedReceipts,
+                resourceURL: { store.resourceURL(relativePath: $0) }
+            )
+        }
         catch let caughtError { error = UserFacingAlert(error: caughtError) }
     }
 

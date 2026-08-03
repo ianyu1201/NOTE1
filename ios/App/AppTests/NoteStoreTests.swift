@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import App
 
 @MainActor
@@ -716,6 +717,55 @@ final class NoteStoreTests: XCTestCase {
 
         XCTAssertTrue(try Data(contentsOf: pdfURL).starts(with: Data("%PDF".utf8)))
         XCTAssertTrue(try String(contentsOf: markdownURL).contains("# 分享测试"))
+    }
+
+    func testV02PDFExportCarriesSnapshotImagesWhenAResolverIsProvided() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("NOTE1PDF-(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 20)).image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 40, height: 20))
+        }
+        let relativePath = "snapshot.png"
+        let imageURL = directory.appendingPathComponent(relativePath)
+        try XCTUnwrap(image.pngData()).write(to: imageURL, options: .atomic)
+
+        let resource = V02AttachmentResource(
+            id: UUID(),
+            source: .importedAttachment,
+            filename: "参考图.png",
+            mimeType: "image/png",
+            relativePath: relativePath,
+            size: 12,
+            createdAt: .now
+        )
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let receipt = V02Receipt(
+            id: UUID(),
+            roundID: UUID(),
+            collectionID: UUID(),
+            createdAt: now,
+            snapshot: .init(
+                collectionName: "图片导出",
+                startedAt: now,
+                endedAt: now.addingTimeInterval(60),
+                effectiveEditCount: 0,
+                members: [.init(
+                    inspirationID: UUID(),
+                    text: "带图片的灵感",
+                    resourceIDs: [resource.id],
+                    attachments: [.init(resource: resource)]
+                )]
+            )
+        )
+
+        let pdf = V02ReceiptExport.pdfData(for: receipt) { path in
+            path == relativePath ? imageURL : nil
+        }
+        XCTAssertTrue(pdf.range(of: Data("/Subtype /Image".utf8)) != nil)
     }
 
     func testV02SearchFindsFrozenReceiptContentAfterOriginalIsEdited() throws {

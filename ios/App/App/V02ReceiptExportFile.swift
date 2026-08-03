@@ -23,13 +23,17 @@ enum V02ReceiptExportFormat: CaseIterable {
 }
 
 enum V02ReceiptExportFile {
-    static func write(_ receipt: V02Receipt, format: V02ReceiptExportFormat) throws -> URL {
+    static func write(
+        _ receipt: V02Receipt,
+        format: V02ReceiptExportFormat,
+        resourceURL: ((String) -> URL?)? = nil
+    ) throws -> URL {
         let name = safeFilename(receipt.snapshot.collectionName)
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("NOTE1-\(name)-\(receipt.id.uuidString).\(format.fileExtension)")
         let data: Data
         switch format {
-        case .pdf: data = V02ReceiptExport.pdfData(for: receipt)
+        case .pdf: data = V02ReceiptExport.pdfData(for: receipt, resourceURL: resourceURL)
         case .markdown: data = Data(V02ReceiptExport.markdown(for: receipt).utf8)
         case .plainText: data = Data(V02ReceiptExport.plainText(for: receipt).utf8)
         }
@@ -37,8 +41,11 @@ enum V02ReceiptExportFile {
         return url
     }
 
-    static func writePDFs(_ receipts: [V02Receipt]) throws -> [URL] {
-        try receipts.map { try write($0, format: .pdf) }
+    static func writePDFs(
+        _ receipts: [V02Receipt],
+        resourceURL: ((String) -> URL?)? = nil
+    ) throws -> [URL] {
+        try receipts.map { try write($0, format: .pdf, resourceURL: resourceURL) }
     }
 
     private static func safeFilename(_ value: String) -> String {

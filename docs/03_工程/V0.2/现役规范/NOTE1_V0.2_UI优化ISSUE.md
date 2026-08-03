@@ -58,7 +58,8 @@
 - 当前补丁：构思小票撤回只允许最近一轮，并在撤回后移除结束事件，避免旧轮次被错误重开或重复记录“结束本轮构思”。
 - 当前补丁：快速记录自动接管临时录音后，若灵感事务失败则保留已接管录音供用户重试，不再留下失效临时路径。
 - 当前补丁：卡片预览底部构思集按钮按 A 级确认图恢复为固定小“+”标记，不再误显示跨构思集成员总数。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release16 test`，89 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release16/Logs/Test/Test-App-2026.08.04_01-04-23-+0800.xcresult`。
+- 当前补丁：PDF 导出沿用同一份构思小票快照，按 A4 分页输出时间线、成员文字、附件元数据和可解析的图片原比例；超长文字会跨页，不再只导出文字或截断内容。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release19 test`，90 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release19/Logs/Test/Test-App-2026.08.04_01-11-37-+0800.xcresult`。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 
