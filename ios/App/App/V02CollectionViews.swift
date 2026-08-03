@@ -450,10 +450,8 @@ private struct V02CollectionWorkbenchView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 10) {
-                workbenchContent
-                Spacer(minLength: 0)
-            }
+            workbenchContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.top, 8)
             .background(NoteTheme.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)

@@ -593,10 +593,10 @@ private struct V02GroupPickerTray: View {
                     }
                 }
             }
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
+        .fixedSize(horizontal: false, vertical: true)
         .onPreferenceChange(GroupTargetFramesKey.self) {
             targetFrames = $0
         }
