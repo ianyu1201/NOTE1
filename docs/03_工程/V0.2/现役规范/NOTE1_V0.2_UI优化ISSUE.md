@@ -69,13 +69,14 @@
 - 当前补丁：灵感、构思集和小票册的滚动底部预留改为直接挂在 `ScrollView`，避免把预留误加到内部堆栈；构思集工作台的浮动“+”回到 TabView 上方，不再覆盖纸张底部的附件/移出/更多操作行。
 - 当前补丁：灵感首页最近成果摘要限制为单行并允许窄屏轻微缩放，避免摘要换行制造额外首屏高度；灵感、构思集和小票册的撤回提示改为浮层，出现或消失不再改变滚动内容布局。
 - 当前补丁：卡片左滑接近阈值时增加低饱和“收起 / 结束本轮构思”背景渐显；卡片预览归入构思集按钮和页码改为底栏上方的固定操作槽，稀疏卡不再把按钮留在卡片正下方。
+- 当前补丁：卡片预览操作槽使用固定 24pt 间距紧跟纸张，移除会吞掉剩余视口高度的 `Spacer`；按钮和页码不再被推到屏幕底部，避免卡片与操作区之间出现无意义大空白。
 - 当前补丁：卡片页构思集托盘、选择面板和确认弹窗打开时向 App shell 发布覆盖层状态，统一隐藏底层全局“+”，避免按钮穿透叠层。
 - 当前补丁：继续构思时校验历史成员仍存在，并先从其他活动构思集中移除后再归入当前轮次，避免同一灵感同时属于多个活动构思集。
 - 当前补丁：撤回最新小票前遵守 5 个活动构思集上限，并在成员被移入其他活动轮次后先清理旧轮次归属；删除独立灵感时只清理因此变空的原构思集，不再误删其他空草稿构思集。
 - 当前补丁：本机备份拒绝重复附件 ID、构思小票附件快照与资源元数据不一致等无效归档；新建组内灵感在构思集不存在或轮次已结束时返回准确约束错误；录入面板被系统下滑关闭时回收未引用附件。
-- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic43 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
-- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-analyze43 analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release43 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release43/Logs/Test/Test-App-2026.08.04_05-12-35-+0800.xcresult`。
+- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-card-gap47-generic build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
+- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-card-gap47-analyze analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-card-gap47 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-card-gap47/Logs/Test/Test-App-2026.08.04_05-30-54-+0800.xcresult`。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 

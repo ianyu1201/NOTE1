@@ -67,11 +67,12 @@ struct V02CardPreviewView: View {
                 }
                 .padding(.horizontal, 2)
 
-                // Keep the paper near the title while the operation slot stays
-                // anchored above the shared TabView. A flexible gap belongs
-                // here, not inside the paper, so sparse cards never push the
-                // source button into the middle of the screen.
-                Spacer(minLength: V02NavigationLayoutPolicy.cardOperationGap)
+                // Keep the operation slot directly below the paper. A
+                // flexible Spacer here would consume the entire remaining
+                // viewport and recreate the large blank band that the V0.2
+                // confirmation board explicitly rejects.
+                Color.clear
+                    .frame(height: V02NavigationLayoutPolicy.cardOperationGap)
                 if cards.indices.contains(index), case .inspiration = cards[index] {
                     V02GroupEntryButton(action: {
                         beginGroupPicker(for: cards)
