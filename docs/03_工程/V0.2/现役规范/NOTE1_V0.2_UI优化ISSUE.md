@@ -67,6 +67,7 @@
 - 当前补丁：本机备份拒绝重复附件 ID、构思小票附件快照与资源元数据不一致等无效归档；新建组内灵感在构思集不存在或轮次已结束时返回准确约束错误；录入面板被系统下滑关闭时回收未引用附件。
 - 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic31 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
 - 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release31 test`，96 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release31/Logs/Test/Test-App-2026.08.04_02-52-19-+0800.xcresult`。
+- 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 
