@@ -709,6 +709,9 @@ private struct V02CollectionWorkbenchView: View {
 
     private func finishRound() {
         guard let round else { return }
+        // End-round snapshots must include the latest text even when the
+        // debounce window has not elapsed yet.
+        persistEditingMember()
         do {
             let receipt = try store.endRound(round.id)
             isEnding = false
