@@ -90,6 +90,8 @@
 - 本次构思集卡片高度收口后的正式目录验证：`/tmp/note1-v03-generic53`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze53`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests53`，99 项测试、0 失败，`** TEST SUCCEEDED **`。`/tmp/note1-v03-collection-compact-check.png` 仅为一次临时入口视觉抽样，临时入口已从源代码移除，不替代最终设备证据。
 - 临时入口移除后的最终源代码复验：`/tmp/note1-v03-generic54`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze54`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests54`，99 项测试、0 失败，`** TEST SUCCEEDED **`；源码无残留调试参数或强制解包命中。
 - 本次移除工作台/归组托盘弹性间距后的正式目录验证：`/tmp/note1-v03-generic55`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze55`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests55`，99 项测试、0 失败，`** TEST SUCCEEDED **`；本轮未增加截图步骤。
+- 临时视觉抽样入口移除后的正式源代码复验：`/tmp/note1-v03-generic56`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze56`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests56`，99 项测试、0 失败，`** TEST SUCCEEDED **`；本轮未增加截图步骤。
+- 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
