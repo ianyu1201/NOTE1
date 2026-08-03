@@ -28,10 +28,9 @@ struct V02CardPreviewView: View {
     var body: some View {
         NavigationStack {
         let cards = store.cardPreviewEntries
-        ZStack {
+        ZStack(alignment: .top) {
             NoteTheme.background.ignoresSafeArea()
-            VStack(spacing: 18) {
-                SharedTopBar(onBack: onBack, historySelected: false, onHistory: onHistory)
+            VStack(spacing: 10) {
                 if cards.isEmpty {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: "收起的灵感仍可在“灵感”中找到。")
                 } else {
@@ -51,12 +50,11 @@ struct V02CardPreviewView: View {
                 }
                 .padding(.horizontal, 2)
 
-                // Keep the group operation in a predictable hand-sized slot
-                // between the paper and the primary navigation. A flexible
-                // spacer here used to push the button into the nav's glass
-                // surface on the narrow 368pt viewport.
-                Color.clear
-                    .frame(height: 18)
+                // Anchor the paper directly below the system navigation bar,
+                // then assign only the remaining space to the gap above the
+                // bottom operation. This keeps the first screen dense without
+                // letting the group action collide with primary navigation.
+                Spacer(minLength: 18)
                 VStack(spacing: 6) {
                     V02GroupEntryButton(count: activeMemberCount, action: {
                         beginGroupPicker(for: cards)
@@ -96,8 +94,14 @@ struct V02CardPreviewView: View {
                 .padding(.bottom, 8)
                 }
             }
+            // `NavigationStack` does not automatically propagate the shell's
+            // custom safe-area inset into this page-local flexible spacer.
+            // Reserve exactly one navigation-bar height so the centered group
+            // action remains in the same operation band as the floating plus,
+            // never underneath the four primary destinations.
+            .padding(.bottom, V02NavigationLayoutPolicy.barHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .padding(.top, 26)
         .padding(.bottom, 22)
         .onAppear { restoreCardPosition(in: cards) }
         .onChange(of: cards.map(\.id)) { _, _ in restoreCardPosition(in: cards) }
@@ -212,11 +216,41 @@ struct V02CardPreviewView: View {
                 .padding(.bottom, 152)
         }
         .background(NoteTheme.background.ignoresSafeArea())
-        // The card preview owns its visual top bar. Keep the NavigationStack's
-        // system bar out of the layout so the lavender surface starts directly
-        // below the status region. The editor destination opts back in to its
-        // own navigation controls.
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .fontWeight(.semibold)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("返回灵感")
+            }
+            ToolbarItem(placement: .principal) {
+                Text("NOTE1")
+                    .noteFontCapped(
+                        size: 20,
+                        maximumScale: 1.2,
+                        weight: .medium,
+                        design: .rounded,
+                        relativeTo: .headline
+                    )
+                    .tracking(6)
+                    .foregroundStyle(NoteTheme.ink)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: onHistory) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .fontWeight(.semibold)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("历史记录")
+            }
+        }
         }
         .background(NoteTheme.background.ignoresSafeArea())
     }
