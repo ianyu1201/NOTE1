@@ -53,17 +53,20 @@ struct V02SettingsView: View {
                 .listSectionSpacing(18)
                 .listRowBackground(NoteTheme.paper.opacity(0.72))
             }
-            .navigationTitle("设置")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("设置")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .frame(width: 44, height: 44)
-                    }
+                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "xmark") }
                     .accessibilityLabel("关闭设置")
                 }
+                .noteSharedBackgroundHidden()
             }
         }
         .fileExporter(
@@ -174,7 +177,15 @@ private struct V02PrivacyView: View {
                 .padding(20)
             }
         }
-        .navigationTitle("本机隐私说明")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("本机隐私说明")
+                    .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                    .foregroundStyle(NoteTheme.ink)
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
     }
 }

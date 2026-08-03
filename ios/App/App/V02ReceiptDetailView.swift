@@ -50,9 +50,15 @@ struct V02ReceiptDetailView: View {
                 .scrollIndicators(.hidden)
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle("小票详情")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("小票详情")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
                         .accessibilityLabel("返回小票册")

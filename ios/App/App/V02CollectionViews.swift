@@ -571,8 +571,17 @@ private struct V02CollectionWorkbenchView: View {
                         catch { reportError(error) }
                     }
                 }
-                .navigationTitle("概览与排序")
-                .toolbar { EditButton() }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text("概览与排序")
+                            .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                            .foregroundStyle(NoteTheme.ink)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    ToolbarItem(placement: .primaryAction) { EditButton() }
+                }
             }
         }
         .alert("构思集名称", isPresented: $isRenaming) {
@@ -796,19 +805,25 @@ struct V02CollectionHistoryView: View {
                     Button("继续") { do { _ = try store.continueThinking(in: collection.id); dismiss() } catch { reportError(error) } }
                 }
             }
-            .navigationTitle("构思历程")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("构思历程")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         isPresentingSearch = true
                     } label: {
-                        Image(systemName: "magnifyingglass")
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
+                        V02GlassIconLabel(systemName: "magnifyingglass")
                     }
                     .accessibilityLabel("搜索构思历程")
                     Button("完成") { dismiss() }
                 }
+                .noteSharedBackgroundHidden()
             }
             .sheet(isPresented: $isPresentingSearch) {
                 V02SearchView(store: store, initialScope: .collections, locksScope: true)

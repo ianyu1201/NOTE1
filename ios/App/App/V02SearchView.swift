@@ -109,10 +109,15 @@ struct V02SearchView: View {
             }
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationTitle("搜索")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("搜索")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }
                 }
@@ -327,8 +332,17 @@ private struct V02SearchCollectionDetail: View {
                 .padding(.vertical, 18)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationTitle(collection.name)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(collection.name)
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .lineLimit(1)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
         }
     }
 }

@@ -43,9 +43,15 @@ struct V02WorkbenchAttachmentSheet: View {
                 }
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationTitle("附件")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("附件")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("完成") { dismiss() }
                 }

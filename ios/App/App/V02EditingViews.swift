@@ -49,11 +49,17 @@ struct V02InspirationEditorView: View {
                 .padding(.bottom, 112)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationTitle("编辑灵感").navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbar(.visible, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("编辑灵感")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         saveNow()
@@ -236,9 +242,15 @@ struct V02ComposerView: View {
                 .padding(.bottom, 24)
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationTitle("记录灵感")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("记录灵感")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {
                         if hasUnsavedContent {

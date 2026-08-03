@@ -38,17 +38,20 @@ struct V02TrashView: View {
                     }
                 }
             }
-            .navigationTitle("回收站")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("回收站")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "xmark")
-                            .frame(width: 44, height: 44)
-                    }
+                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "xmark") }
                     .accessibilityLabel("关闭回收站")
                 }
+                .noteSharedBackgroundHidden()
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button(isSelecting ? "取消选择" : "选择") {
@@ -59,12 +62,10 @@ struct V02TrashView: View {
                             isConfirmingEmpty = true
                         }
                         .disabled(store.state.trash.isEmpty)
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .frame(width: 44, height: 44)
-                    }
+                    } label: { V02GlassIconLabel(systemName: "ellipsis") }
                     .accessibilityLabel("回收站更多操作")
                 }
+                .noteSharedBackgroundHidden()
             }
             .task {
                 do { try store.purgeExpiredTrash() }
