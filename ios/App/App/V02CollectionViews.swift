@@ -492,9 +492,9 @@ private struct V02CollectionWorkbenchView: View {
                     Button {
                         isEnding = true
                     } label: {
-                        Image(systemName: "flag")
+                        Label("结束本轮构思", systemImage: "flag")
                             .fontWeight(.semibold)
-                            .frame(minWidth: 44, minHeight: 44)
+                            .frame(minHeight: 44)
                             .contentShape(Rectangle())
                     }
                     .accessibilityLabel("结束本轮构思")
