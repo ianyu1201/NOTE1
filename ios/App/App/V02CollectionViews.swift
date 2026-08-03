@@ -811,30 +811,38 @@ struct V02CollectionHistoryView: View {
                     Button("继续") { do { _ = try store.continueThinking(in: collection.id); dismiss() } catch { reportError(error) } }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("构思历程")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {
-                        isPresentingSearch = true
-                    } label: {
-                        V02GlassIconLabel(systemName: "magnifyingglass")
-                    }
-                    .accessibilityLabel("搜索构思历程")
-                    Button("完成") { dismiss() }
-                }
-                .noteSharedBackgroundHidden()
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader {
+                historyHeader
             }
             .sheet(isPresented: $isPresentingSearch) {
                 V02SearchView(store: store, initialScope: .collections, locksScope: true)
             }
         }
+    }
+
+    private var historyHeader: some View {
+        ZStack {
+            Text("构思历程")
+                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                .foregroundStyle(NoteTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 10) {
+                Spacer(minLength: 0)
+                Button {
+                    isPresentingSearch = true
+                } label: {
+                    V02GlassIconLabel(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("搜索构思历程")
+                Button("完成") { dismiss() }
+                    .frame(minHeight: 48)
+            }
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
+        .background(NoteTheme.background)
     }
 }
 

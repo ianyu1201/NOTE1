@@ -65,15 +65,16 @@
 - 当前补丁：PDF 导出沿用同一份构思小票快照，按 A4 分页输出时间线、成员文字、附件元数据和可解析的图片原比例；超长文字会跨页，不再只导出文字或截断内容。
 - 当前补丁：小票册页面级头部保持标题居中、搜索与更多操作整格可点，继续隐藏底层系统导航栏但不改变 TabView 与页面导航语义。
 - 当前补丁：构思集根页与小票册根页采用共享的安全区头部策略；iOS 26 使用 `safeAreaBar`，旧系统使用 `safeAreaInset`，避免不对称系统 toolbar 将标题排到左侧，同时保持构思集工作台的系统 toolbar 可见。
+- 当前补丁：构思历程 sheet 同样采用页面级安全区头部，标题保持居中，搜索与“完成”保留整格命中区；不再依赖 iOS 26 下不对称的系统 toolbar 排布。
 - 当前补丁：灵感、构思集和小票册的滚动底部预留改为直接挂在 `ScrollView`，避免把预留误加到内部堆栈；构思集工作台的浮动“+”回到 TabView 上方，不再覆盖纸张底部的附件/移出/更多操作行。
 - 当前补丁：卡片页构思集托盘、选择面板和确认弹窗打开时向 App shell 发布覆盖层状态，统一隐藏底层全局“+”，避免按钮穿透叠层。
 - 当前补丁：继续构思时校验历史成员仍存在，并先从其他活动构思集中移除后再归入当前轮次，避免同一灵感同时属于多个活动构思集。
 - 当前补丁：撤回最新小票前遵守 5 个活动构思集上限，并在成员被移入其他活动轮次后先清理旧轮次归属；删除独立灵感时只清理因此变空的原构思集，不再误删其他空草稿构思集。
 - 当前补丁：本机备份拒绝重复附件 ID、构思小票附件快照与资源元数据不一致等无效归档；新建组内灵感在构思集不存在或轮次已结束时返回准确约束错误；录入面板被系统下滑关闭时回收未引用附件。
-- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic37 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
-- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-analyze37 analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release37 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release37/Logs/Test/Test-App-2026.08.04_04-30-44-+0800.xcresult`。
-- 本轮仅针对一级页面顶部、工作台浮动按钮和卡片预览纸张做一次集中视觉抽样：`/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-secondary-cards34.png`；截图用于确认标题居中、操作区不重叠及短卡收紧，不替代真机、旧系统和完整交互关闭证据。
+- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic38 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
+- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-analyze38 analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release38 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release38/Logs/Test/Test-App-2026.08.04_04-50-41-+0800.xcresult`。
+- 本轮仅针对一级页面顶部、工作台浮动按钮、构思历程头部和卡片预览纸张做一次集中视觉抽样：`/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`；截图用于确认标题居中、操作区不重叠及短卡收紧，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
