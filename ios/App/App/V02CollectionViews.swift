@@ -711,7 +711,7 @@ private struct V02CollectionWorkbenchView: View {
         guard let round else { return }
         // End-round snapshots must include the latest text even when the
         // debounce window has not elapsed yet.
-        persistEditingMember()
+        guard persistEditingMember() else { return }
         do {
             let receipt = try store.endRound(round.id)
             isEnding = false
@@ -743,13 +743,19 @@ private struct V02CollectionWorkbenchView: View {
         }
     }
 
-    private func persistEditingMember() {
+    @discardableResult
+    private func persistEditingMember() -> Bool {
         pendingMemberSave?.cancel()
         guard let id = editingMemberID,
               let member = members.first(where: { $0.id == id }),
-              member.text != memberText else { return }
-        do { try store.updateInspiration(id, text: memberText) }
-        catch { reportError(error) }
+              member.text != memberText else { return true }
+        do {
+            try store.updateInspiration(id, text: memberText)
+            return true
+        } catch {
+            reportError(error)
+            return false
+        }
     }
 }
 
