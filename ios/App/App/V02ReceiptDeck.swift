@@ -190,7 +190,11 @@ struct V02ReceiptDeck: View {
                                 }
                             }
                         case .none:
-                            gestureStartedAtExtractionHandle = false
+                            withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                                translation = .zero
+                                axis = .none
+                                gestureStartedAtExtractionHandle = false
+                            }
                         }
                     }
                 )
