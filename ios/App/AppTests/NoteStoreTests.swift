@@ -483,6 +483,16 @@ final class NoteStoreTests: XCTestCase {
         }
     }
 
+    func testV02CollectionNameTrimsWhitespaceAndUsesDefaultForBlankInput() throws {
+        var state = V02DomainState()
+
+        let named = try V02DomainEngine.createCollection(in: &state, name: "  设计方向  ")
+        let blank = try V02DomainEngine.createCollection(in: &state, name: " \n\t ")
+
+        XCTAssertEqual(named.name, "设计方向")
+        XCTAssertEqual(blank.name, "构思集（2）")
+    }
+
     func testV02StorePersistsAndDoesNotWriteEmptyInspirations() throws {
         let v02Directory = directory.appendingPathComponent("v02")
         let store = V02Store(storageDirectory: v02Directory)

@@ -58,6 +58,7 @@
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 当前补丁：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；短卡不再被固定 360pt 纸张撑出大块内部空白，长文本仍限制在可读上限，最大辅助字号由共享 deck 下限兜底。
 - 当前补丁：结束本轮前的强制保存失败时中止出票，避免以旧文字生成错误小票。
+- 当前补丁：V0.2 与共享旧实现移除可避免的应用支持目录、构思集命名和事件文本强制解包；异常沙盒路径或空白名称不再以崩溃收场。
 - 当前补丁：切换一级页面时清除页面私有选择状态，避免选择模式和浮动“+”状态泄漏到其他 Tab。
 - 当前补丁：历史、设置、回收站和小票详情等模态层打开时统一隐藏底层浮动“+”，避免半透明 Sheet 下出现叠层冲突。
 - 当前补丁：卡片预览“新建构思集并归入”改为单事务，归入失败时不再留下空构思集；新增数据层原子性测试。
@@ -83,6 +84,7 @@
 - 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-ids48 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-ids48/Logs/Test/Test-App-2026.08.04_05-38-47-+0800.xcresult`。
 - 本次响应式出票操作修复的模拟器构建：`/tmp/note1-v03-generic49`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze49`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests49`，97 项测试、0 失败，`** TEST SUCCEEDED **`；该变更仍需在最大辅助字号和真机上完成最终视觉/手感复验。
 - 本次短卡纸张高度收紧后的正式目录验证：`/tmp/note1-v03-generic51`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze51`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests51`，97 项测试、0 失败，`** TEST SUCCEEDED **`。视觉抽样仅用于确认短卡高度和操作区间距，未作为编译、静态分析或单元测试的固定步骤；设备级复验仍待补齐。
+- 本次低风险稳定性收口后的正式目录验证：`/tmp/note1-v03-generic52`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze52`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests52`，98 项测试、0 失败，`** TEST SUCCEEDED **`。新增测试覆盖构思集名称空白裁剪与默认编号；未增加截图步骤。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 

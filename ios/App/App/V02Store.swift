@@ -57,10 +57,11 @@ final class V02Store: ObservableObject {
         storageDirectory: URL? = nil
     ) {
         self.fileManager = fileManager
-        let base = storageDirectory ?? fileManager.urls(
+        let applicationSupport = fileManager.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
-        ).first!
+        ).first ?? fileManager.temporaryDirectory
+        let base = storageDirectory ?? applicationSupport
             .appendingPathComponent("NOTE1-V02", isDirectory: true)
         self.storageDirectory = base
         databaseURL = base.appendingPathComponent("note1-v02-data.json")

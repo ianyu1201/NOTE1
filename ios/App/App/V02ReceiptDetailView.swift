@@ -405,7 +405,7 @@ struct V02ReceiptDetailView: View {
         let name = event.inspirationID.flatMap { id in
             receipt.snapshot.members.first(where: { $0.inspirationID == id })?.text
         }?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let suffix = name?.isEmpty == false ? "：\(name!)" : ""
+        let suffix = name.map { $0.isEmpty ? "" : "：\($0)" } ?? ""
         switch event.kind {
         case .started: return "开始构思"
         case .memberAdded: return "加入灵感\(suffix)"

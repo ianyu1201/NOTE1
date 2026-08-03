@@ -266,11 +266,11 @@ final class NoteStore: ObservableObject {
         if let customStorageDirectory {
             baseDirectory = customStorageDirectory
         } else {
-            baseDirectory = fileManager.urls(
+            let applicationSupport = fileManager.urls(
                 for: .applicationSupportDirectory,
                 in: .userDomainMask
-            ).first!
-                .appendingPathComponent("NOTE1", isDirectory: true)
+            ).first ?? fileManager.temporaryDirectory
+            baseDirectory = applicationSupport.appendingPathComponent("NOTE1", isDirectory: true)
         }
 
         storageDirectory = baseDirectory
@@ -1388,7 +1388,9 @@ struct V02DomainEngine {
         guard activeCount < maximumActiveCollections else { throw V02DomainError.collectionLimit }
         let defaultName = "构思集（\(state.nextCollectionNumber)）"
         state.nextCollectionNumber += 1
-        let collection = V02ThinkingCollection(id: UUID(), name: name?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? name!.trimmingCharacters(in: .whitespacesAndNewlines) : defaultName, createdAt: now, currentRoundID: nil)
+        let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let collectionName = trimmedName.flatMap { $0.isEmpty ? nil : $0 } ?? defaultName
+        let collection = V02ThinkingCollection(id: UUID(), name: collectionName, createdAt: now, currentRoundID: nil)
         state.collections.append(collection)
         return collection
     }
