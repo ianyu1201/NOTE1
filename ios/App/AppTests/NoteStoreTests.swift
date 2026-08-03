@@ -1285,7 +1285,7 @@ final class NoteStoreTests: XCTestCase {
             V02NavigationLayoutPolicy.floatingComposerBottomPadding,
             NoteTheme.navigationHeight + V02NavigationLayoutPolicy.composerBottomGap
         )
-        XCTAssertGreaterThan(
+        XCTAssertEqual(
             V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding,
             V02NavigationLayoutPolicy.floatingComposerBottomPadding
         )

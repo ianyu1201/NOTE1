@@ -111,14 +111,14 @@ struct V02InspirationListView: View {
                 }
                 .padding(.horizontal, NoteTheme.horizontalPadding)
                 .padding(.top, 6)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    Color.clear
-                        .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
-                        .allowsHitTesting(false)
-                }
             }
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear
+                    .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
+                    .allowsHitTesting(false)
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar { inspirationToolbar }

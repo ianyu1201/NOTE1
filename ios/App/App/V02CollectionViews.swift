@@ -59,14 +59,14 @@ struct V02CollectionListView: View {
                 }
                 .padding(.horizontal, NoteTheme.horizontalPadding)
                 .padding(.top, 10)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    Color.clear
-                        .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
-                        .allowsHitTesting(false)
-                }
             }
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear
+                    .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
+                    .allowsHitTesting(false)
+            }
 
             if let collection = workingCollection {
                 V02CollectionWorkbenchView(
@@ -79,45 +79,15 @@ struct V02CollectionListView: View {
                         isWorkbenchPresented = false
                     }
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
                 .zIndex(2)
             }
           }
-          .navigationBarTitleDisplayMode(.inline)
-          .toolbarBackground(.hidden, for: .navigationBar)
-          .toolbar(workingCollection == nil ? .visible : .hidden, for: .navigationBar)
-          .toolbar {
+          .toolbar(workingCollection == nil ? .hidden : .visible, for: .navigationBar)
+          .notePrimaryHeader {
               if workingCollection == nil {
-                  ToolbarItem(placement: .principal) {
-                      Text("构思集")
-                          .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                          .foregroundStyle(NoteTheme.ink)
-                          .accessibilityAddTraits(.isHeader)
-                  }
-                  ToolbarItem(placement: .topBarLeading) {
-                      Menu {
-                          Button("新建构思集", systemImage: "plus", action: requestNewCollection)
-                      } label: {
-                          V02GlassIconLabel(systemName: "line.3.horizontal")
-                      }
-                      .accessibilityLabel("构思集菜单")
-                  }
-                  .noteSharedBackgroundHidden()
-                  ToolbarItemGroup(placement: .topBarTrailing) {
-                      Button {
-                          isPresentingSearch = true
-                      } label: {
-                          V02GlassIconLabel(systemName: "magnifyingglass")
-                      }
-                      .accessibilityLabel("搜索构思集")
-                      Button {
-                          isShowingHistory = true
-                      } label: {
-                          V02GlassIconLabel(systemName: "clock.arrow.circlepath")
-                      }
-                      .accessibilityLabel("构思历程")
-                  }
-                  .noteSharedBackgroundHidden()
+                  collectionHeader
               }
           }
         }
@@ -233,6 +203,42 @@ struct V02CollectionListView: View {
         .onChange(of: isWorkbenchPresented) { _, presented in
             if !presented { workingCollection = nil }
         }
+    }
+
+    private var collectionHeader: some View {
+        ZStack {
+            Text("构思集")
+                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                .foregroundStyle(NoteTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 10) {
+                Menu {
+                    Button("新建构思集", systemImage: "plus", action: requestNewCollection)
+                } label: {
+                    V02GlassIconLabel(systemName: "line.3.horizontal")
+                }
+                .accessibilityLabel("构思集菜单")
+
+                Spacer(minLength: 0)
+
+                Button {
+                    isPresentingSearch = true
+                } label: {
+                    V02GlassIconLabel(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("搜索构思集")
+                Button {
+                    isShowingHistory = true
+                } label: {
+                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel("构思历程")
+            }
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
+        .background(NoteTheme.background)
     }
 
     private func finishRound(_ round: V02ThinkingRound) {

@@ -35,6 +35,9 @@ enum NoteTheme {
 enum V02NavigationLayoutPolicy {
     static let cellMinHeight: CGFloat = 72
     static let barHeight: CGFloat = 76
+    /// Compact page-level header height used when a root page needs a
+    /// full-width centered title with asymmetric actions on iOS 26.
+    static let primaryHeaderHeight: CGFloat = NoteTheme.controlSize + 8
     static let barHorizontalInset: CGFloat = 18
     static let composerBottomGap: CGFloat = 16
     /// All primary scroll containers use the same bottom inset policy so the
@@ -46,10 +49,12 @@ enum V02NavigationLayoutPolicy {
     /// Compact gap between the card paper and its page-local operation row.
     /// The row must not become a flexible blank band on sparse collection cards.
     static let cardOperationGap: CGFloat = 24
-    /// Shared optical anchor for root-page floating actions. The workbench
-    /// uses a higher anchor because its card owns a bottom action row.
+    /// Shared optical anchor for root-page and workbench floating actions.
     static let floatingComposerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
-    static let workbenchFloatingComposerBottomPadding: CGFloat = 168
+    /// The workbench action row belongs to the paper; keep the floating
+    /// composer in the space above the shared TabView instead of over that
+    /// row. It follows the same safe-area anchor as the root-page composer.
+    static let workbenchFloatingComposerBottomPadding: CGFloat = floatingComposerBottomPadding
 
     static func showsFloatingComposer(on page: V02PrimaryPage, isOverlayPresented: Bool) -> Bool {
         // The shell owns the shared floating component for every page that
@@ -114,6 +119,20 @@ extension View {
                 castsShadow: castsShadow
             )
         )
+    }
+}
+
+extension View {
+    /// Pins a page-owned header to the safe-area bar on iOS 26 and uses the
+    /// compatible inset fallback on older systems. Keeping this in one
+    /// modifier prevents root pages from stacking independent top spacers.
+    @ViewBuilder
+    func notePrimaryHeader<Header: View>(@ViewBuilder _ content: () -> Header) -> some View {
+        if #available(iOS 26.0, *) {
+            safeAreaBar(edge: .top, spacing: 0, content: content)
+        } else {
+            safeAreaInset(edge: .top, spacing: 0, content: content)
+        }
     }
 }
 
