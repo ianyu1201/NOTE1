@@ -2,9 +2,10 @@ import SwiftUI
 
 struct V02SearchView: View {
     @ObservedObject var store: V02Store
+    private let lockedScope: V02SearchScope?
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
-    @State private var scope: V02SearchScope = .all
+    @State private var scope: V02SearchScope
     @State private var isSelecting = false
     @State private var selectedIDs = Set<UUID>()
     @State private var isConfirmingDelete = false
@@ -13,6 +14,12 @@ struct V02SearchView: View {
     @State private var selectedInspiration: V02Inspiration?
     @State private var selectedCollection: V02ThinkingCollection?
     @State private var selectedReceipt: V02Receipt?
+
+    init(store: V02Store, initialScope: V02SearchScope = .all, locksScope: Bool = false) {
+        self.store = store
+        lockedScope = locksScope ? initialScope : nil
+        _scope = State(initialValue: initialScope)
+    }
 
     private var results: [V02SearchResult] { store.search(query, scope: scope) }
     private var selectedInspirations: [V02Inspiration] {
@@ -176,17 +183,25 @@ struct V02SearchView: View {
     }
 
     private var scopePicker: some View {
-        HStack(spacing: 8) {
-            ForEach(V02SearchScope.allCases, id: \.self) { item in
-                Button(item.title) { scope = item }
-                    .buttonStyle(.plain)
-                    .noteFont(size: 13, weight: .medium, relativeTo: .caption)
-                    .foregroundStyle(scope == item ? .white : NoteTheme.ink)
-                    .padding(.horizontal, 13)
-                    .frame(minHeight: 34)
-                    .background(scope == item ? NoteTheme.ink : Color.white.opacity(0.42), in: Capsule())
-                    .accessibilityIdentifier("v02.search.scope.\(item.title)")
-                    .accessibilityAddTraits(scope == item ? .isSelected : [])
+        VStack(alignment: .leading, spacing: 6) {
+            if lockedScope != nil {
+                Text("当前范围")
+                    .noteFont(size: 11, weight: .semibold, relativeTo: .caption)
+                    .foregroundStyle(NoteTheme.secondaryInk)
+                    .accessibilityHidden(true)
+            }
+            HStack(spacing: 8) {
+                ForEach(lockedScope.map { [$0] } ?? V02SearchScope.allCases, id: \.self) { item in
+                    Button(item.title) { scope = item }
+                        .buttonStyle(.plain)
+                        .noteFont(size: 13, weight: .medium, relativeTo: .caption)
+                        .foregroundStyle(scope == item ? .white : NoteTheme.ink)
+                        .padding(.horizontal, 13)
+                        .frame(minHeight: 34)
+                        .background(scope == item ? NoteTheme.ink : Color.white.opacity(0.42), in: Capsule())
+                        .accessibilityIdentifier("v02.search.scope.\(item.title)")
+                        .accessibilityAddTraits(scope == item ? .isSelected : [])
+                }
             }
         }
         .accessibilityElement(children: .contain)

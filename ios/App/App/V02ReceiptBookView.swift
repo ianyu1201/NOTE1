@@ -118,7 +118,7 @@ struct V02ReceiptBookView: View {
             )
         }
         .sheet(isPresented: $isPresentingSearch) {
-            V02SearchView(store: store)
+            V02SearchView(store: store, initialScope: .receipts, locksScope: true)
         }
         .sheet(isPresented: Binding(
             get: { !shareURLs.isEmpty },

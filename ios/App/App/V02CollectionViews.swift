@@ -15,6 +15,7 @@ struct V02CollectionListView: View {
     @State private var addingToCollection: V02ThinkingCollection?
     @State private var workingCollection: V02ThinkingCollection?
     @State private var isShowingHistory = false
+    @State private var isPresentingSearch = false
     @State private var isCreatingCollection = false
     @State private var newCollectionName = ""
     @State private var capacityNotice = false
@@ -114,7 +115,16 @@ struct V02CollectionListView: View {
                       }
                       .accessibilityLabel("构思集菜单")
                   }
-                  ToolbarItem(placement: .topBarTrailing) {
+                  ToolbarItemGroup(placement: .topBarTrailing) {
+                      Button {
+                          isPresentingSearch = true
+                      } label: {
+                          Image(systemName: "magnifyingglass")
+                              .fontWeight(.semibold)
+                              .frame(minWidth: 44, minHeight: 44)
+                              .contentShape(Rectangle())
+                      }
+                      .accessibilityLabel("搜索构思集")
                       Button {
                           isShowingHistory = true
                       } label: {
@@ -228,6 +238,9 @@ struct V02CollectionListView: View {
         }
         .sheet(isPresented: $isShowingHistory) {
             V02CollectionHistoryView(store: store, reportError: reportError)
+        }
+        .sheet(isPresented: $isPresentingSearch) {
+            V02SearchView(store: store, initialScope: .collections, locksScope: true)
         }
         .onChange(of: isWorkbenchPresented) { _, presented in
             if !presented { workingCollection = nil }
