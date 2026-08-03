@@ -202,7 +202,7 @@ struct V02ReceiptBookView: View {
 
     private func deleteSelectedReceipts() {
         do {
-            for id in pendingDeleteIDs { undoTrashEntryIDs.formUnion(try store.deleteReceipt(id)) }
+            undoTrashEntryIDs.formUnion(try store.batchDeleteReceipts(pendingDeleteIDs))
             selectedIDs.subtract(pendingDeleteIDs)
             pendingDeleteIDs.removeAll()
         } catch {

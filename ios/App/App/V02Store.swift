@@ -587,10 +587,21 @@ final class V02Store: ObservableObject {
 
     @discardableResult
     func deleteReceipt(_ id: UUID, now: Date = .now) throws -> Set<UUID> {
+        try batchDeleteReceipts([id], now: now)
+    }
+
+    @discardableResult
+    func batchDeleteReceipts(_ ids: Set<UUID>, now: Date = .now) throws -> Set<UUID> {
         var entryIDs = Set<UUID>()
         try transact { state in
+            guard !ids.isEmpty,
+                  ids.allSatisfy({ id in state.receipts.contains { $0.id == id } }) else {
+                throw V02DomainError.roundNotFound
+            }
             let existingIDs = Set(state.trash.map(\.id))
-            try V02DomainEngine.deleteReceipt(id, in: &state, now: now)
+            for id in ids {
+                try V02DomainEngine.deleteReceipt(id, in: &state, now: now)
+            }
             entryIDs = Set(state.trash.map(\.id)).subtracting(existingIDs)
         }
         return entryIDs

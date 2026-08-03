@@ -391,7 +391,15 @@ struct V02ComposerView: View {
                     _ = try store.createInspiration(text: text, resourceIDs: resourceIDs)
                 }
             } catch {
-                if let autoPersistedVoiceID { try? store.discardUnreferencedResource(autoPersistedVoiceID) }
+                // The composer still owns all pending resources after a
+                // failed inspiration transaction. Keep an auto-persisted
+                // recording attached so the user can retry (for example
+                // after resolving a full collection) instead of losing the
+                // temporary recording and leaving a dead URL behind.
+                if let autoPersistedVoiceID {
+                    voiceResourceID = autoPersistedVoiceID
+                    recorder.consumeTemporaryRecording()
+                }
                 throw error
             }
             recorder.consumeTemporaryRecording()

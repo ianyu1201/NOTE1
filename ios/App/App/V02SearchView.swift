@@ -141,7 +141,7 @@ struct V02SearchView: View {
             Button("删除", role: .destructive) {
                 do {
                     if scope == .receipts {
-                        for id in selectedIDs { _ = try store.deleteReceipt(id) }
+                        _ = try store.batchDeleteReceipts(selectedIDs)
                     } else {
                         _ = try store.batchDeleteInspirations(selectedIDs)
                     }

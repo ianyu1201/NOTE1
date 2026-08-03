@@ -1520,6 +1520,12 @@ struct V02DomainEngine {
             throw V02DomainError.roundNotFound
         }
         let receipt = state.receipts[receiptIndex]
+        let latestReceiptForCollection = state.receipts
+            .filter { $0.collectionID == receipt.collectionID }
+            .max { $0.createdAt < $1.createdAt }
+        guard latestReceiptForCollection?.id == receiptID else {
+            throw V02DomainError.roundNotFound
+        }
         guard let roundIndex = state.rounds.firstIndex(where: { $0.id == receipt.roundID && $0.state == .ended }),
               let collectionIndex = state.collections.firstIndex(where: { $0.id == receipt.collectionID }),
               state.collections[collectionIndex].currentRoundID == nil else {
@@ -1528,6 +1534,9 @@ struct V02DomainEngine {
         state.receipts.remove(at: receiptIndex)
         state.rounds[roundIndex].state = .thinking
         state.rounds[roundIndex].endedAt = nil
+        if state.rounds[roundIndex].events.last?.kind == .ended {
+            state.rounds[roundIndex].events.removeLast()
+        }
         state.collections[collectionIndex].currentRoundID = state.rounds[roundIndex].id
         for index in state.inspirations.indices where state.rounds[roundIndex].memberIDs.contains(state.inspirations[index].id) {
             state.inspirations[index].collectionID = receipt.collectionID

@@ -812,6 +812,57 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.state.inspirations.first?.cardFlowState, .visible)
     }
 
+    func testV02UndoOnlyAllowsTheLatestReceiptAndDoesNotDuplicateEndEvents() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-latest-receipt"))
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let inspiration = try store.createInspiration(text: "可重复结束", now: now)
+        let collection = try store.createCollectionAndRound(name: "撤回顺序", now: now)
+        try store.assign(inspiration.id, to: collection.id)
+
+        let firstRoundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        let firstReceipt = try store.endRound(firstRoundID, now: now.addingTimeInterval(10))
+        _ = try store.continueThinking(in: collection.id, now: now.addingTimeInterval(20))
+        let secondRoundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        let secondReceipt = try store.endRound(secondRoundID, now: now.addingTimeInterval(30))
+
+        XCTAssertThrowsError(try store.undoEndRound(firstReceipt.id, now: now.addingTimeInterval(31)))
+        XCTAssertEqual(store.state.receipts.map(\.id), [firstReceipt.id, secondReceipt.id])
+        XCTAssertTrue(store.activeCollections.isEmpty)
+
+        try store.undoEndRound(secondReceipt.id, now: now.addingTimeInterval(32))
+        let reopenedRoundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        let reopenedReceipt = try store.endRound(reopenedRoundID, now: now.addingTimeInterval(40))
+        XCTAssertEqual(reopenedReceipt.snapshot.events.filter { $0.kind == .ended }.count, 1)
+    }
+
+    func testV02BatchDeleteReceiptsIsAtomicWhenOneReceiptIsMissing() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("batch-delete-receipts"))
+        func makeReceipt(_ text: String, offset: TimeInterval) throws -> V02Receipt {
+            let inspiration = try store.createInspiration(
+                text: text,
+                now: Date(timeIntervalSince1970: 1_700_000_000 + offset)
+            )
+            let collection = try store.createCollectionAndRound(
+                name: text,
+                now: Date(timeIntervalSince1970: 1_700_000_000 + offset)
+            )
+            try store.assign(inspiration.id, to: collection.id)
+            let roundID = try XCTUnwrap(store.activeCollections.first(where: { $0.id == collection.id })?.currentRoundID)
+            return try store.endRound(roundID, now: Date(timeIntervalSince1970: 1_700_000_000 + offset + 1))
+        }
+
+        let first = try makeReceipt("第一张", offset: 0)
+        let second = try makeReceipt("第二张", offset: 10)
+        XCTAssertThrowsError(try store.batchDeleteReceipts([first.id, UUID()]))
+        XCTAssertEqual(Set(store.state.receipts.map(\.id)), [first.id, second.id])
+        XCTAssertTrue(store.state.trash.isEmpty)
+
+        let entryIDs = try store.batchDeleteReceipts([first.id, second.id])
+        XCTAssertEqual(entryIDs.count, 2)
+        XCTAssertTrue(store.state.receipts.isEmpty)
+        XCTAssertEqual(store.state.trash.count, 2)
+    }
+
     func testV02RenameCollectionPersistsWithoutChangingDefaultNameCounter() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("rename-collection"))
         let first = try store.createCollectionAndRound()
