@@ -65,47 +65,9 @@ struct V02ReceiptBookView: View {
         }
           .scrollIndicators(.hidden)
           .background(NoteTheme.background.ignoresSafeArea())
-          .navigationBarTitleDisplayMode(.inline)
-          .toolbarBackground(.hidden, for: .navigationBar)
-          .toolbar {
-              ToolbarItem(placement: .principal) {
-                  Text("小票册")
-                      .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                      .foregroundStyle(NoteTheme.ink)
-                      .accessibilityAddTraits(.isHeader)
-              }
-              ToolbarItemGroup(placement: .topBarTrailing) {
-                  Button {
-                      isPresentingSearch = true
-                  } label: {
-                      V02GlassIconLabel(systemName: "magnifyingglass")
-                  }
-                  .accessibilityLabel("搜索小票")
-                  Menu {
-                      Button(isSelecting ? "取消选择" : "选择", systemImage: "checkmark.circle") {
-                          isSelecting.toggle()
-                          if !isSelecting { selectedIDs.removeAll() }
-                      }
-                      Menu("切换模板", systemImage: "rectangle.2.swap") {
-                          ForEach(V02ReceiptTemplate.allCases) { template in
-                              Button(template.rawValue) { setTemplate(template) }
-                          }
-                      }
-                      Button("导出 PDF", systemImage: "doc.badge.arrow.up") { exportCurrent(.pdf) }
-                      Button("分享", systemImage: "square.and.arrow.up") { exportCurrent(.pdf) }
-                      Button("复制", systemImage: "doc.on.doc") { copyCurrentReceipt() }
-                      Button("在小票中查找", systemImage: "magnifyingglass") {
-                          if let currentReceipt { detailReceipt = currentReceipt }
-                      }
-                      Button("删除", systemImage: "trash", role: .destructive) {
-                          if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
-                      }
-                  } label: {
-                      V02GlassIconLabel(systemName: "ellipsis")
-                  }
-                  .accessibilityLabel("更多小票册操作")
-              }
-              .noteSharedBackgroundHidden()
+          .toolbar(.hidden, for: .navigationBar)
+          .safeAreaInset(edge: .top, spacing: 0) {
+              receiptHeader
           }
         }
         .onChange(of: receipts.map(\.id)) { _, ids in
@@ -149,6 +111,55 @@ struct V02ReceiptBookView: View {
             }
         }
         .noteErrorAlert($error)
+    }
+
+    private var receiptHeader: some View {
+        ZStack {
+            Text("小票册")
+                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                .foregroundStyle(NoteTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 10) {
+                Spacer(minLength: 0)
+                Button {
+                    isPresentingSearch = true
+                } label: {
+                    V02GlassIconLabel(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("搜索小票")
+                receiptMenu
+            }
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(height: NoteTheme.topBarHeight)
+        .background(NoteTheme.background)
+    }
+
+    private var receiptMenu: some View {
+        Menu {
+            Button(isSelecting ? "取消选择" : "选择", systemImage: "checkmark.circle") {
+                isSelecting.toggle()
+                if !isSelecting { selectedIDs.removeAll() }
+            }
+            Menu("切换模板", systemImage: "rectangle.2.swap") {
+                ForEach(V02ReceiptTemplate.allCases) { template in
+                    Button(template.rawValue) { setTemplate(template) }
+                }
+            }
+            Button("导出 PDF", systemImage: "doc.badge.arrow.up") { exportCurrent(.pdf) }
+            Button("分享", systemImage: "square.and.arrow.up") { exportCurrent(.pdf) }
+            Button("复制", systemImage: "doc.on.doc") { copyCurrentReceipt() }
+            Button("在小票中查找", systemImage: "magnifyingglass") {
+                if let currentReceipt { detailReceipt = currentReceipt }
+            }
+            Button("删除", systemImage: "trash", role: .destructive) {
+                if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
+            }
+        } label: {
+            V02GlassIconLabel(systemName: "ellipsis")
+        }
+        .accessibilityLabel("更多小票册操作")
     }
 
     private var selectionToolbar: some View {

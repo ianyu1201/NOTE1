@@ -51,7 +51,7 @@
 - 当前补丁：快速记录保存时自动接管尚未点“保留”的临时录音；若灵感创建失败则回收新资源，避免文字保存成功而录音静默丢失。
 - 当前补丁：小票册未锁定方向的短拖手势统一回弹并清零位移，避免取消手势后纸张残留偏移。
 - 当前补丁：系统 toolbar 在 iOS 26 隐藏共享玻璃背景后复用 NOTE1 圆形玻璃控件，保留原生导航语义与整格命中区，避免顶部按钮出现额外胶囊外框；卡片页按卡片类型移除隐藏的构思集按钮占位并缩短操作间距；小票册移除重复横向内边距，恢复长票可读宽度；搜索条件变化时清除失效的多选状态。
-- 当前补丁：构思集与小票册改用 toolbar principal 标题，避免 iOS 26 将页面标题排到左侧；卡片在最大辅助字号下提高纸张高度，避免构思集名称和说明被截断。
+- 当前补丁：构思集改用 toolbar principal 标题，避免 iOS 26 将页面标题排到左侧；卡片在最大辅助字号下提高纸张高度，避免构思集名称和说明被截断。小票册在 iOS 26 同时放置搜索与更多操作时改用页面级安全区头部，避免系统 toolbar 的不对称排布把标题推到左侧或截断。
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 当前补丁：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；短卡不再被固定 360pt 纸张撑出大块内部空白，长文本仍限制在可读上限，最大辅助字号由共享 deck 下限兜底。
 - 当前补丁：结束本轮前的强制保存失败时中止出票，避免以旧文字生成错误小票。
@@ -63,14 +63,15 @@
 - 当前补丁：快速记录自动接管临时录音后，若灵感事务失败则保留已接管录音供用户重试，不再留下失效临时路径。
 - 当前补丁：卡片预览底部构思集按钮按 A 级确认图恢复为固定小“+”标记，不再误显示跨构思集成员总数。
 - 当前补丁：PDF 导出沿用同一份构思小票快照，按 A4 分页输出时间线、成员文字、附件元数据和可解析的图片原比例；超长文字会跨页，不再只导出文字或截断内容。
+- 当前补丁：小票册页面级头部保持标题居中、搜索与更多操作整格可点，继续隐藏底层系统导航栏但不改变 TabView 与页面导航语义。
 - 当前补丁：卡片页构思集托盘、选择面板和确认弹窗打开时向 App shell 发布覆盖层状态，统一隐藏底层全局“+”，避免按钮穿透叠层。
 - 当前补丁：继续构思时校验历史成员仍存在，并先从其他活动构思集中移除后再归入当前轮次，避免同一灵感同时属于多个活动构思集。
 - 当前补丁：撤回最新小票前遵守 5 个活动构思集上限，并在成员被移入其他活动轮次后先清理旧轮次归属；删除独立灵感时只清理因此变空的原构思集，不再误删其他空草稿构思集。
 - 当前补丁：本机备份拒绝重复附件 ID、构思小票附件快照与资源元数据不一致等无效归档；新建组内灵感在构思集不存在或轮次已结束时返回准确约束错误；录入面板被系统下滑关闭时回收未引用附件。
-- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic34 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
-- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-analyze34 analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
-- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release34 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release34/Logs/Test/Test-App-2026.08.04_03-25-41-+0800.xcresult`。
-- 本轮仅针对卡片预览纸张高度做一次集中视觉抽样：`/tmp/note1-v02-secondary-cards34.png`；截图用于确认短构思集卡片进一步收紧，不替代真机、旧系统和完整交互关闭证据。
+- 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-generic35 build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
+- 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-final-analyze35 analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
+- 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-final-release35 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-final-release35/Logs/Test/Test-App-2026.08.04_03-49-07-+0800.xcresult`。
+- 本轮仅针对卡片预览纸张与小票册顶部头部做一次集中视觉抽样：`/tmp/note1-v02-secondary-cards34.png`、`/tmp/note1-v02-secondary-receipts35.png`；截图用于确认短构思集卡片收紧及小票册标题/操作位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
