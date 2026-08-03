@@ -314,7 +314,7 @@ private struct V02InspirationTimelineRow: View {
                         .foregroundStyle(NoteTheme.secondaryInk)
                         if !attachmentSymbols.isEmpty {
                             HStack(spacing: 7) {
-                                ForEach(attachmentSymbols.prefix(3), id: \.self) { symbol in
+                                ForEach(Array(attachmentSymbols.prefix(3).enumerated()), id: \.offset) { _, symbol in
                                     Image(systemName: symbol)
                                 }
                                 Text("附件 \(inspiration.resourceIDs.count) 个")
