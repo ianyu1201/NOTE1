@@ -438,7 +438,6 @@ struct V02CardPreviewView: View {
         switch card {
         case .inspiration(let inspiration):
             VStack(alignment: .leading, spacing: 12) {
-                Spacer(minLength: 26)
                 Text(NoteDateFormatter.display(inspiration.createdAt))
                     .noteFont(size: 12, relativeTo: .caption)
                     .foregroundStyle(NoteTheme.secondaryInk)
@@ -459,7 +458,6 @@ struct V02CardPreviewView: View {
                         .noteFont(size: 12, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
                 }
-                Spacer(minLength: 26)
             }
         case .collection(let collection, let memberCount):
             VStack(alignment: .leading, spacing: 14) {
