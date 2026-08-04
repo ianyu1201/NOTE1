@@ -1306,7 +1306,6 @@ final class NoteStoreTests: XCTestCase {
             V02NavigationLayoutPolicy.primaryContentBottomPadding,
             V02NavigationLayoutPolicy.primaryContentSpacing
         )
-        XCTAssertEqual(V02NavigationLayoutPolicy.cardOperationGap, 24)
         XCTAssertEqual(
             V02NavigationLayoutPolicy.floatingComposerBottomPadding,
             NoteTheme.navigationHeight + V02NavigationLayoutPolicy.composerBottomGap

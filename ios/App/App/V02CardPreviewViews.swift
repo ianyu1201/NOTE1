@@ -67,62 +67,55 @@ struct V02CardPreviewView: View {
                     }
                 }
                 .padding(.horizontal, 2)
-
-                // Keep the operation slot directly below the paper. A
-                // flexible Spacer here would consume the entire remaining
-                // viewport and recreate the large blank band that the V0.2
-                // confirmation board explicitly rejects.
-                Color.clear
-                    .frame(height: V02NavigationLayoutPolicy.cardOperationGap)
-                if cards.indices.contains(index), case .inspiration = cards[index] {
-                    V02GroupEntryButton(action: {
-                        beginGroupPicker(for: cards)
-                    }, onDrag: { location, translation, ended in
-                        if translation.height < -18 {
-                            isShowingGroupTray = true
-                            isDraggingGroup = true
-                        }
-                        // V02GroupEntryButton reports its drag in the same global
-                        // coordinate space as the tray frames, so the final
-                        // location is compared directly without frame-offset
-                        // guesses that drift when the overlay reflows.
-                        let point = location
-                        activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                        if ended {
-                            let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                            defer { activeTargetReset() }
-                            guard translation.height < -50,
-                                  case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                  let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
-                            pendingInspirationID = inspiration.id
-                            handleGroupOperation(target)
-                        }
-                    })
-                    .background(GeometryReader { proxy in
-                        Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
-                    })
-                    // Keep the source control above the page-local dismiss layer. This
-                    // preserves outside-tap dismissal while allowing a second gesture
-                    // to begin from the same fixed button after the tray is open.
-                    .zIndex(isShowingGroupTray ? 6 : 0)
-                    .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
                 }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+        .overlay(alignment: .bottom) {
+            if !cards.isEmpty {
                 VStack(spacing: 6) {
+                    if cards.indices.contains(index), case .inspiration = cards[index] {
+                        V02GroupEntryButton(action: {
+                            beginGroupPicker(for: cards)
+                        }, onDrag: { location, translation, ended in
+                            if translation.height < -18 {
+                                isShowingGroupTray = true
+                                isDraggingGroup = true
+                            }
+                            // V02GroupEntryButton reports its drag in the same global
+                            // coordinate space as the tray frames, so the final
+                            // location is compared directly without frame-offset
+                            // guesses that drift when the overlay reflows.
+                            let point = location
+                            activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                            if ended {
+                                let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                                defer { activeTargetReset() }
+                                guard translation.height < -50,
+                                      case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                      let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                                pendingInspirationID = inspiration.id
+                                handleGroupOperation(target)
+                            }
+                        })
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
+                        })
+                        // Keep the source control above the page-local dismiss layer. This
+                        // preserves outside-tap dismissal while allowing a second gesture
+                        // to begin from the same fixed button after the tray is open.
+                        .zIndex(isShowingGroupTray ? 6 : 0)
+                        .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
+                    }
                     Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
                         .noteFontCapped(size: 13, maximumScale: 1.25, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
                 }
-                .padding(.bottom, 8)
-                }
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, V02NavigationLayoutPolicy.primaryContentBottomPadding)
+                .padding(.horizontal, 24)
             }
-            // The tab bar already owns the system safe-area boundary. Keep a
-            // small optical gap here rather than reserving a second full bar
-            // height, which would recreate the empty band this page is meant
-            // to avoid.
-            .padding(.bottom, 0)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
-        .padding(.bottom, 22)
         .onAppear { restoreCardPosition(in: cards) }
         .onChange(of: cards.map(\.id)) { _, _ in restoreCardPosition(in: cards) }
         .onChange(of: index) { _, newIndex in
