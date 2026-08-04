@@ -33,19 +33,16 @@ enum V02CardDeckPolicy {
     }
 }
 
-/// Card-preview papers should follow the amount of content instead of making
-/// every sparse card occupy the same tall rectangle. The deck still keeps a
-/// stable upper bound so long text and gesture physics remain predictable.
+/// Card-preview papers occupy a stable, readable first-screen panel. The
+/// content stays top-aligned inside that panel, while the operation slot and
+/// page indicator remain immediately below it instead of drifting into the
+/// remaining viewport.
 enum V02CardPreviewLayoutPolicy {
-    /// Short cards should leave enough room for the date, one or two lines of
-    /// content and attachment metadata without turning the paper into a
-    /// large empty rectangle. Longer text grows from this floor below.
-    static let compactHeight: CGFloat = 196
-    /// A collection card has a fixed label, name and short guidance copy but
-    /// no date or attachment row. Keeping its floor separate avoids carrying
-    /// the independent-inspiration breathing room into a sparse group card.
-    static let collectionHeight: CGFloat = 176
-    static let maximumHeight: CGFloat = 360
+    /// The confirmed card-preview composition gives the primary paper enough
+    /// height to own the first screen, including sparse collection cards.
+    static let compactHeight: CGFloat = 360
+    static let collectionHeight: CGFloat = 360
+    static let maximumHeight: CGFloat = 420
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 

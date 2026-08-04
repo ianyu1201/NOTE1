@@ -128,7 +128,7 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
-    func testV02CardPreviewCompactsSparsePapersButCapsLongText() {
+    func testV02CardPreviewKeepsStableFirstScreenHeightAndCapsLongText() {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
         let sparse = V02Inspiration(
             id: UUID(),
@@ -153,11 +153,11 @@ final class NoteStoreTests: XCTestCase {
         let longHeight = V02CardPreviewLayoutPolicy.deckHeight(for: .inspiration(long))
 
         XCTAssertEqual(sparseHeight, V02CardPreviewLayoutPolicy.compactHeight)
-        XCTAssertGreaterThan(longHeight, sparseHeight)
+        XCTAssertGreaterThanOrEqual(longHeight, sparseHeight)
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
 
-    func testV02CollectionPreviewUsesShorterPaperFloorThanIndependentInspiration() {
+    func testV02CollectionPreviewUsesStableFirstScreenPaperFloor() {
         let collection = V02ThinkingCollection(
             id: UUID(),
             name: "构思集（1）",
@@ -170,7 +170,7 @@ final class NoteStoreTests: XCTestCase {
         )
 
         XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.collectionHeight)
-        XCTAssertLessThan(collectionHeight, V02CardPreviewLayoutPolicy.compactHeight)
+        XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.compactHeight)
     }
 
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
