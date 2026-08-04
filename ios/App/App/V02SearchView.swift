@@ -224,41 +224,72 @@ struct V02SearchView: View {
     }
 
     private var selectionToolbar: some View {
-        HStack(spacing: 14) {
-            Text("已选 \(selectedIDs.count)")
-                .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
-            Spacer()
-            if scope == .inspirations {
-                Button("全选") {
-                    selectedIDs = Set(results.compactMap { if case .inspiration(let item) = $0 { item.id } else { nil } })
-                }
-                Button("放回") {
-                    do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
-                    catch let caughtError { error = UserFacingAlert(error: caughtError) }
-                }
-                .disabled(selectedInspirations.isEmpty || !selectedInspirations.allSatisfy { $0.cardFlowState == .tuckedAway })
-                Menu("归入") {
-                    ForEach(store.activeCollections) { collection in
-                        Button(collection.name) {
-                            do { try store.batchAssign(selectedIDs, to: collection.id); selectedIDs.removeAll() }
-                            catch let caughtError { error = UserFacingAlert(error: caughtError) }
-                        }
-                        .disabled(!canAssignSelected(to: collection))
-                    }
-                }
-                .disabled(selectedIDs.isEmpty || store.activeCollections.isEmpty)
-            } else if scope == .receipts {
-                Button("全选") {
-                    selectedIDs = Set(results.compactMap { if case .receipt(let item) = $0 { item.id } else { nil } })
-                }
-                Button("导出") { exportSelectedReceipts() }.disabled(selectedIDs.isEmpty)
-            }
-            Button("删除", role: .destructive) { isConfirmingDelete = true }
-                .disabled(selectedIDs.isEmpty)
+        ViewThatFits(in: .horizontal) {
+            selectionActions(axis: .horizontal)
+                .fixedSize(horizontal: true, vertical: false)
+            selectionActions(axis: .vertical)
         }
         .padding(13)
         .frame(maxWidth: .infinity, alignment: .leading)
         .noteGlass(cornerRadius: 18, castsShadow: false)
+    }
+
+    private enum SelectionActionAxis { case horizontal, vertical }
+
+    @ViewBuilder
+    private func selectionActions(axis: SelectionActionAxis) -> some View {
+        if axis == .horizontal {
+            HStack(spacing: 14) {
+                Text("已选 \(selectedIDs.count)")
+                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
+                selectionActionButtons
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("已选 \(selectedIDs.count)")
+                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
+                selectionActionButtons
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var selectionActionButtons: some View {
+        if scope == .inspirations {
+            Button("全选") {
+                selectedIDs = Set(results.compactMap { if case .inspiration(let item) = $0 { item.id } else { nil } })
+            }
+            .frame(minHeight: 44)
+            Button("放回") {
+                do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
+                catch let caughtError { error = UserFacingAlert(error: caughtError) }
+            }
+            .frame(minHeight: 44)
+            .disabled(selectedInspirations.isEmpty || !selectedInspirations.allSatisfy { $0.cardFlowState == .tuckedAway })
+            Menu("归入") {
+                ForEach(store.activeCollections) { collection in
+                    Button(collection.name) {
+                        do { try store.batchAssign(selectedIDs, to: collection.id); selectedIDs.removeAll() }
+                        catch let caughtError { error = UserFacingAlert(error: caughtError) }
+                    }
+                    .disabled(!canAssignSelected(to: collection))
+                }
+            }
+            .frame(minHeight: 44)
+            .disabled(selectedIDs.isEmpty || store.activeCollections.isEmpty)
+        } else if scope == .receipts {
+            Button("全选") {
+                selectedIDs = Set(results.compactMap { if case .receipt(let item) = $0 { item.id } else { nil } })
+            }
+            .frame(minHeight: 44)
+            Button("导出") { exportSelectedReceipts() }
+                .frame(minHeight: 44)
+                .disabled(selectedIDs.isEmpty)
+        }
+        Button("删除", role: .destructive) { isConfirmingDelete = true }
+            .frame(minHeight: 44)
+            .disabled(selectedIDs.isEmpty)
     }
 
     private func subtitle(for result: V02SearchResult) -> String {

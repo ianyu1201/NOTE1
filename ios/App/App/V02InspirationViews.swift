@@ -199,33 +199,60 @@ struct V02InspirationListView: View {
                     selectedIDs.removeAll()
                 }
             }
-            HStack(spacing: 16) {
-                Button("删除", role: .destructive) { isConfirmingDelete = true }
-                    .disabled(selectedIDs.isEmpty)
-                Button("放回卡片流") {
-                    do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
-                    catch { reportError(error) }
-                }
-                .disabled(!canReturnSelected)
-                Menu {
-                    ForEach(store.activeCollections) { collection in
-                        Button(collection.name) {
-                            do { try store.batchAssign(selectedIDs, to: collection.id); selectedIDs.removeAll() }
-                            catch { reportError(error) }
-                        }
-                        .disabled(!canAssignSelected(to: collection))
-                    }
-                } label: {
-                    Label("归入构思集", systemImage: "folder.badge.plus")
-                }
-                .disabled(selectedIDs.isEmpty || store.activeCollections.isEmpty)
+            ViewThatFits(in: .horizontal) {
+                selectionActions(axis: .horizontal)
+                    .fixedSize(horizontal: true, vertical: false)
+                selectionActions(axis: .vertical)
             }
-            .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .noteGlass(cornerRadius: 20, castsShadow: false)
         .padding(.bottom, 10)
+    }
+
+    private enum SelectionActionAxis { case horizontal, vertical }
+
+    @ViewBuilder
+    private func selectionActions(axis: SelectionActionAxis) -> some View {
+        if axis == .horizontal {
+            HStack(spacing: 16) {
+                selectionActionButtons
+            }
+            .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                selectionActionButtons
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
+        }
+    }
+
+    @ViewBuilder
+    private var selectionActionButtons: some View {
+        Button("删除", role: .destructive) { isConfirmingDelete = true }
+            .frame(minHeight: 44)
+            .disabled(selectedIDs.isEmpty)
+        Button("放回卡片流") {
+            do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
+            catch { reportError(error) }
+        }
+        .frame(minHeight: 44)
+        .disabled(!canReturnSelected)
+        Menu {
+            ForEach(store.activeCollections) { collection in
+                Button(collection.name) {
+                    do { try store.batchAssign(selectedIDs, to: collection.id); selectedIDs.removeAll() }
+                    catch { reportError(error) }
+                }
+                .disabled(!canAssignSelected(to: collection))
+            }
+        } label: {
+            Label("归入构思集", systemImage: "folder.badge.plus")
+                .frame(minHeight: 44)
+        }
+        .disabled(selectedIDs.isEmpty || store.activeCollections.isEmpty)
     }
 
     private func toggleSelection(_ id: UUID) {

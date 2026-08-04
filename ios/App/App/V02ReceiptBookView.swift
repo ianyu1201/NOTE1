@@ -164,23 +164,11 @@ struct V02ReceiptBookView: View {
     }
 
     private var selectionToolbar: some View {
-        HStack(spacing: 10) {
-            Text("已选 \(selectedIDs.count) 张")
-                .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
-            Spacer()
-            Button("全选") { selectedIDs = Set(receipts.map(\.id)) }
-                .buttonStyle(.plain)
-            Menu("操作") {
-                Button("导出 PDF", systemImage: "arrow.down.doc") { exportSelectedPDFs() }
-                    .disabled(selectedIDs.isEmpty)
-                Button("分享 PDF", systemImage: "square.and.arrow.up") { exportSelectedPDFs() }
-                    .disabled(selectedIDs.isEmpty)
-                Button("删除", role: .destructive) { pendingDeleteIDs = selectedIDs }
-                    .disabled(selectedIDs.isEmpty)
-            }
-            .accessibilityLabel("批量操作")
+        ViewThatFits(in: .horizontal) {
+            selectionActions(axis: .horizontal)
+                .fixedSize(horizontal: true, vertical: false)
+            selectionActions(axis: .vertical)
         }
-        .noteFont(size: 13, relativeTo: .caption)
         .foregroundStyle(NoteTheme.ink)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -188,6 +176,43 @@ struct V02ReceiptBookView: View {
         .noteGlass(cornerRadius: 15, castsShadow: false)
         .frame(maxWidth: .infinity, alignment: .trailing)
         .accessibilityIdentifier("v02.receipt.selection")
+    }
+
+    private enum SelectionActionAxis { case horizontal, vertical }
+
+    @ViewBuilder
+    private func selectionActions(axis: SelectionActionAxis) -> some View {
+        if axis == .horizontal {
+            HStack(spacing: 10) {
+                Text("已选 \(selectedIDs.count) 张")
+                    .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
+                selectionActionButtons
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("已选 \(selectedIDs.count) 张")
+                    .noteFont(size: 14, weight: .medium, relativeTo: .subheadline)
+                selectionActionButtons
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var selectionActionButtons: some View {
+        Button("全选") { selectedIDs = Set(receipts.map(\.id)) }
+            .buttonStyle(.plain)
+            .frame(minHeight: 44)
+        Menu("操作") {
+            Button("导出 PDF", systemImage: "arrow.down.doc") { exportSelectedPDFs() }
+                .disabled(selectedIDs.isEmpty)
+            Button("分享 PDF", systemImage: "square.and.arrow.up") { exportSelectedPDFs() }
+                .disabled(selectedIDs.isEmpty)
+            Button("删除", role: .destructive) { pendingDeleteIDs = selectedIDs }
+                .disabled(selectedIDs.isEmpty)
+        }
+        .accessibilityLabel("批量操作")
+        .frame(minHeight: 44)
     }
 
     private var emptyBook: some View {

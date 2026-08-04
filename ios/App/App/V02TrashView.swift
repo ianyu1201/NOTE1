@@ -112,19 +112,11 @@ struct V02TrashView: View {
         List {
             if isSelecting {
                 Section {
-                    HStack {
-                        Text("已选 \(selectedIDs.count) 项")
-                        Spacer()
-                        Button("全选") { selectedIDs = Set(store.state.trash.map(\.id)) }
-                        Button("恢复") { restoreSelected() }
-                            .disabled(selectedIDs.isEmpty)
-                        Button("永久删除", role: .destructive) {
-                            pendingPermanentDelete = nil
-                            isConfirmingEmpty = true
-                        }
-                        .disabled(selectedIDs.isEmpty)
+                    ViewThatFits(in: .horizontal) {
+                        selectionActions(axis: .horizontal)
+                            .fixedSize(horizontal: true, vertical: false)
+                        selectionActions(axis: .vertical)
                     }
-                    .buttonStyle(.bordered)
                 }
             }
             Section {
@@ -146,6 +138,41 @@ struct V02TrashView: View {
         .scrollContentBackground(.hidden)
         .listSectionSpacing(18)
         .listRowBackground(NoteTheme.paper.opacity(0.72))
+    }
+
+    private enum SelectionActionAxis { case horizontal, vertical }
+
+    @ViewBuilder
+    private func selectionActions(axis: SelectionActionAxis) -> some View {
+        if axis == .horizontal {
+            HStack(spacing: 12) {
+                Text("已选 \(selectedIDs.count) 项")
+                selectionActionButtons
+            }
+            .buttonStyle(.bordered)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("已选 \(selectedIDs.count) 项")
+                selectionActionButtons
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .buttonStyle(.bordered)
+        }
+    }
+
+    @ViewBuilder
+    private var selectionActionButtons: some View {
+        Button("全选") { selectedIDs = Set(store.state.trash.map(\.id)) }
+            .frame(minHeight: 44)
+        Button("恢复") { restoreSelected() }
+            .frame(minHeight: 44)
+            .disabled(selectedIDs.isEmpty)
+        Button("永久删除", role: .destructive) {
+            pendingPermanentDelete = nil
+            isConfirmingEmpty = true
+        }
+        .frame(minHeight: 44)
+        .disabled(selectedIDs.isEmpty)
     }
 
     @ViewBuilder

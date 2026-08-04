@@ -79,6 +79,7 @@
 - 当前补丁：灵感时间流附件图标改用序号稳定标识，连续多个同类型附件不会产生重复 SwiftUI ID。
 - 当前补丁：卡片页构思集托盘、选择面板和确认弹窗打开时向 App shell 发布覆盖层状态，统一隐藏底层全局“+”，避免按钮穿透叠层。
 - 当前补丁：搜索范围胶囊改为水平可滚动容器，普通字号保持原有排列，最大辅助字号下不再被截断或挤压搜索结果区域。
+- 当前补丁：灵感、搜索、回收站和小票册的选择模式操作栏改用 `ViewThatFits`；常规宽度保持横排，最大辅助字号或窄屏空间不足时自动纵向排列，所有操作仍保持至少 44pt 命中高度。
 - 当前补丁：灵感、构思集和小票册滚动底部预留同时覆盖 TabView 与浮动“+”的安全区；构思集卡片右侧箭头增加视觉避让，不再与全局新增按钮重叠。
 - 当前补丁：继续构思时校验历史成员仍存在，并先从其他活动构思集中移除后再归入当前轮次，避免同一灵感同时属于多个活动构思集。
 - 当前补丁：撤回最新小票前遵守 5 个活动构思集上限，并在成员被移入其他活动轮次后先清理旧轮次归属；删除独立灵感时只清理因此变空的原构思集，不再误删其他空草稿构思集。
@@ -99,6 +100,7 @@
 - 临时入口移除后的最终源代码复验：通用设备构建 `/tmp/note1-v03-generic61`、静态分析 `/tmp/note1-v03-analyze61` 均成功，XCTest `/tmp/note1-v03-tests61` 为 99 项、0 失败；源码扫描无 `--v02-cards-first` 或 `ProcessInfo.processInfo.arguments` 残留。
 - 搜索范围布局收口后的最终源代码复验：通用设备构建 `/tmp/note1-v03-generic66`、静态分析 `/tmp/note1-v03-analyze66` 均成功，XCTest `/tmp/note1-v03-tests66` 为 99 项、0 失败；稳定态搜索视觉抽样 `/tmp/note1-v03-search-stable.png` 确认输入框、范围胶囊和空态纵向关系保持正确，临时入口已移除。
 - 浮动新增安全区与构思集箭头避让后的最终源代码复验：通用设备构建 `/tmp/note1-v03-generic70`、静态分析 `/tmp/note1-v03-analyze70` 均成功，XCTest `/tmp/note1-v03-tests70` 为 99 项、0 失败；稳定态构思集视觉抽样 `/tmp/note1-v03-collections-clearance-final2.png` 确认箭头与“+”不再重叠，临时入口已移除。
+- 选择模式大字号布局收口后的正式目录复验：模拟器构建 `/tmp/note1-v03-selection-layout`、通用设备静态分析 `/tmp/note1-v03-selection-analyze` 均成功；XCTest `/tmp/note1-v03-selection-tests` 为 99 项、0 失败。该补丁不改变业务事务，只修正操作栏在窄宽度/最大辅助字号下的排列策略，未增加截图步骤。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
