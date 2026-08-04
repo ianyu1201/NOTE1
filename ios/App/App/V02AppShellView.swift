@@ -37,6 +37,7 @@ struct V02AppShellView: View {
     @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
     @State private var isCardOverlayPresented = false
+    @State private var isReceiptOverlayPresented = false
 
     var body: some View {
         ZStack {
@@ -100,11 +101,14 @@ struct V02AppShellView: View {
         }
         .background {
             V02ModalAccessibilityIsolation(
-                hidesRoot: presentedReceipt != nil || isChildEditorPresented,
+                hidesRoot: presentedReceipt != nil
+                    || isChildEditorPresented
+                    || isReceiptOverlayPresented,
                 hidesTabBar: generatedReceipt != nil
                     || presentedReceipt != nil
                     || isChildEditorPresented
                     || isCollectionWorkbenchPresented
+                    || isReceiptOverlayPresented
             )
             .frame(width: 0, height: 0)
         }
@@ -208,7 +212,11 @@ struct V02AppShellView: View {
                 self.error = UserFacingAlert(error: error)
             }
         case .receipts:
-            V02ReceiptBookView(store: store, isSelecting: $isManagingSelection)
+            V02ReceiptBookView(
+                store: store,
+                isSelecting: $isManagingSelection,
+                onOverlayChange: { isReceiptOverlayPresented = $0 }
+            )
         }
     }
 

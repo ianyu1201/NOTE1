@@ -3,6 +3,7 @@ import SwiftUI
 struct V02ReceiptBookView: View {
     @ObservedObject var store: V02Store
     @Binding var isSelecting: Bool
+    let onOverlayChange: (Bool) -> Void
     @State private var selectedIDs = Set<UUID>()
     @State private var pendingDeleteIDs = Set<UUID>()
     @State private var shareURLs: [URL] = []
@@ -24,6 +25,10 @@ struct V02ReceiptBookView: View {
     private var currentReceipt: V02Receipt? {
         guard receipts.indices.contains(receiptIndex) else { return nil }
         return receipts[receiptIndex]
+    }
+
+    private var localOverlayPresented: Bool {
+        detailReceipt != nil || isPresentingSearch || !shareURLs.isEmpty
     }
 
     var body: some View {
@@ -58,7 +63,8 @@ struct V02ReceiptBookView: View {
             .padding(.horizontal, NoteTheme.horizontalPadding)
             .padding(.top, 6)
         }
-          .scrollIndicators(.hidden)
+            .scrollIndicators(.hidden)
+          .accessibilityHidden(localOverlayPresented)
           .background(NoteTheme.background.ignoresSafeArea())
           .safeAreaInset(edge: .bottom, spacing: 0) {
               Color.clear
@@ -67,9 +73,16 @@ struct V02ReceiptBookView: View {
           }
           .toolbar(.hidden, for: .navigationBar)
           .notePrimaryHeader {
-              receiptHeader
+              if !localOverlayPresented {
+                  receiptHeader
+              }
           }
         }
+        .onAppear { onOverlayChange(localOverlayPresented) }
+        .onChange(of: localOverlayPresented) { _, presented in
+            onOverlayChange(presented)
+        }
+        .onDisappear { onOverlayChange(false) }
         .onChange(of: receipts.map(\.id)) { _, ids in
             receiptIndex = min(receiptIndex, max(0, ids.count - 1))
         }
