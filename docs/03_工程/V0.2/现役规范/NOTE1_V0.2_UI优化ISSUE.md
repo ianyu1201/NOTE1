@@ -104,6 +104,7 @@
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
+- 本次门禁复核仍为同一结论：`ysyiphone (26.5.2)` 处于 Devices Offline，当前可用模拟器和 SDK 只有 iOS 26.5；没有新增真机 VoiceOver 或 iOS 17–25 材质证据，因此问题单继续保持“待复验”。
 
 以上为开发侧修复和模拟器复验记录。按照本文件的关闭规则，代码修复已完成，但仍需补齐同尺寸截图、必要录屏、真机 VoiceOver 和 iOS 17–25 材质降级等证据后，才能将各 ISSUE 从“待复验”改为“已关闭”。截图采用集中批量采集，不作为每轮编译/测试的固定步骤。
 
