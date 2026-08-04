@@ -125,6 +125,7 @@
 - 本轮取证节奏按“页面 × 视口 × 数据状态 × 交互阶段”合并：同一稳定状态下的多个 ISSUE 共用一张截图，导航和手势优先由语义快照/录屏覆盖；不再采用一项任务一张截图的低效方式。截图只在布局、导航、手势反馈或视觉样式发生变化且需要图像证据时新增。
 - 本次小票详情 VoiceOver 边界复验：XcodeBuildMCP 语义快照进入详情后仅保留“返回小票册 / 小票更多操作”和当前小票内容，底层小票册正文与四个 Tab 不再出现；未新增截图，符合按状态批量取证规则。真机 VoiceOver 录音仍待补。
 - 本次编辑模态层复验：完整编辑页快照保留“灵感内容 / 添加附件 / 完成 / 返回”等编辑目标；底层灵感列表、卡片纸张与 TabView 已由 App shell 的编辑状态统一隐藏，退出编辑后页面目标恢复。通用构建 `/tmp/note1-v02-editor-generic`、静态分析 `/tmp/note1-v02-editor-analyze` 均成功；XcodeBuildMCP XCTest 为 100 项、0 失败，结果包 `~/Library/Developer/XcodeBuildMCP/workspaces/NOTE1-6002ba52fd9f/result-bundles/test_sim_2026-08-04T06-33-28-715Z_pid12190_2a6aa549.xcresult`。该证据仍不替代真机 VoiceOver 录音。
+- 本次全局搜索层复验：从灵感首页打开搜索后，语义快照仅保留搜索输入框、取消和四个范围筛选；底层灵感列表、首页工具栏与四个 Tab 不再进入目标序列。未新增截图，符合按页面状态批量取证规则；该证据仍不替代真机 VoiceOver 录音。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。

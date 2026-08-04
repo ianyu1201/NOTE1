@@ -39,6 +39,25 @@ struct V02AppShellView: View {
     @State private var isCardOverlayPresented = false
     @State private var isReceiptOverlayPresented = false
 
+    private var isPresentedRootModal: Bool {
+        presentedReceipt != nil
+            || isChildEditorPresented
+            || isPresentingComposer
+            || isPresentingSettings
+            || isPresentingTrash
+            || isPresentingSearch
+            || isPresentingHistory
+            || isReceiptOverlayPresented
+    }
+
+    private var shouldHidePrimaryContentAccessibility: Bool {
+        generatedReceipt != nil || isPresentedRootModal
+    }
+
+    private var shouldHideTabBarAccessibility: Bool {
+        shouldHidePrimaryContentAccessibility || isCollectionWorkbenchPresented
+    }
+
     var body: some View {
         ZStack {
             NoteTheme.background.ignoresSafeArea()
@@ -47,16 +66,12 @@ struct V02AppShellView: View {
                     ForEach(V02PrimaryPage.allCases) { destination in
                         pageContent(for: destination)
                             .accessibilityHidden(
-                                generatedReceipt != nil
-                                    || presentedReceipt != nil
-                                    || isChildEditorPresented
+                                shouldHidePrimaryContentAccessibility
                             )
                             .tabItem {
                                 Label(destination.rawValue, systemImage: destination.symbol)
                                     .accessibilityHidden(
-                                        generatedReceipt != nil
-                                            || presentedReceipt != nil
-                                            || isChildEditorPresented
+                                        shouldHidePrimaryContentAccessibility
                                     )
                             }
                             .tag(destination)
@@ -70,9 +85,7 @@ struct V02AppShellView: View {
                     // tabs remain visually present behind the settled paper
                     // but must not compete with its actions in VoiceOver.
                     .accessibilityHidden(
-                        generatedReceipt != nil
-                            || presentedReceipt != nil
-                            || isChildEditorPresented
+                        shouldHidePrimaryContentAccessibility
                     )
                     .simultaneousGesture(primaryPageEdgeGesture(width: proxy.size.width))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -101,14 +114,8 @@ struct V02AppShellView: View {
         }
         .background {
             V02ModalAccessibilityIsolation(
-                hidesRoot: presentedReceipt != nil
-                    || isChildEditorPresented
-                    || isReceiptOverlayPresented,
-                hidesTabBar: generatedReceipt != nil
-                    || presentedReceipt != nil
-                    || isChildEditorPresented
-                    || isCollectionWorkbenchPresented
-                    || isReceiptOverlayPresented
+                hidesRoot: isPresentedRootModal,
+                hidesTabBar: shouldHideTabBarAccessibility
             )
             .frame(width: 0, height: 0)
         }
