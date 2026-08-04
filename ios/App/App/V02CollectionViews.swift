@@ -327,6 +327,10 @@ private struct V02CollectionPaperCard: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(NoteTheme.secondaryInk)
+                    // Leave a visual exclusion zone for the shell-owned
+                    // floating plus when the last visible card sits above
+                    // the TabView; the whole card remains one hit target.
+                    .padding(.trailing, 24)
             }
             .padding(.horizontal, 18)
             .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)

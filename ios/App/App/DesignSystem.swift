@@ -43,9 +43,12 @@ enum V02NavigationLayoutPolicy {
     /// All primary scroll containers use the same bottom inset policy so the
     /// native TabView bar and page content do not drift apart.
     static let primaryContentSpacing: CGFloat = 12
-    /// Keep enough breathing room for the floating system navigation surface
-    /// when a page is hosted inside the shell's GeometryReader.
-    static let primaryContentBottomPadding: CGFloat = barHeight + primaryContentSpacing
+    /// Keep enough breathing room for the native TabView and the shell-owned
+    /// floating action button when a scroll page is hosted inside the shell's
+    /// GeometryReader. Without the action clearance, the last row can remain
+    /// under the plus button even after the user reaches the end.
+    static let primaryContentBottomPadding: CGFloat =
+        barHeight + primaryContentSpacing + NoteTheme.floatingComposerSize + composerBottomGap
     /// The card page's local operation row follows the paper. Keep the gap
     /// explicit so sparse cards do not turn the remaining viewport into a
     /// second, visually empty module.
