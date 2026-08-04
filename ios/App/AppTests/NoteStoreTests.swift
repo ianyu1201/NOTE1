@@ -153,6 +153,7 @@ final class NoteStoreTests: XCTestCase {
         let longHeight = V02CardPreviewLayoutPolicy.deckHeight(for: .inspiration(long))
 
         XCTAssertEqual(sparseHeight, V02CardPreviewLayoutPolicy.compactHeight)
+        XCTAssertGreaterThanOrEqual(sparseHeight, 500)
         XCTAssertGreaterThanOrEqual(longHeight, sparseHeight)
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
@@ -171,6 +172,7 @@ final class NoteStoreTests: XCTestCase {
 
         XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.collectionHeight)
         XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.compactHeight)
+        XCTAssertGreaterThanOrEqual(collectionHeight, 500)
     }
 
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {

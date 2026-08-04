@@ -55,6 +55,8 @@
 - 当前补丁：小票生成完成态的“查看小票 / 返回 / 撤回”操作使用 `ViewThatFits`，窄屏或最大辅助字号空间不足时自动改为纵向排列，避免三按钮横排挤压、截断或不可点。
 - 当前补丁：卡片预览无可用卡片时，空态改为在剩余首屏区域居中，不再贴在标题下方留下失衡的整页空白。
 - 当前补丁：卡片预览纸张恢复为稳定的 360pt 首屏主卡高度（长内容上限 420pt），内容保持顶部对齐；不再把“减少内部留白”误做成短卡，避免纸张下方留下失衡的大块空视口。
+- 当前补丁：卡片预览纸张首屏下限提高到 520pt（长内容上限 560pt），在 368 × 800 紧凑视口中仍由纸张承担主要视觉焦点；独立灵感保留“归入构思集”入口，构思集代表卡片提供有语义的“进入构思集”入口，不再出现操作位空缺。
+- 当前补丁：归组托盘从页面级 GeometryReader 改为锚定来源按钮的局部 overlay，并在托盘打开时为操作槽增加受控间距，避免目标胶囊随纸张高度变化漂移到纸张内部或被底栏遮挡；现有构思集目标仍按容量策略显示。
 - 当前补丁：构思集工作台改为内容顶部对齐，归组托盘改为内容自适应高度，移除两个无业务意义的弹性 `Spacer`，避免工作台和拖拽托盘把剩余视口变成不可见空白或过大的命中层。
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 历史尝试（已由后续稳定首屏高度方案替代）：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；该方案曾用于避免短卡内部空白，最终以稳定首屏主卡高度收口。
@@ -103,6 +105,7 @@
 - 浮动新增安全区与构思集箭头避让后的最终源代码复验：通用设备构建 `/tmp/note1-v03-generic70`、静态分析 `/tmp/note1-v03-analyze70` 均成功，XCTest `/tmp/note1-v03-tests70` 为 99 项、0 失败；稳定态构思集视觉抽样 `/tmp/note1-v03-collections-clearance-final2.png` 确认箭头与“+”不再重叠，临时入口已移除。
 - 选择模式大字号布局收口后的正式目录复验：模拟器构建 `/tmp/note1-v03-selection-layout`、通用设备静态分析 `/tmp/note1-v03-selection-analyze` 均成功；XCTest `/tmp/note1-v03-selection-tests` 为 99 项、0 失败。该补丁不改变业务事务，只修正操作栏在窄宽度/最大辅助字号下的排列策略，未增加截图步骤。
 - 本次卡片内容顶部对齐后的正式目录复验：模拟器构建 `/tmp/note1-v03-card-topalign`、通用设备静态分析 `/tmp/note1-v03-card-topalign-analyze` 均成功；XCTest `/tmp/note1-v03-card-topalign-tests` 为 99 项、0 失败。稳定态模拟器抽样仅采集一次，保存为 `/tmp/note1-v03-card-topalign.png`，用于确认构思集卡片仍为首屏主卡高度且内容从纸张上方开始；未增加逐项截图步骤。
+- 本次卡片首屏高度与归组入口修复后的正式目录复验：通用设备静态分析 `/tmp/note1-v03-card-tall-button-final-analyze`、模拟器 XCTest `/tmp/note1-v03-card-tall-button-final-tests` 均成功；99 项测试、0 失败，结果包为 `/tmp/note1-v03-card-tall-button-final-tests/Logs/Test/Test-App-2026.08.04_11-09-35-+0800.xcresult`。集中视觉抽样只采集一次，保存为 `/tmp/note1-v03-card-tall-button-final.png`（368 × 800）：纸张高度占据首屏主体、内容顶部对齐、独立灵感显示“归入构思集”，托盘目标位于来源按钮上方且未被底栏遮挡；集合卡片入口与跳转逻辑由 XCTest/运行态语义树覆盖。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。

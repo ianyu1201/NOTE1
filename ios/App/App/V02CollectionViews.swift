@@ -5,6 +5,7 @@ struct V02CollectionListView: View {
     @ObservedObject var store: V02Store
     @Binding var isWorkbenchPresented: Bool
     @Binding var isRequestingNewCollection: Bool
+    @Binding var requestedCollectionID: UUID?
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     @State private var endingRound: V02ThinkingRound?
@@ -95,6 +96,10 @@ struct V02CollectionListView: View {
             guard requested else { return }
             isRequestingNewCollection = false
             requestNewCollection()
+        }
+        .onAppear { openRequestedCollectionIfNeeded() }
+        .onChange(of: requestedCollectionID) { _, _ in
+            openRequestedCollectionIfNeeded()
         }
         .alert("结束本轮构思？", isPresented: Binding(
             get: { endingRound != nil },
@@ -256,6 +261,14 @@ struct V02CollectionListView: View {
         }
         newCollectionName = ""
         isCreatingCollection = true
+    }
+
+    private func openRequestedCollectionIfNeeded() {
+        guard let requestedID = requestedCollectionID,
+              let collection = store.activeCollections.first(where: { $0.id == requestedID }) else { return }
+        workingCollection = collection
+        isWorkbenchPresented = true
+        requestedCollectionID = nil
     }
 
     private func createCollection() {

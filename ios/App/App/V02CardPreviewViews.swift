@@ -9,6 +9,7 @@ struct V02CardPreviewView: View {
     let reportError: (Error) -> Void
     let onEditingChange: (Bool) -> Void
     let onOverlayChange: (Bool) -> Void
+    let onOpenCollection: (V02ThinkingCollection) -> Void
     @State private var index = 0
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
     @State private var endingRound: V02ThinkingRound?
@@ -73,39 +74,70 @@ struct V02CardPreviewView: View {
                 // viewport and recreate the large blank band that the V0.2
                 // confirmation board explicitly rejects.
                 Color.clear
-                    .frame(height: V02NavigationLayoutPolicy.cardOperationGap)
-                if cards.indices.contains(index), case .inspiration = cards[index] {
-                    V02GroupEntryButton(action: {
-                        beginGroupPicker(for: cards)
-                    }, onDrag: { location, translation, ended in
-                        if translation.height < -18 {
-                            isShowingGroupTray = true
-                            isDraggingGroup = true
+                    .frame(
+                        height: V02NavigationLayoutPolicy.cardOperationGap
+                            + (isShowingGroupTray ? 32 : 0)
+                    )
+                if cards.indices.contains(index) {
+                    switch cards[index] {
+                    case .inspiration:
+                        V02GroupEntryButton(action: {
+                            beginGroupPicker(for: cards)
+                        }, onDrag: { location, translation, ended in
+                            if translation.height < -18 {
+                                isShowingGroupTray = true
+                                isDraggingGroup = true
+                            }
+                            // V02GroupEntryButton reports its drag in the same global
+                            // coordinate space as the tray frames, so the final
+                            // location is compared directly without frame-offset
+                            // guesses that drift when the overlay reflows.
+                            let point = location
+                            activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                            if ended {
+                                let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                                defer { activeTargetReset() }
+                                guard translation.height < -50,
+                                      case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                      let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                                pendingInspirationID = inspiration.id
+                                handleGroupOperation(target)
+                            }
+                        })
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
+                        })
+                        // Keep the source control above the page-local dismiss layer. This
+                        // preserves outside-tap dismissal while allowing a second gesture
+                        // to begin from the same fixed button after the tray is open.
+                        .zIndex(isShowingGroupTray ? 6 : 0)
+                        .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
+                        .overlay(alignment: .bottom) {
+                            if isShowingGroupTray {
+                                V02GroupPickerTray(
+                                    collections: store.activeCollections,
+                                    mode: .actions,
+                                    targetFrames: $groupTargetFrames,
+                                    activeTargetID: activeGroupTargetID,
+                                    onSelect: { handleGroupOperation("existing") },
+                                    onCreate: { handleGroupOperation("new") }
+                                )
+                                .frame(width: min(350, max(0, UIScreen.main.bounds.width - 24)))
+                                // Anchor the operation targets to the source
+                                // button itself. A page-level GeometryReader
+                                // used to place this tray over the paper when
+                                // the deck height changed.
+                                .offset(y: -64)
+                                .allowsHitTesting(!isDraggingGroup)
+                                .transition(.opacity)
+                            }
                         }
-                        // V02GroupEntryButton reports its drag in the same global
-                        // coordinate space as the tray frames, so the final
-                        // location is compared directly without frame-offset
-                        // guesses that drift when the overlay reflows.
-                        let point = location
-                        activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                        if ended {
-                            let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                            defer { activeTargetReset() }
-                            guard translation.height < -50,
-                                  case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                  let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
-                            pendingInspirationID = inspiration.id
-                            handleGroupOperation(target)
+                    case .collection(let collection, _):
+                        V02CollectionEntryButton {
+                            onOpenCollection(collection)
                         }
-                    })
-                    .background(GeometryReader { proxy in
-                        Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
-                    })
-                    // Keep the source control above the page-local dismiss layer. This
-                    // preserves outside-tap dismissal while allowing a second gesture
-                    // to begin from the same fixed button after the tray is open.
-                    .zIndex(isShowingGroupTray ? 6 : 0)
-                    .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
+                        .accessibilityHint("打开当前构思集工作台")
+                    }
                 }
                 Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
                     .noteFontCapped(size: 13, maximumScale: 1.25, relativeTo: .caption)
@@ -153,31 +185,6 @@ struct V02CardPreviewView: View {
         )
         .onPreferenceChange(GroupButtonFrameKey.self) {
             groupButtonFrame = $0
-        }
-        .overlay {
-            if isShowingGroupTray {
-                GeometryReader { proxy in
-                    V02GroupPickerTray(
-                        collections: store.activeCollections,
-                        mode: .actions,
-                        targetFrames: $groupTargetFrames,
-                        activeTargetID: activeGroupTargetID,
-                        onSelect: { handleGroupOperation("existing") },
-                        onCreate: { handleGroupOperation("new") }
-                    )
-                    .frame(width: min(350, proxy.size.width - 24))
-                    .position(
-                        x: proxy.size.width / 2,
-                        // Anchor the expansion to the measured source button.
-                        // A page-height offset can put the tray below the
-                        // viewport on tall devices; the source frame keeps it
-                        // directly above the button on every size.
-                        y: max(120, groupButtonFrame.minY - 48)
-                    )
-                }
-                .allowsHitTesting(!isDraggingGroup)
-                .transition(.opacity)
-            }
         }
         .overlay {
             if isShowingCollectionPicker {
@@ -512,6 +519,32 @@ private struct V02GroupEntryButton: View {
         .accessibilityLabel("归入构思集")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { action() }
+    }
+}
+
+private struct V02CollectionEntryButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(NoteTheme.ink)
+                    .frame(width: 52, height: 52)
+                    .background(Color.white.opacity(0.72), in: Circle())
+                    .overlay { Circle().stroke(Color.white.opacity(0.9), lineWidth: 1) }
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 18, height: 18)
+                    .background(NoteTheme.ink, in: Circle())
+                    .offset(x: 4, y: 3)
+            }
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityLabel("进入构思集")
+        .accessibilityAddTraits(.isButton)
     }
 }
 

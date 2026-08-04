@@ -39,10 +39,12 @@ enum V02CardDeckPolicy {
 /// remaining viewport.
 enum V02CardPreviewLayoutPolicy {
     /// The confirmed card-preview composition gives the primary paper enough
-    /// height to own the first screen, including sparse collection cards.
-    static let compactHeight: CGFloat = 360
-    static let collectionHeight: CGFloat = 360
-    static let maximumHeight: CGFloat = 420
+    /// height to own the first screen, including sparse collection cards. A
+    /// 520pt floor keeps the paper visually primary on the 368pt × 800pt
+    /// compact viewport instead of reducing it to a short white card.
+    static let compactHeight: CGFloat = 520
+    static let collectionHeight: CGFloat = 520
+    static let maximumHeight: CGFloat = 560
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
