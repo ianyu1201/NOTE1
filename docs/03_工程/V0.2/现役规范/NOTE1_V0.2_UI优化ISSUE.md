@@ -110,6 +110,7 @@
 - 当前产品决策后的代码收口：`V02Store.cardPreviewEntries` 仅返回未归入构思集的独立灵感；卡片预览移除构思集代表卡片、构思集卡片结束动作和跨 Tab 跳转状态，构思集工作台入口只保留在“构思集”一级页面。对应测试改为验证组内成员不出现在卡片预览中。
 - 本次“卡片预览仅显示独立灵感”复验：通用设备构建 `/tmp/note1-v03-inspiration-only-final-generic`、静态分析 `/tmp/note1-v03-inspiration-only-final-analyze` 均成功；模拟器 XCTest `/tmp/note1-v03-inspiration-only-final-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-v03-inspiration-only-final-tests/Logs/Test/Test-App-2026.08.04_11-33-07-+0800.xcresult`。集中视觉抽样 `/tmp/note1-v03-card-preview-inspiration-only.png`（368 × 800）显示第 1 / 1 张，仅保留独立灵感和“归入构思集”按钮。
 - 本次“主卡片铺满、归入按钮悬浮在卡片底部”复验：模拟器构建 `/tmp/note1-card-full-generic`、通用设备静态分析 `/tmp/note1-card-full-analyze` 均成功；XCTest `/tmp/note1-card-full-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-card-full-tests/Logs/Test/Test-App-2026.08.04_12-10-01-+0800.xcresult`。集中视觉抽样 `/tmp/note1-card-full-final.png`（368 × 800）确认主卡片铺满至底部一级入口上沿，归入按钮和页码叠加在卡片底部，右下新增卡片入口仍可用；真机、旧系统和完整手势证据仍按关闭规则待补。
+- 本次“长按始终显示双目标”复验：`V02GroupOperationPolicy` 改为在 0、3、5 个构思集时均返回 `新建构思集 + 归入现有构思集`；容量限制由后续面板处理。通用设备构建 `/tmp/note1-two-targets-generic`、静态分析 `/tmp/note1-two-targets-analyze` 均成功；XCTest `/tmp/note1-two-targets-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-two-targets-tests/Logs/Test/Test-App-2026.08.04_12-29-02-+0800.xcresult`。双目标真实长按录屏和真机/旧系统门禁仍待补。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
@@ -200,7 +201,7 @@
 
 - 当前纸张使用带紫调的纸白，前后只露纸边；
 - 构思集按钮悬浮在铺满主区域的当前卡片底部，卡片下沿贴近底部一级入口上沿；
-- 长按后根据当前容量显示“新建构思集”“归入现有构思集”中的一个或两个拓展目标；
+- 长按后始终显示“新建构思集”和“归入现有构思集”两个拓展目标；容量限制在后续面板中反馈，不提前隐藏操作类型；
 - 双目标采用左右对称、轻微向外倾斜的柔和悬浮胶囊，不显示任何连接弧线、虚线或箭头；
 - 用户只拖拽一次并在操作目标上松手；随后通过新建面板或现有构思集列表点按完成，不继续拖入具体构思集；
 - 按钮不跟手，目标外松手不打开后续面板、不写入；已满构思集给出规定提示。

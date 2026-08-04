@@ -183,10 +183,10 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertNil(V02GroupTargetPolicy.commitTarget(finalActiveTarget: nil))
     }
 
-    func testV02GroupOperationTargetsRespectZeroFiveAndCapacityRules() {
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new"])
+    func testV02GroupOperationTargetsAlwaysExposeBothOperationTypes() {
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new", "existing"])
         XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 3), ["new", "existing"])
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 5), ["existing"])
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 5), ["new", "existing"])
         XCTAssertTrue(V02GroupOperationPolicy.canAccept(memberCount: 9))
         XCTAssertFalse(V02GroupOperationPolicy.canAccept(memberCount: 10))
         XCTAssertEqual(V02GroupOperationPolicy.capacityLabel(memberCount: 9), "9/10")

@@ -7,7 +7,7 @@ NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App�
 ## 当前状态
 
 - V0.1 历史封存：`v0.1.0`
-- V0.2 当前正式目录治理分支：`codex/note1-current-folder-governance@4d1cf0d`
+- V0.2 当前正式目录治理分支：`codex/note1-current-folder-governance@0a87482`
 - V0.3 产品阶段封存入口：`v0.3-product-start-20260803`
 - V0.3 交接入口：`docs/00_项目治理/NOTE1_V0.3产品会话交接与启动说明.md`
 
@@ -116,7 +116,7 @@ xcodebuild \
 
 ## 当前验证边界
 
-2026-08-04 在 `7962b30` 上独立运行 97 项 XCTest，通过 97、失败 0；通用 iOS 构建和静态分析均成功。该结果不替代：
+2026-08-04 在 `0a87482` 上独立运行 98 项 XCTest，通过 98、失败 0；通用 iOS 构建和静态分析均成功。该结果不替代：
 
 - 真机完整闭环；
 - VoiceOver 真实语音导航；

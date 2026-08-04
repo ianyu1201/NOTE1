@@ -99,11 +99,12 @@ enum V02GroupTargetPolicy {
 }
 
 enum V02GroupOperationPolicy {
-    static func targetIDs(activeCollectionCount: Int) -> [String] {
-        let count = max(0, activeCollectionCount)
-        if count == 0 { return ["new"] }
-        if count >= 5 { return ["existing"] }
-        return ["new", "existing"]
+    /// The long-press affordance always exposes the two operation types. The
+    /// active-collection count is resolved by the follow-up panel: creation
+    /// reports the five-collection limit and the existing-list panel can show
+    /// an empty or full state without changing the source affordance.
+    static func targetIDs(activeCollectionCount _: Int) -> [String] {
+        ["new", "existing"]
     }
 
     static func canAccept(memberCount: Int) -> Bool {
