@@ -75,7 +75,7 @@
 - 当前补丁：灵感、构思集和小票册的滚动底部预留改为直接挂在 `ScrollView`，避免把预留误加到内部堆栈；构思集工作台的浮动“+”回到 TabView 上方，不再覆盖纸张底部的附件/移出/更多操作行。
 - 当前补丁：灵感首页最近成果摘要限制为单行并允许窄屏轻微缩放，避免摘要换行制造额外首屏高度；灵感、构思集和小票册的撤回提示改为浮层，出现或消失不再改变滚动内容布局。
 - 当前补丁：卡片左滑接近阈值时增加低饱和“收起 / 结束本轮构思”背景渐显；卡片预览归入构思集按钮和页码改为底栏上方的固定操作槽，稀疏卡不再把按钮留在卡片正下方。
-- 当前补丁：卡片预览操作槽改为固定贴近底栏的底部锚点，移除会吞掉剩余视口高度的 `Spacer`；纸张按内容自适应，按钮和页码不再因卡片高度或视口变化漂移，也不会被底栏遮挡。
+- 当前补丁：卡片预览操作槽改为紧跟纸张的固定 24pt 间距，移除会吞掉剩余视口高度的 `Spacer`；纸张按内容自适应，按钮和页码不再悬在屏幕中部，也不会被底栏遮挡。
 - 当前补丁：灵感时间流附件图标改用序号稳定标识，连续多个同类型附件不会产生重复 SwiftUI ID。
 - 当前补丁：卡片页构思集托盘、选择面板和确认弹窗打开时向 App shell 发布覆盖层状态，统一隐藏底层全局“+”，避免按钮穿透叠层。
 - 当前补丁：继续构思时校验历史成员仍存在，并先从其他活动构思集中移除后再归入当前轮次，避免同一灵感同时属于多个活动构思集。
@@ -91,7 +91,8 @@
 - 临时入口移除后的最终源代码复验：`/tmp/note1-v03-generic54`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze54`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests54`，99 项测试、0 失败，`** TEST SUCCEEDED **`；源码无残留调试参数或强制解包命中。
 - 本次移除工作台/归组托盘弹性间距后的正式目录验证：`/tmp/note1-v03-generic55`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze55`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests55`，99 项测试、0 失败，`** TEST SUCCEEDED **`；本轮未增加截图步骤。
 - 临时视觉抽样入口移除后的正式源代码复验：`/tmp/note1-v03-generic56`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze56`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests56`，99 项测试、0 失败，`** TEST SUCCEEDED **`；本轮未增加截图步骤。
-- 卡片操作槽底部锚定后的最终源代码复验：`/tmp/note1-v03-generic58`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze58`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests58`，99 项测试、0 失败，`** TEST SUCCEEDED **`；仅复用一次稳定态视觉抽样 `/tmp/note1-v03-card-slot-final.png`，未重复查看中间截图。
+- 前一版卡片操作槽底部锚定方案的源代码复验：`/tmp/note1-v03-generic58`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze58`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests58`，99 项测试、0 失败，`** TEST SUCCEEDED **`；该视觉方案已被下一条“紧跟纸张”修复替代。
+- 卡片操作槽紧跟纸张后的正式源代码复验：`/tmp/note1-v03-generic59`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze59`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests59`，99 项测试、0 失败，`** TEST SUCCEEDED **`；稳定态视觉抽样 `/tmp/note1-v03-card-compact-final.png` 确认构思集卡片与页码间距受控，临时入口已移除。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
