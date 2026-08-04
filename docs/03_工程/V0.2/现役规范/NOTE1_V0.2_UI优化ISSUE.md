@@ -91,6 +91,7 @@
 - 当前补丁：撤回最新小票前遵守 5 个活动构思集上限，并在成员被移入其他活动轮次后先清理旧轮次归属；删除独立灵感时只清理因此变空的原构思集，不再误删其他空草稿构思集。
 - 当前补丁：本机备份拒绝重复附件 ID、构思小票附件快照与资源元数据不一致等无效归档；新建组内灵感在构思集不存在或轮次已结束时返回准确约束错误；录入面板被系统下滑关闭时回收未引用附件。
 - 当前正式目录通用 iOS 设备构建：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-ids48-generic build`，`** BUILD SUCCEEDED **`；未执行真机安装、VoiceOver 或材质手感验收。
+- 本次可访问性隔离后的正式目录复验：模拟器 Build & Run 成功；通用 iOS 构建 `/tmp/note1-v02-current-generic` 与静态分析 `/tmp/note1-v02-current-analyze` 成功；XcodeBuildMCP XCTest 为 100 项、0 失败，结果包 `~/Library/Developer/XcodeBuildMCP/workspaces/NOTE1-6002ba52fd9f/result-bundles/test_sim_2026-08-04T05-50-55-180Z_pid12190_1658c782.xcresult`。
 - 当前正式目录静态分析：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath /tmp/note1-v02-ids48-analyze analyze`，`** ANALYZE SUCCEEDED **`；日志无 warning/error。
 - 当前正式目录构建与 XCTest：`xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'platform=iOS Simulator,id=F59FEBE4-16C9-498F-BFB2-0BCF7C36DAC5' -derivedDataPath /tmp/note1-v02-ids48 test`，97 项测试、0 失败，`** TEST SUCCEEDED **`；结果包：`/tmp/note1-v02-ids48/Logs/Test/Test-App-2026.08.04_05-38-47-+0800.xcresult`。
 - 本次响应式出票操作修复的模拟器构建：`/tmp/note1-v03-generic49`，`** BUILD SUCCEEDED **`；静态分析：`/tmp/note1-v03-analyze49`，`** ANALYZE SUCCEEDED **`；XCTest：`/tmp/note1-v03-tests49`，97 项测试、0 失败，`** TEST SUCCEEDED **`；该变更仍需在最大辅助字号和真机上完成最终视觉/手感复验。
