@@ -53,6 +53,12 @@ struct V02AppShellView: View {
                     }
                 }
                     .toolbar(isChildEditorPresented ? .hidden : .visible, for: .tabBar)
+                    // The receipt-generation layer is a focused modal state
+                    // owned by the shell. Keep the underlying tabs out of the
+                    // accessibility tree while that layer is visible; the
+                    // tabs remain visually present behind the settled paper
+                    // but must not compete with its actions in VoiceOver.
+                    .accessibilityHidden(generatedReceipt != nil || presentedReceipt != nil)
                     .simultaneousGesture(primaryPageEdgeGesture(width: proxy.size.width))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

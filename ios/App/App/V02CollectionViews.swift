@@ -61,6 +61,10 @@ struct V02CollectionListView: View {
                 .padding(.top, 10)
             }
             .scrollIndicators(.hidden)
+            // The workbench is presented as a focused page-level layer. Do
+            // not leave the covered collection rows in the VoiceOver order;
+            // they remain underneath for the visual transition only.
+            .accessibilityHidden(workingCollection != nil)
             .background(NoteTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
