@@ -202,19 +202,23 @@ struct V02SearchView: View {
                     .foregroundStyle(NoteTheme.secondaryInk)
                     .accessibilityHidden(true)
             }
-            HStack(spacing: 8) {
-                ForEach(lockedScope.map { [$0] } ?? V02SearchScope.allCases, id: \.self) { item in
-                    Button(item.title) { scope = item }
-                        .buttonStyle(.plain)
-                        .noteFont(size: 13, weight: .medium, relativeTo: .caption)
-                        .foregroundStyle(scope == item ? .white : NoteTheme.ink)
-                        .padding(.horizontal, 13)
-                        .frame(minHeight: 34)
-                        .background(scope == item ? NoteTheme.ink : Color.white.opacity(0.42), in: Capsule())
-                        .accessibilityIdentifier("v02.search.scope.\(item.title)")
-                        .accessibilityAddTraits(scope == item ? .isSelected : [])
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(lockedScope.map { [$0] } ?? V02SearchScope.allCases, id: \.self) { item in
+                        Button(item.title) { scope = item }
+                            .buttonStyle(.plain)
+                            .noteFont(size: 13, weight: .medium, relativeTo: .caption)
+                            .foregroundStyle(scope == item ? .white : NoteTheme.ink)
+                            .padding(.horizontal, 13)
+                            .frame(minHeight: 34)
+                            .background(scope == item ? NoteTheme.ink : Color.white.opacity(0.42), in: Capsule())
+                            .accessibilityIdentifier("v02.search.scope.\(item.title)")
+                            .accessibilityAddTraits(scope == item ? .isSelected : [])
+                    }
                 }
             }
+            .scrollClipDisabled()
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .contain)
     }
