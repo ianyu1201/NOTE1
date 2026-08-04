@@ -158,23 +158,6 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
 
-    func testV02CollectionPreviewUsesStableFirstScreenPaperFloor() {
-        let collection = V02ThinkingCollection(
-            id: UUID(),
-            name: "构思集（1）",
-            createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-            currentRoundID: UUID()
-        )
-
-        let collectionHeight = V02CardPreviewLayoutPolicy.deckHeight(
-            for: .collection(collection, memberCount: 1)
-        )
-
-        XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.collectionHeight)
-        XCTAssertEqual(collectionHeight, V02CardPreviewLayoutPolicy.compactHeight)
-        XCTAssertGreaterThanOrEqual(collectionHeight, 500)
-    }
-
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
         let first = UUID(), second = UUID(), third = UUID()
         XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [first, second, third]), 1)
@@ -1250,24 +1233,16 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: resourceURL.path))
     }
 
-    func testV02CardPreviewUsesOneCollectionCardInsteadOfDuplicatingMembers() throws {
+    func testV02CardPreviewShowsOnlyIndependentInspirations() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("card-preview"))
         let independent = try store.createInspiration(text: "独立卡片")
         let grouped = try store.createInspiration(text: "组内卡片")
         let collection = try store.createCollectionAndRound()
         try store.assign(grouped.id, to: collection.id)
 
-        XCTAssertEqual(store.cardPreviewEntries.count, 2)
-        XCTAssertTrue(store.cardPreviewEntries.contains { entry in
-            if case .inspiration(let inspiration) = entry { return inspiration.id == independent.id }
-            return false
-        })
-        XCTAssertTrue(store.cardPreviewEntries.contains { entry in
-            if case .collection(let cardCollection, let memberCount) = entry {
-                return cardCollection.id == collection.id && memberCount == 1
-            }
-            return false
-        })
+        XCTAssertEqual(store.cardPreviewEntries.count, 1)
+        XCTAssertEqual(store.cardPreviewEntries.first?.id, independent.id)
+        XCTAssertFalse(store.cardPreviewEntries.contains { $0.id == grouped.id })
     }
 
     func testV02VoiceAudioKeepsItsDistinctSourceType() throws {

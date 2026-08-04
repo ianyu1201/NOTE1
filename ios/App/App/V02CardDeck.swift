@@ -43,15 +43,12 @@ enum V02CardPreviewLayoutPolicy {
     /// 520pt floor keeps the paper visually primary on the 368pt × 800pt
     /// compact viewport instead of reducing it to a short white card.
     static let compactHeight: CGFloat = 520
-    static let collectionHeight: CGFloat = 520
     static let maximumHeight: CGFloat = 560
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
         switch entry {
-        case .collection:
-            return collectionHeight
         case .inspiration(let inspiration):
             let characterCount = max(inspiration.text.trimmingCharacters(in: .whitespacesAndNewlines).count, 1)
             let lineCount = min(

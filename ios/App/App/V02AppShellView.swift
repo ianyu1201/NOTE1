@@ -37,7 +37,6 @@ struct V02AppShellView: View {
     @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
     @State private var isCardOverlayPresented = false
-    @State private var requestedCollectionID: UUID?
 
     var body: some View {
         ZStack {
@@ -162,23 +161,17 @@ struct V02AppShellView: View {
                 store: store,
                 onBack: { page = .inspirations },
                 onHistory: { isPresentingHistory = true },
-                showGeneration: { receipt in generatedReceipt = receipt },
                 reportError: { error in
                 self.error = UserFacingAlert(error: error)
                 },
                 onEditingChange: { isChildEditorPresented = $0 },
-                onOverlayChange: { isCardOverlayPresented = $0 },
-                onOpenCollection: { collection in
-                    requestedCollectionID = collection.id
-                    page = .collections
-                }
+                onOverlayChange: { isCardOverlayPresented = $0 }
             )
         case .collections:
             V02CollectionListView(
                 store: store,
                 isWorkbenchPresented: $isCollectionWorkbenchPresented,
                 isRequestingNewCollection: $isRequestingNewCollection,
-                requestedCollectionID: $requestedCollectionID,
                 showGeneration: { receipt in generatedReceipt = receipt }
             ) { error in
                 self.error = UserFacingAlert(error: error)

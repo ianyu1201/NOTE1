@@ -30,12 +30,10 @@ enum V02SearchResult: Identifiable {
 
 enum V02CardPreviewEntry: Identifiable {
     case inspiration(V02Inspiration)
-    case collection(V02ThinkingCollection, memberCount: Int)
 
     var id: UUID {
         switch self {
         case .inspiration(let inspiration): inspiration.id
-        case .collection(let collection, _): collection.id
         }
     }
 }
@@ -95,16 +93,9 @@ final class V02Store: ObservableObject {
     }
 
     var cardPreviewEntries: [V02CardPreviewEntry] {
-        let independent = state.inspirations
+        state.inspirations
             .filter { $0.collectionID == nil && $0.cardFlowState == .visible }
             .map(V02CardPreviewEntry.inspiration)
-        let collections = activeCollections.compactMap { collection -> V02CardPreviewEntry? in
-            guard let roundID = collection.currentRoundID,
-                  let round = state.rounds.first(where: { $0.id == roundID }),
-                  !round.memberIDs.isEmpty else { return nil }
-            return .collection(collection, memberCount: round.memberIDs.count)
-        }
-        return independent + collections
     }
 
     func search(

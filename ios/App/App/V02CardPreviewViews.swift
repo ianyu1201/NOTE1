@@ -5,15 +5,11 @@ struct V02CardPreviewView: View {
     @ObservedObject var store: V02Store
     let onBack: () -> Void
     let onHistory: () -> Void
-    let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     let onEditingChange: (Bool) -> Void
     let onOverlayChange: (Bool) -> Void
-    let onOpenCollection: (V02ThinkingCollection) -> Void
     @State private var index = 0
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
-    @State private var endingRound: V02ThinkingRound?
-    @State private var undoReceipt: V02Receipt?
     @State private var undoTuckedInspiration: V02Inspiration?
     @State private var editingInspiration: V02Inspiration?
     @State private var isShowingGroupTray = false
@@ -29,6 +25,12 @@ struct V02CardPreviewView: View {
 
     private var cards: [V02CardPreviewEntry] { store.cardPreviewEntries }
 
+    private var emptyStateMessage: String {
+        store.activeCollections.isEmpty
+            ? "收起的灵感仍可在“灵感”中找到。"
+            : "构思中的内容请前往“构思集”继续调整。"
+    }
+
     private var currentDeckHeight: CGFloat {
         guard cards.indices.contains(index) else { return V02CardPreviewLayoutPolicy.compactHeight }
         return V02CardPreviewLayoutPolicy.deckHeight(for: cards[index])
@@ -40,19 +42,14 @@ struct V02CardPreviewView: View {
             NoteTheme.background.ignoresSafeArea()
             VStack(spacing: 0) {
                 if cards.isEmpty {
-                    EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: "收起的灵感仍可在“灵感”中找到。")
+                    EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: emptyStateMessage)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                 V02CardDeck(
                     cards: cards,
                     index: $index,
                     height: currentDeckHeight,
-                    tuckPrompt: { card in
-                        switch card {
-                        case .inspiration: "收起"
-                        case .collection: "结束本轮构思"
-                        }
-                    }
+                    tuckPrompt: { _ in "收起" }
                 ) { card in
                     cardContent(card)
                 } onTuck: { card in
@@ -60,11 +57,6 @@ struct V02CardPreviewView: View {
                     case .inspiration(let inspiration):
                         do { try store.tuckAway(inspiration.id); undoTuckedInspiration = inspiration }
                         catch { reportError(error) }
-                    case .collection(let collection, _):
-                        if let roundID = collection.currentRoundID,
-                           let round = store.state.rounds.first(where: { $0.id == roundID }) {
-                            endingRound = round
-                        }
                     }
                 }
                 .padding(.horizontal, 2)
@@ -79,64 +71,56 @@ struct V02CardPreviewView: View {
                             + (isShowingGroupTray ? 32 : 0)
                     )
                 if cards.indices.contains(index) {
-                    switch cards[index] {
-                    case .inspiration:
-                        V02GroupEntryButton(action: {
-                            beginGroupPicker(for: cards)
-                        }, onDrag: { location, translation, ended in
-                            if translation.height < -18 {
-                                isShowingGroupTray = true
-                                isDraggingGroup = true
-                            }
-                            // V02GroupEntryButton reports its drag in the same global
-                            // coordinate space as the tray frames, so the final
-                            // location is compared directly without frame-offset
-                            // guesses that drift when the overlay reflows.
-                            let point = location
-                            activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                            if ended {
-                                let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                                defer { activeTargetReset() }
-                                guard translation.height < -50,
-                                      case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                      let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
-                                pendingInspirationID = inspiration.id
-                                handleGroupOperation(target)
-                            }
-                        })
-                        .background(GeometryReader { proxy in
-                            Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
-                        })
-                        // Keep the source control above the page-local dismiss layer. This
-                        // preserves outside-tap dismissal while allowing a second gesture
-                        // to begin from the same fixed button after the tray is open.
-                        .zIndex(isShowingGroupTray ? 6 : 0)
-                        .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
-                        .overlay(alignment: .bottom) {
-                            if isShowingGroupTray {
-                                V02GroupPickerTray(
-                                    collections: store.activeCollections,
-                                    mode: .actions,
-                                    targetFrames: $groupTargetFrames,
-                                    activeTargetID: activeGroupTargetID,
-                                    onSelect: { handleGroupOperation("existing") },
-                                    onCreate: { handleGroupOperation("new") }
-                                )
-                                .frame(width: min(350, max(0, UIScreen.main.bounds.width - 24)))
-                                // Anchor the operation targets to the source
-                                // button itself. A page-level GeometryReader
-                                // used to place this tray over the paper when
-                                // the deck height changed.
-                                .offset(y: -64)
-                                .allowsHitTesting(!isDraggingGroup)
-                                .transition(.opacity)
-                            }
+                    V02GroupEntryButton(action: {
+                        beginGroupPicker(for: cards)
+                    }, onDrag: { location, translation, ended in
+                        if translation.height < -18 {
+                            isShowingGroupTray = true
+                            isDraggingGroup = true
                         }
-                    case .collection(let collection, _):
-                        V02CollectionEntryButton {
-                            onOpenCollection(collection)
+                        // V02GroupEntryButton reports its drag in the same global
+                        // coordinate space as the tray frames, so the final
+                        // location is compared directly without frame-offset
+                        // guesses that drift when the overlay reflows.
+                        let point = location
+                        activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                        if ended {
+                            let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
+                            defer { activeTargetReset() }
+                            guard translation.height < -50,
+                                  case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                  let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                            pendingInspirationID = inspiration.id
+                            handleGroupOperation(target)
                         }
-                        .accessibilityHint("打开当前构思集工作台")
+                    })
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
+                    })
+                    // Keep the source control above the page-local dismiss layer. This
+                    // preserves outside-tap dismissal while allowing a second gesture
+                    // to begin from the same fixed button after the tray is open.
+                    .zIndex(isShowingGroupTray ? 6 : 0)
+                    .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
+                    .overlay(alignment: .bottom) {
+                        if isShowingGroupTray {
+                            V02GroupPickerTray(
+                                collections: store.activeCollections,
+                                mode: .actions,
+                                targetFrames: $groupTargetFrames,
+                                activeTargetID: activeGroupTargetID,
+                                onSelect: { handleGroupOperation("existing") },
+                                onCreate: { handleGroupOperation("new") }
+                            )
+                            .frame(width: min(350, max(0, UIScreen.main.bounds.width - 24)))
+                            // Anchor the operation targets to the source
+                            // button itself. A page-level GeometryReader
+                            // used to place this tray over the paper when
+                            // the deck height changed.
+                            .offset(y: -64)
+                            .allowsHitTesting(!isDraggingGroup)
+                            .transition(.opacity)
+                        }
                     }
                 }
                 Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
@@ -158,16 +142,6 @@ struct V02CardPreviewView: View {
             onOverlayChange(presented)
         }
         .onDisappear { onOverlayChange(false) }
-        .alert("结束本轮构思？", isPresented: Binding(
-            get: { endingRound != nil }, set: { if !$0 { endingRound = nil } }
-        ), presenting: endingRound) { round in
-            Button("结束并生成小票") {
-                finishRound(round)
-            }
-            Button("取消", role: .cancel) { endingRound = nil }
-        } message: { _ in
-            Text("确认后会为这一轮构思生成一张固定小票。")
-        }
         .fullScreenCover(item: $editingInspiration, onDismiss: { onEditingChange(false) }) { inspiration in
             V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
         }
@@ -296,39 +270,6 @@ struct V02CardPreviewView: View {
                 guard !Task.isCancelled else { return }
                 self.undoTuckedInspiration = nil
             }
-        } else if let undoReceipt {
-            HStack(spacing: 12) {
-                Text("本轮构思已结束，\(undoReceipt.snapshot.members.count) 条灵感已收录。")
-                    .lineLimit(2)
-                    .allowsHitTesting(false)
-                Spacer(minLength: 8)
-                    .allowsHitTesting(false)
-                Button("撤回") {
-                    do { try store.undoEndRound(undoReceipt.id) }
-                    catch { reportError(error) }
-                    self.undoReceipt = nil
-                }
-                .buttonStyle(PressScaleButtonStyle())
-                .padding(.horizontal, 15)
-                .frame(minHeight: 38)
-                .foregroundStyle(NoteTheme.ink)
-                .noteGlass(cornerRadius: 20, castsShadow: false)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(NoteTheme.paper.opacity(0.82))
-                    .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.74), lineWidth: 1) }
-                    .allowsHitTesting(false)
-            }
-            .fixedSize(horizontal: false, vertical: true)
-            .task(id: undoReceipt.id) {
-                try? await Task.sleep(for: .seconds(2))
-                guard !Task.isCancelled else { return }
-                self.undoReceipt = nil
-            }
         }
     }
 
@@ -354,7 +295,7 @@ struct V02CardPreviewView: View {
     }
 
     private var localOverlayPresented: Bool {
-        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection || endingRound != nil || capacityError != nil
+        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection || capacityError != nil
     }
 
     private func beginGroupPicker(for cards: [V02CardPreviewEntry]) {
@@ -393,13 +334,6 @@ struct V02CardPreviewView: View {
         } catch {
             reportError(error)
         }
-    }
-
-    private func finishRound(_ round: V02ThinkingRound) {
-        do {
-            showGeneration(try store.endRound(round.id))
-            endingRound = nil
-        } catch { reportError(error) }
     }
 
     private func memberCount(for collection: V02ThinkingCollection) -> Int {
@@ -466,17 +400,6 @@ struct V02CardPreviewView: View {
                         .foregroundStyle(NoteTheme.secondaryInk)
                 }
             }
-        case .collection(let collection, let memberCount):
-            VStack(alignment: .leading, spacing: 14) {
-                Label("构思集", systemImage: "folder.fill")
-                    .noteFont(size: 15, weight: .semibold, relativeTo: .headline)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                Text(collection.name)
-                    .noteFont(size: 22, weight: .semibold, relativeTo: .title2)
-                Text("本轮含 \(memberCount) 条灵感。可在“构思集”继续调整顺序与内容。")
-                    .noteFont(size: 16, relativeTo: .body)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-            }
         }
     }
 }
@@ -519,32 +442,6 @@ private struct V02GroupEntryButton: View {
         .accessibilityLabel("归入构思集")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { action() }
-    }
-}
-
-private struct V02CollectionEntryButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            ZStack(alignment: .bottomTrailing) {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(NoteTheme.ink)
-                    .frame(width: 52, height: 52)
-                    .background(Color.white.opacity(0.72), in: Circle())
-                    .overlay { Circle().stroke(Color.white.opacity(0.9), lineWidth: 1) }
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
-                    .background(NoteTheme.ink, in: Circle())
-                    .offset(x: 4, y: 3)
-            }
-        }
-        .buttonStyle(PressScaleButtonStyle())
-        .accessibilityLabel("进入构思集")
-        .accessibilityAddTraits(.isButton)
     }
 }
 
