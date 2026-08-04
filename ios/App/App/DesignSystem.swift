@@ -49,10 +49,6 @@ enum V02NavigationLayoutPolicy {
     /// under the plus button even after the user reaches the end.
     static let primaryContentBottomPadding: CGFloat =
         barHeight + primaryContentSpacing + NoteTheme.floatingComposerSize + composerBottomGap
-    /// The card page's local operation row follows the paper. Keep the gap
-    /// explicit so sparse cards do not turn the remaining viewport into a
-    /// second, visually empty module.
-    static let cardOperationGap: CGFloat = 24
     /// Shared optical anchor for root-page and workbench floating actions.
     static let floatingComposerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
     /// The workbench action row belongs to the paper; keep the floating

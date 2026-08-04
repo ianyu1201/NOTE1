@@ -33,10 +33,9 @@ enum V02CardDeckPolicy {
     }
 }
 
-/// Card-preview papers occupy a stable, readable first-screen panel. The
-/// content stays top-aligned inside that panel, while the operation slot and
-/// page indicator remain immediately below it instead of drifting into the
-/// remaining viewport.
+/// Card-preview papers keep a readable minimum height for compact viewports.
+/// The card-preview page may expand this height to the full space above the
+/// shared TabView; its action and page indicator are overlaid on the paper.
 enum V02CardPreviewLayoutPolicy {
     /// The confirmed card-preview composition gives the primary paper enough
     /// height to own the first screen, including sparse collection cards. A
