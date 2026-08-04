@@ -1256,6 +1256,21 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(store.cardPreviewEntries.contains { $0.id == grouped.id })
     }
 
+    func testV02TuckAndReturnRoundTripsCardPreviewEntry() throws {
+        let v02Directory = directory.appendingPathComponent("card-preview-return")
+        let store = V02Store(storageDirectory: v02Directory)
+        let inspiration = try store.createInspiration(text: "可撤回卡片")
+
+        try store.tuckAway(inspiration.id)
+        XCTAssertTrue(store.cardPreviewEntries.isEmpty)
+
+        try store.returnToCardFlow(inspiration.id)
+        XCTAssertEqual(store.cardPreviewEntries.map(\.id), [inspiration.id])
+
+        let reloaded = V02Store(storageDirectory: v02Directory)
+        XCTAssertEqual(reloaded.cardPreviewEntries.map(\.id), [inspiration.id])
+    }
+
     func testV02VoiceAudioKeepsItsDistinctSourceType() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("voice"))
         let voice = try store.saveVoiceInspirationAudio(filename: "voice.m4a", m4aData: Data([0, 1]))
