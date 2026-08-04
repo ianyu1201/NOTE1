@@ -115,6 +115,10 @@ struct V02InspirationListView: View {
                 .padding(.top, 6)
             }
             .scrollIndicators(.hidden)
+            // `fullScreenCover` is hosted by this page's NavigationStack.
+            // Explicitly remove the covered list from the accessibility tree
+            // while the editor is active so VoiceOver cannot reach stale rows.
+            .accessibilityHidden(editingInspiration != nil)
             .background(NoteTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
@@ -122,6 +126,7 @@ struct V02InspirationListView: View {
                     .allowsHitTesting(false)
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar { inspirationToolbar }
         }

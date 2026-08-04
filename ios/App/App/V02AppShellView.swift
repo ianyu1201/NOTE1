@@ -45,8 +45,14 @@ struct V02AppShellView: View {
                 TabView(selection: $page) {
                     ForEach(V02PrimaryPage.allCases) { destination in
                         pageContent(for: destination)
+                            .accessibilityHidden(isChildEditorPresented)
                             .tabItem {
                                 Label(destination.rawValue, systemImage: destination.symbol)
+                                    .accessibilityHidden(
+                                        generatedReceipt != nil
+                                            || presentedReceipt != nil
+                                            || isChildEditorPresented
+                                    )
                             }
                             .tag(destination)
                             .accessibilityIdentifier("v02.primary.\(destination.rawValue)")
@@ -58,7 +64,11 @@ struct V02AppShellView: View {
                     // accessibility tree while that layer is visible; the
                     // tabs remain visually present behind the settled paper
                     // but must not compete with its actions in VoiceOver.
-                    .accessibilityHidden(generatedReceipt != nil || presentedReceipt != nil)
+                    .accessibilityHidden(
+                        generatedReceipt != nil
+                            || presentedReceipt != nil
+                            || isChildEditorPresented
+                    )
                     .simultaneousGesture(primaryPageEdgeGesture(width: proxy.size.width))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -83,6 +93,19 @@ struct V02AppShellView: View {
                 .transition(.opacity)
                 .zIndex(V02ReceiptGenerationLayoutPolicy.generationZIndex)
             }
+        }
+        .accessibilityHidden(
+            generatedReceipt != nil
+                || presentedReceipt != nil
+                || isChildEditorPresented
+        )
+        .background {
+            V02ModalAccessibilityIsolation(
+                isHidden: generatedReceipt != nil
+                    || presentedReceipt != nil
+                    || isChildEditorPresented
+            )
+            .frame(width: 0, height: 0)
         }
         .overlay(alignment: .bottomTrailing) {
             if V02NavigationLayoutPolicy.showsFloatingComposer(
@@ -200,6 +223,41 @@ struct V02AppShellView: View {
                     page = page.before
                 }
             }
+    }
+}
+
+/// SwiftUI's `accessibilityHidden` does not consistently propagate through
+/// the UIKit presentation host used by a `TabView` and `fullScreenCover`.
+/// When a full-screen child or receipt layer is active, hide the underlying
+/// shell and its tab bar descendants from VoiceOver without changing the
+/// visual presentation.
+private struct V02ModalAccessibilityIsolation: UIViewRepresentable {
+    let isHidden: Bool
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        let apply = {
+            guard let root = uiView.window?.rootViewController?.view else { return }
+            root.accessibilityElementsHidden = isHidden
+            root.v02ForEachDescendant { view in
+                guard let tabBar = view as? UITabBar else { return }
+                tabBar.accessibilityElementsHidden = isHidden
+            }
+        }
+        apply()
+        DispatchQueue.main.async(execute: apply)
+    }
+}
+
+private extension UIView {
+    func v02ForEachDescendant(_ visit: (UIView) -> Void) {
+        visit(self)
+        subviews.forEach { $0.v02ForEachDescendant(visit) }
     }
 }
 

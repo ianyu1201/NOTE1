@@ -61,6 +61,7 @@ struct V02CardPreviewView: View {
                             }
                         }
                         .padding(.horizontal, 2)
+                        .accessibilityHidden(editingInspiration != nil)
                         .overlay(alignment: .bottom) {
                             VStack(spacing: 5) {
                                 if cards.indices.contains(index) {
@@ -129,6 +130,10 @@ struct V02CardPreviewView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        // The full-screen editor is presented by this page's navigation
+        // stack. Hide the entire card surface, including its floating group
+        // action, while the editor owns focus.
+        .accessibilityHidden(editingInspiration != nil)
         .onAppear { restoreCardPosition(in: cards) }
         .onChange(of: cards.map(\.id)) { _, _ in restoreCardPosition(in: cards) }
         .onChange(of: index) { _, newIndex in
@@ -199,6 +204,7 @@ struct V02CardPreviewView: View {
         }
         .background(NoteTheme.background.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -230,6 +236,7 @@ struct V02CardPreviewView: View {
             .noteSharedBackgroundHidden()
         }
         }
+        .accessibilityHidden(editingInspiration != nil)
         .background(NoteTheme.background.ignoresSafeArea())
     }
 
