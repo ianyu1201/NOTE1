@@ -46,6 +46,10 @@ enum V02NavigationLayoutPolicy {
     /// Keep enough breathing room for the floating system navigation surface
     /// when a page is hosted inside the shell's GeometryReader.
     static let primaryContentBottomPadding: CGFloat = barHeight + primaryContentSpacing
+    /// The card page's local operation row follows the paper. Keep the gap
+    /// explicit so sparse cards do not turn the remaining viewport into a
+    /// second, visually empty module.
+    static let cardOperationGap: CGFloat = 24
     /// Shared optical anchor for root-page and workbench floating actions.
     static let floatingComposerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
     /// The workbench action row belongs to the paper; keep the floating
