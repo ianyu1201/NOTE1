@@ -57,7 +57,7 @@
 - 当前补丁：卡片预览纸张恢复为稳定的 360pt 首屏主卡高度（长内容上限 420pt），内容保持顶部对齐；不再把“减少内部留白”误做成短卡，避免纸张下方留下失衡的大块空视口。
 - 当前补丁：卡片预览只展示未归入构思集的独立灵感，保留“归入构思集”入口，构思集及其成员统一从独立的“构思集”一级入口进入。
 - 当前补丁：卡片预览主卡片改为占满标题下方至底部一级入口上沿的可用高度；“归入构思集”和页码叠加在卡片底部，移除卡片下方独立操作槽与由此产生的空白带；长按托盘仍从按钮上方展开。
-- 当前补丁：归组托盘从页面级 GeometryReader 改为锚定来源按钮的局部 overlay；目标胶囊从卡片底部按钮上方展开，避免随纸张高度变化漂移或被底栏遮挡；现有构思集目标仍按容量策略显示。
+- 当前补丁：归组托盘从页面级 GeometryReader 改为锚定来源按钮的局部 overlay；目标胶囊从卡片底部按钮上方展开，避免随纸张高度变化漂移或被底栏遮挡；两个操作类型始终保留，具体容量限制在后续面板内处理。
 - 当前补丁：构思集工作台改为内容顶部对齐，归组托盘改为内容自适应高度，移除两个无业务意义的弹性 `Spacer`，避免工作台和拖拽托盘把剩余视口变成不可见空白或过大的命中层。
 - 当前补丁：小票详情、搜索、灵感编辑、记录灵感、附件、设置、回收站、构思历程及其二级页面统一使用 toolbar principal 标题；关闭/更多/搜索按钮复用 NOTE1 圆形玻璃控件，避免二级页面回退到 iOS 26 左对齐标题或共享玻璃胶囊。
 - 历史尝试（已由后续稳定首屏高度方案替代）：卡片预览纸张高度按短内容、长文本和附件数量采用受控自适应策略；该方案曾用于避免短卡内部空白，最终以稳定首屏主卡高度收口。
@@ -111,6 +111,7 @@
 - 本次“卡片预览仅显示独立灵感”复验：通用设备构建 `/tmp/note1-v03-inspiration-only-final-generic`、静态分析 `/tmp/note1-v03-inspiration-only-final-analyze` 均成功；模拟器 XCTest `/tmp/note1-v03-inspiration-only-final-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-v03-inspiration-only-final-tests/Logs/Test/Test-App-2026.08.04_11-33-07-+0800.xcresult`。集中视觉抽样 `/tmp/note1-v03-card-preview-inspiration-only.png`（368 × 800）显示第 1 / 1 张，仅保留独立灵感和“归入构思集”按钮。
 - 本次“主卡片铺满、归入按钮悬浮在卡片底部”复验：模拟器构建 `/tmp/note1-card-full-generic`、通用设备静态分析 `/tmp/note1-card-full-analyze` 均成功；XCTest `/tmp/note1-card-full-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-card-full-tests/Logs/Test/Test-App-2026.08.04_12-10-01-+0800.xcresult`。集中视觉抽样 `/tmp/note1-card-full-final.png`（368 × 800）确认主卡片铺满至底部一级入口上沿，归入按钮和页码叠加在卡片底部，右下新增卡片入口仍可用；真机、旧系统和完整手势证据仍按关闭规则待补。
 - 本次“长按始终显示双目标”复验：`V02GroupOperationPolicy` 改为在 0、3、5 个构思集时均返回 `新建构思集 + 归入现有构思集`；容量限制由后续面板处理。通用设备构建 `/tmp/note1-two-targets-generic`、静态分析 `/tmp/note1-two-targets-analyze` 均成功；XCTest `/tmp/note1-two-targets-tests` 为 98 项、0 失败，结果包为 `/tmp/note1-two-targets-tests/Logs/Test/Test-App-2026.08.04_12-29-02-+0800.xcresult`。双目标真实长按录屏和真机/旧系统门禁仍待补。
+- XcodeBuildMCP 语义复验：在同一 iPhone 17 Pro 模拟器完成卡片预览 → 长按“归入构思集” → 快速入口，最新快照同时出现 `新建构思集` 与 `归入现有构思集`，继续点按后显示现有构思集名称和 `当前数量/10`；集中视觉抽样 `/tmp/note1-two-targets-final.jpg`（368 × 800）同时确认两个目标位于卡片底部按钮上方、卡片铺满至一级入口上沿；模拟器长按录屏 `/tmp/note1-two-targets-longpress.mp4` 已保存。该证据覆盖模拟器语义与点击路径，不替代真机录屏和旧系统门禁。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。
 - 当前门禁环境：`xcrun xctrace list devices` 显示连接的 iPhone 处于 Offline，Xcode 仅安装 iOS 26.5 模拟器；因此真机 VoiceOver 与 iOS 17–25 材质降级仍保持“待复验”，未伪造为已完成。
