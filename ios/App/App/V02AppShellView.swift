@@ -45,7 +45,11 @@ struct V02AppShellView: View {
                 TabView(selection: $page) {
                     ForEach(V02PrimaryPage.allCases) { destination in
                         pageContent(for: destination)
-                            .accessibilityHidden(isChildEditorPresented)
+                            .accessibilityHidden(
+                                generatedReceipt != nil
+                                    || presentedReceipt != nil
+                                    || isChildEditorPresented
+                            )
                             .tabItem {
                                 Label(destination.rawValue, systemImage: destination.symbol)
                                     .accessibilityHidden(
@@ -94,16 +98,13 @@ struct V02AppShellView: View {
                 .zIndex(V02ReceiptGenerationLayoutPolicy.generationZIndex)
             }
         }
-        .accessibilityHidden(
-            generatedReceipt != nil
-                || presentedReceipt != nil
-                || isChildEditorPresented
-        )
         .background {
             V02ModalAccessibilityIsolation(
-                isHidden: generatedReceipt != nil
+                hidesRoot: presentedReceipt != nil || isChildEditorPresented,
+                hidesTabBar: generatedReceipt != nil
                     || presentedReceipt != nil
                     || isChildEditorPresented
+                    || isCollectionWorkbenchPresented
             )
             .frame(width: 0, height: 0)
         }
@@ -201,6 +202,7 @@ struct V02AppShellView: View {
                 store: store,
                 isWorkbenchPresented: $isCollectionWorkbenchPresented,
                 isRequestingNewCollection: $isRequestingNewCollection,
+                isGenerationPresented: generatedReceipt != nil,
                 showGeneration: { receipt in generatedReceipt = receipt }
             ) { error in
                 self.error = UserFacingAlert(error: error)
@@ -232,7 +234,8 @@ struct V02AppShellView: View {
 /// shell and its tab bar descendants from VoiceOver without changing the
 /// visual presentation.
 private struct V02ModalAccessibilityIsolation: UIViewRepresentable {
-    let isHidden: Bool
+    let hidesRoot: Bool
+    let hidesTabBar: Bool
 
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: .zero)
@@ -243,10 +246,10 @@ private struct V02ModalAccessibilityIsolation: UIViewRepresentable {
     func updateUIView(_ uiView: UIView, context: Context) {
         let apply = {
             guard let root = uiView.window?.rootViewController?.view else { return }
-            root.accessibilityElementsHidden = isHidden
+            root.accessibilityElementsHidden = hidesRoot
             root.v02ForEachDescendant { view in
                 guard let tabBar = view as? UITabBar else { return }
-                tabBar.accessibilityElementsHidden = isHidden
+                tabBar.accessibilityElementsHidden = hidesTabBar
             }
         }
         apply()

@@ -5,6 +5,7 @@ struct V02CollectionListView: View {
     @ObservedObject var store: V02Store
     @Binding var isWorkbenchPresented: Bool
     @Binding var isRequestingNewCollection: Bool
+    let isGenerationPresented: Bool
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     @State private var endingRound: V02ThinkingRound?
@@ -64,7 +65,7 @@ struct V02CollectionListView: View {
             // The workbench is presented as a focused page-level layer. Do
             // not leave the covered collection rows in the VoiceOver order;
             // they remain underneath for the visual transition only.
-            .accessibilityHidden(workingCollection != nil)
+            .accessibilityHidden(workingCollection != nil || isGenerationPresented)
             .background(NoteTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
@@ -90,7 +91,7 @@ struct V02CollectionListView: View {
           }
           .toolbar(workingCollection == nil ? .hidden : .visible, for: .navigationBar)
           .notePrimaryHeader {
-              if workingCollection == nil {
+              if workingCollection == nil && !isGenerationPresented {
                   collectionHeader
               }
           }
