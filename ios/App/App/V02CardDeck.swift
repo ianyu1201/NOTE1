@@ -46,6 +46,13 @@ enum V02CardPreviewLayoutPolicy {
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
+    /// Both the standalone card-preview page and the collection workbench
+    /// use the available page body above the shared TabView as their paper
+    /// height. The compact floor only protects unusually short containers.
+    static func pageHeight(for availableHeight: CGFloat) -> CGFloat {
+        max(availableHeight, compactHeight)
+    }
+
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
         switch entry {
         case .inspiration(let inspiration):

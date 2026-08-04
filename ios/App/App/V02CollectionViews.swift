@@ -633,16 +633,21 @@ private struct V02CollectionWorkbenchView: View {
         } else if members.isEmpty {
             ContentUnavailableView("先放入一条灵感", systemImage: "rectangle.stack")
         } else {
-            V02CardDeck(
-                cards: members,
-                index: $index,
-                height: 520,
-                cornerRadius: 18,
-                horizontalPadding: 26,
-                showsLayeredPaper: true,
-                isGestureEnabled: !editorFocused
-            ) { member in
-                workbenchCard(member)
+            // Keep workbench papers on the same first-screen geometry as
+            // standalone card preview: the paper owns all space above the
+            // shared TabView instead of stopping at a separate fixed height.
+            GeometryReader { proxy in
+                V02CardDeck(
+                    cards: members,
+                    index: $index,
+                    height: V02CardPreviewLayoutPolicy.pageHeight(for: proxy.size.height),
+                    cornerRadius: 18,
+                    horizontalPadding: 26,
+                    showsLayeredPaper: true,
+                    isGestureEnabled: !editorFocused
+                ) { member in
+                    workbenchCard(member)
+                }
             }
         }
     }

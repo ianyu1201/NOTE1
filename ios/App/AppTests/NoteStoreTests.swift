@@ -158,6 +158,17 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
 
+    func testV02CardPreviewAndWorkbenchShareAvailablePageHeightPolicy() {
+        XCTAssertEqual(
+            V02CardPreviewLayoutPolicy.pageHeight(for: 640),
+            640
+        )
+        XCTAssertEqual(
+            V02CardPreviewLayoutPolicy.pageHeight(for: 480),
+            V02CardPreviewLayoutPolicy.compactHeight
+        )
+    }
+
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {
         let first = UUID(), second = UUID(), third = UUID()
         XCTAssertEqual(V02CardPositionPolicy.resolvedIndex(preferredID: second, currentIndex: 0, ids: [first, second, third]), 1)

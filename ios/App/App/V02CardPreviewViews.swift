@@ -45,7 +45,7 @@ struct V02CardPreviewView: View {
                     // the shared TabView instead of leaving a second blank module
                     // for the card action.
                     GeometryReader { proxy in
-                        let deckHeight = max(proxy.size.height, V02CardPreviewLayoutPolicy.compactHeight)
+                        let deckHeight = V02CardPreviewLayoutPolicy.pageHeight(for: proxy.size.height)
                         V02CardDeck(
                             cards: cards,
                             index: $index,
