@@ -78,6 +78,7 @@
 - 当前补丁：小票册页面级头部保持标题居中、搜索与更多操作整格可点，继续隐藏底层系统导航栏但不改变 TabView 与页面导航语义。
 - 当前补丁：构思集根页与小票册根页采用共享的安全区头部策略；iOS 26 使用 `safeAreaBar`，旧系统使用 `safeAreaInset`，避免不对称系统 toolbar 将标题排到左侧，同时保持构思集工作台的系统 toolbar 可见。
 - 当前补丁：构思历程 sheet 同样采用页面级安全区头部，标题保持居中，搜索与“完成”保留整格命中区；不再依赖 iOS 26 下不对称的系统 toolbar 排布。
+- 当前补丁：灵感首页与卡片预览根页继续使用原生 toolbar 语义，但将标题带改为项目背景色的不透明表面；滚动到列表底部或切换卡片时，正文不再透过标题和返回/历史控制产生残影。
 - 当前补丁：灵感、构思集和小票册的滚动底部预留改为直接挂在 `ScrollView`，避免把预留误加到内部堆栈；构思集工作台的浮动“+”回到 TabView 上方，不再覆盖纸张底部的附件/移出/更多操作行。
 - 当前补丁：灵感首页最近成果摘要限制为单行并允许窄屏轻微缩放，避免摘要换行制造额外首屏高度；灵感、构思集和小票册的撤回提示改为浮层，出现或消失不再改变滚动内容布局。
 - 当前补丁：卡片左滑接近阈值时增加低饱和“收起 / 结束本轮构思”背景渐显；归入构思集按钮和页码随主卡片一起定位在卡片底部，不再漂在画面中部。
@@ -119,6 +120,7 @@
 - 本次“构思集成员卡片与卡片预览统一尺寸”复验：`V02CardPreviewLayoutPolicy.pageHeight(for:)` 同时用于卡片预览与构思集工作台；XcodeBuildMCP 模拟器语义快照确认工作台标题、成员卡片、组内操作和底部一级入口均可见；集中视觉抽样 `/tmp/note1-workbench-card-match-final.jpg`（368 × 800）确认工作台纸张从标题下方铺满至一级入口上沿，不再停在 520pt 固定短卡。该证据不替代真机、旧系统和最大辅助字号门禁。
 - 本次 VoiceOver 顺序修复复验：XcodeBuildMCP 模拟器语义快照进入构思集工作台后只保留工作台标题、成员卡片和组内操作，底层构思集列表与系统 TabView 不再出现在目标序列；出票反馈层只保留“查看小票 / 返回 / 撤回”，底层构思集列表和 TabView 不再进入目标序列。该证据仍不替代真机 VoiceOver 录音。
 - 本次工作台/出票层边界修正复验：通用构建 `/tmp/note1-v02-modal-generic`、静态分析 `/tmp/note1-v02-modal-analyze` 均成功；XcodeBuildMCP XCTest 为 100 项、0 失败，结果包 `~/Library/Developer/XcodeBuildMCP/workspaces/NOTE1-6002ba52fd9f/result-bundles/test_sim_2026-08-04T07-08-35-035Z_pid12190_9ef523e9.xcresult`。本次未新增截图，使用语义快照核对工作台与出票反馈层的目标边界；该证据仍不替代真机 VoiceOver 录音。
+- 本次原生 toolbar 标题带收口复验：同一 iPhone 17 Pro 模拟器抽样 `/tmp/note1-v02-audit-current-home-after-toolbar.png`、`/var/folders/vg/z6jntkzd6g7bxs8gypr63q0r0000gn/T/screenshot_optimized_562f5780-db61-4656-87c2-05d02258b618.jpg` 与 `/var/folders/vg/z6jntkzd6g7bxs8gypr63q0r0000gn/T/screenshot_optimized_cc05238b-e362-44a5-a39c-5b0f667f5a24.jpg`；首页滚动底部、卡片预览和构思集成员卡片均未再出现顶部内容透出，构思集成员卡片仍与卡片预览共用可用页面高度策略。该证据仍不替代真机、旧系统和最大辅助字号门禁。
 - 本次编辑模态层复验：完整编辑页快照保留“灵感内容 / 添加附件 / 完成 / 返回”等编辑目标；底层灵感列表、卡片纸张与 TabView 已由 App shell 的编辑状态统一隐藏，退出编辑后页面目标恢复。通用构建 `/tmp/note1-v02-editor-generic`、静态分析 `/tmp/note1-v02-editor-analyze` 均成功；XcodeBuildMCP XCTest 为 100 项、0 失败，结果包 `~/Library/Developer/XcodeBuildMCP/workspaces/NOTE1-6002ba52fd9f/result-bundles/test_sim_2026-08-04T06-33-28-715Z_pid12190_2a6aa549.xcresult`。该证据仍不替代真机 VoiceOver 录音。
 - 构思集与卡片预览仅做一次批量视觉抽样；直接带启动参数进入非默认 Tab 的首帧存在启动过渡残影，等待界面稳定后残影消失，未确认是正式路径缺陷，因此未将临时入口或规避代码留在正式源代码中。
 - 本轮集中视觉证据包含灵感首页摘要单行终态 `/tmp/note1-v02-audit-inspiration-summary1-final.png` 和卡片预览操作槽 `/tmp/note1-v02-audit-cards43-inspiration.png`；此前的一级页面头部、工作台浮动按钮、构思历程头部和小票长票证据仍为 `/tmp/note1-v02-audit2-collections.png`、`/tmp/note1-v02-audit3-receipts.png`、`/tmp/note1-v02-audit-workbench5.png`、`/tmp/note1-v02-audit-history2.png`、`/tmp/note1-v02-secondary-cards34.png`，用于确认标题居中、操作区不重叠、摘要不换行及操作槽位置，不替代真机、旧系统和完整交互关闭证据。

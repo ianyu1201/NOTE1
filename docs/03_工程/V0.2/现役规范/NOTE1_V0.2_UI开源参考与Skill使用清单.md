@@ -42,8 +42,10 @@ GitHub 和现有 UI Skill 值得使用，但用途是减少开发猜测、复用
 | 来源 | 对 NOTE1 的用途 | 使用级别 | 结论 |
 | --- | --- | --- | --- |
 | [Apple Human Interface Guidelines：Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars) | 四个一级入口稳定存在、标签清楚、导航与动作分离 | 规范依据 | 采用；底栏负责导航，新增按钮保持独立 |
+| [Apple Human Interface Guidelines：Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars) | 顶部标题、返回和页面动作的职责边界、工具栏可读性 | 规范依据 | 采用；根页保留原生 toolbar 语义，并使用不透明标题带避免滚动内容透出 |
 | [Apple Human Interface Guidelines：Search fields](https://developer.apple.com/design/human-interface-guidelines/search-fields) | 顶部搜索入口、范围筛选和搜索状态 | 规范依据 | 采用；NOTE1 使用顶部按钮进入完整搜索 |
 | [Apple Human Interface Guidelines：Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility) | 点击目标、Dynamic Type、VoiceOver、Reduce Motion | 验收依据 | 采用；不能为视觉紧凑牺牲命中区 |
+| [AvdLee/SwiftUI-Agent-Skill](https://github.com/AvdLee/SwiftUI-Agent-Skill) | SwiftUI 状态流、视图拆分、导航与 Sheet、列表性能、可访问性和 Liquid Glass 复核 | 工程研究 | 采用检查清单；不安装第三方包，不覆盖 NOTE1 产品基线 |
 | [Dimillian/IceCubesApp](https://github.com/Dimillian/IceCubesApp) | 成熟 SwiftUI 信息流、完整编辑器、媒体和导航状态组织 | 源码研究 | 采用其页面拆分和状态组织思路，不复制 Mastodon UI |
 | [danielsaidi/DeckKit](https://github.com/danielsaidi/DeckKit) | 卡片叠层、滑动、边缘滑动与自定义内容 | 手势研究 | 研究其状态机与 Demo；V0.2 默认不引入依赖 |
 | [EmergeTools/Pow](https://github.com/EmergeTools/Pow) | 数值变化反馈、轻触觉和可复用过渡 | 动效研究 | 只选取克制的反馈思路；不使用粒子或夸张转场 |

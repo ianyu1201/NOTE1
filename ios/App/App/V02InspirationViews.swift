@@ -127,7 +127,10 @@ struct V02InspirationListView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            // Keep the native toolbar semantics while giving the title band an
+            // opaque page surface. A transparent toolbar lets scrolled rows
+            // bleed through the title and top controls on compact viewports.
+            .toolbarBackground(NoteTheme.background, for: .navigationBar)
             .toolbar { inspirationToolbar }
         }
         .alert("删除选中的灵感？", isPresented: $isConfirmingDelete) {

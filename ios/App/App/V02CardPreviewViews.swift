@@ -205,7 +205,10 @@ struct V02CardPreviewView: View {
         .background(NoteTheme.background.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        // The card paper starts immediately below the title band; keep the
+        // native toolbar surface opaque so card text never ghosts behind the
+        // back/history controls while the deck changes pages.
+        .toolbarBackground(NoteTheme.background, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button(action: onBack) {
