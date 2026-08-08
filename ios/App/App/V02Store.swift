@@ -38,6 +38,29 @@ enum V02CardPreviewEntry: Identifiable {
     }
 }
 
+enum StoreError: LocalizedError {
+    case attachmentTooLarge(name: String)
+    case emptyIdea
+    case invalidOperation(String)
+    case persistenceUnavailable
+    case persistenceWriteFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .attachmentTooLarge(let name):
+            "附件「\(name)」超过 100 MB。"
+        case .emptyIdea:
+            "灵感需要包含文字或附件。"
+        case .invalidOperation(let message):
+            message
+        case .persistenceUnavailable:
+            "本机数据暂时无法读取。为保护原记录，NOTE1 已暂停写入。"
+        case .persistenceWriteFailed(let message):
+            "本机数据没有保存成功：\(message)"
+        }
+    }
+}
+
 @MainActor
 final class V02Store: ObservableObject {
     @Published private(set) var state: V02DomainState
@@ -166,7 +189,7 @@ final class V02Store: ObservableObject {
     }
 
     func restoreBackupData(_ data: Data) throws {
-        guard !isReadOnly else { throw NoteStoreError.persistenceUnavailable }
+        guard !isReadOnly else { throw StoreError.persistenceUnavailable }
         let payload = try V02BackupService.decode(data)
         try replaceLocalData(with: payload)
     }
@@ -198,7 +221,7 @@ final class V02Store: ObservableObject {
             }
         }
         guard !usedByInspiration && !usedByReceipt && !usedByTrash else {
-            throw NoteStoreError.invalidOperation("仍被灵感、构思小票或回收站引用的附件不能清理。")
+            throw StoreError.invalidOperation("仍被灵感、构思小票或回收站引用的附件不能清理。")
         }
         try transact { state in state.resources.removeAll { $0.id == resourceID } }
         try? fileManager.removeItem(at: resourceURL(resource))
@@ -211,7 +234,7 @@ final class V02Store: ObservableObject {
         now: Date = .now
     ) throws -> V02AttachmentResource {
         guard input.data.count <= Self.maximumResourceSize else {
-            throw NoteStoreError.attachmentTooLarge(name: input.name)
+            throw StoreError.attachmentTooLarge(name: input.name)
         }
         let id = UUID()
         let extensionPart = URL(fileURLWithPath: input.name).pathExtension
@@ -243,7 +266,7 @@ final class V02Store: ObservableObject {
         now: Date = .now
     ) throws -> V02AttachmentResource {
         guard filename.lowercased().hasSuffix(".m4a") else {
-            throw NoteStoreError.invalidOperation("语音灵感需保存为本机 M4A 录音。")
+            throw StoreError.invalidOperation("语音灵感需保存为本机 M4A 录音。")
         }
         return try createResource(
             input: AttachmentInput(name: filename, mimeType: "audio/mp4", data: m4aData),
@@ -258,7 +281,7 @@ final class V02Store: ObservableObject {
         now: Date = .now
     ) throws -> V02Inspiration {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !resourceIDs.isEmpty else {
-            throw NoteStoreError.emptyIdea
+            throw StoreError.emptyIdea
         }
         guard Set(resourceIDs).count == resourceIDs.count,
               resourceIDs.allSatisfy({ resourceID in state.resources.contains { $0.id == resourceID } }) else {
@@ -287,7 +310,7 @@ final class V02Store: ObservableObject {
         now: Date = .now
     ) throws -> V02Inspiration {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !resourceIDs.isEmpty else {
-            throw NoteStoreError.emptyIdea
+            throw StoreError.emptyIdea
         }
         let inspiration = V02Inspiration(
             id: UUID(), text: text, cardFlowState: .visible, collectionID: collectionID,
@@ -324,7 +347,7 @@ final class V02Store: ObservableObject {
                 throw V02DomainError.inspirationNotFound
             }
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !state.inspirations[index].resourceIDs.isEmpty else {
-                throw NoteStoreError.emptyIdea
+                throw StoreError.emptyIdea
             }
             if state.inspirations[index].text != text,
                let collectionID = state.inspirations[index].collectionID,
@@ -364,7 +387,7 @@ final class V02Store: ObservableObject {
 
     func renameCollection(_ id: UUID, name: String) throws {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { throw NoteStoreError.invalidOperation("构思集名称不能为空。") }
+        guard !trimmed.isEmpty else { throw StoreError.invalidOperation("构思集名称不能为空。") }
         try transact { state in
             guard let index = state.collections.firstIndex(where: { $0.id == id }) else {
                 throw V02DomainError.collectionNotFound
@@ -426,7 +449,7 @@ final class V02Store: ObservableObject {
             created = collection
         }
         guard let created else {
-            throw NoteStoreError.invalidOperation("构思集创建未完成。")
+            throw StoreError.invalidOperation("构思集创建未完成。")
         }
         return created
     }
@@ -458,7 +481,7 @@ final class V02Store: ObservableObject {
             created = collection
         }
         guard let created else {
-            throw NoteStoreError.invalidOperation("构思集创建未完成。")
+            throw StoreError.invalidOperation("构思集创建未完成。")
         }
         return created
     }
@@ -525,7 +548,7 @@ final class V02Store: ObservableObject {
             )
         }
         guard let round else {
-            throw NoteStoreError.invalidOperation("继续构思未完成。")
+            throw StoreError.invalidOperation("继续构思未完成。")
         }
         return round
     }
@@ -541,7 +564,7 @@ final class V02Store: ObservableObject {
             )
         }
         guard let receipt else {
-            throw NoteStoreError.invalidOperation("构思小票生成未完成。")
+            throw StoreError.invalidOperation("构思小票生成未完成。")
         }
         return receipt
     }
@@ -648,7 +671,7 @@ final class V02Store: ObservableObject {
             }
             guard state.inspirations[inspirationIndex].resourceIDs.count > 1 ||
                     !state.inspirations[inspirationIndex].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw NoteStoreError.emptyIdea
+                throw StoreError.emptyIdea
             }
             state.inspirations[inspirationIndex].resourceIDs.removeAll { $0 == resourceID }
             state.inspirations[inspirationIndex].updatedAt = now
@@ -664,13 +687,13 @@ final class V02Store: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
         let loaded = try decoder.decode(V02DomainState.self, from: data)
         guard loaded.version == V02DomainState.currentVersion else {
-            throw NoteStoreError.invalidOperation("当前本机数据版本不兼容。")
+            throw StoreError.invalidOperation("当前本机数据版本不兼容。")
         }
         state = loaded
     }
 
     private func transact(_ operation: (inout V02DomainState) throws -> Void) throws {
-        guard !isReadOnly else { throw NoteStoreError.persistenceUnavailable }
+        guard !isReadOnly else { throw StoreError.persistenceUnavailable }
         var candidate = state
         try operation(&candidate)
         try persist(candidate)
@@ -678,21 +701,23 @@ final class V02Store: ObservableObject {
         lastError = nil
     }
 
-    private func removeUnreferencedResources(from state: inout V02DomainState) -> [V02AttachmentResource] {
-        let referencedResourceIDs = Set(
+    private func referencedResourceIDs(in state: V02DomainState) -> Set<UUID> {
+        Set(
             state.inspirations.flatMap(\.resourceIDs) +
             state.receipts.flatMap { $0.snapshot.members.flatMap(\.resourceIDs) } +
             state.trash.flatMap { entry in
                 switch entry.object {
-                case .inspiration(let inspiration):
-                    inspiration.resourceIDs
-                case .receipt(let receipt):
-                    receipt.snapshot.members.flatMap(\.resourceIDs)
+                case .inspiration(let inspiration): inspiration.resourceIDs
+                case .receipt(let receipt): receipt.snapshot.members.flatMap(\.resourceIDs)
                 }
             }
         )
-        let removed = state.resources.filter { !referencedResourceIDs.contains($0.id) }
-        state.resources.removeAll { !referencedResourceIDs.contains($0.id) }
+    }
+
+    private func removeUnreferencedResources(from state: inout V02DomainState) -> [V02AttachmentResource] {
+        let ids = referencedResourceIDs(in: state)
+        let removed = state.resources.filter { !ids.contains($0.id) }
+        state.resources.removeAll { !ids.contains($0.id) }
         return removed
     }
 
@@ -704,17 +729,8 @@ final class V02Store: ObservableObject {
 
     private func stateWithOnlyReferencedResources(_ state: V02DomainState) -> V02DomainState {
         var copy = state
-        let referencedResourceIDs = Set(
-            copy.inspirations.flatMap(\.resourceIDs) +
-            copy.receipts.flatMap { $0.snapshot.members.flatMap(\.resourceIDs) } +
-            copy.trash.flatMap { entry in
-                switch entry.object {
-                case .inspiration(let inspiration): inspiration.resourceIDs
-                case .receipt(let receipt): receipt.snapshot.members.flatMap(\.resourceIDs)
-                }
-            }
-        )
-        copy.resources.removeAll { !referencedResourceIDs.contains($0.id) }
+        let ids = referencedResourceIDs(in: copy)
+        copy.resources.removeAll { !ids.contains($0.id) }
         return copy
     }
 
@@ -808,7 +824,7 @@ final class V02Store: ObservableObject {
             try encoder.encode(candidate).write(to: databaseURL, options: .atomic)
         } catch {
             lastError = error.localizedDescription
-            throw NoteStoreError.persistenceWriteFailed(error.localizedDescription)
+            throw StoreError.persistenceWriteFailed(error.localizedDescription)
         }
     }
 }

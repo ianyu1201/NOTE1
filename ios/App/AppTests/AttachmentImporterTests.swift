@@ -11,7 +11,7 @@ final class AttachmentImporterTests: XCTestCase {
 
         let handle = try FileHandle(forWritingTo: url)
         try handle.truncate(
-            atOffset: UInt64(NoteStore.maximumAttachmentSize + 1)
+            atOffset: UInt64(V02Store.maximumResourceSize + 1)
         )
         try handle.close()
 
@@ -19,7 +19,7 @@ final class AttachmentImporterTests: XCTestCase {
             _ = try await AttachmentImporter.inputs(from: [url])
             XCTFail("应拒绝超大附件")
         } catch {
-            guard case NoteStoreError.attachmentTooLarge = error else {
+            guard case StoreError.attachmentTooLarge = error else {
                 return XCTFail("应返回附件过大错误，实际为：\(error)")
             }
         }

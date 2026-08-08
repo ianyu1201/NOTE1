@@ -404,7 +404,7 @@ struct UserFacingAlert: Identifiable {
     }
 
     static func local(error: Error) -> UserFacingAlert? {
-        if let storeError = error as? NoteStoreError,
+        if let storeError = error as? StoreError,
            case .persistenceWriteFailed = storeError {
             return nil
         }

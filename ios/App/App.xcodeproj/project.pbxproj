@@ -10,26 +10,9 @@
 		A10000000000000000000001 /* NOTE1App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000001 /* NOTE1App.swift */; };
 		A10000000000000000000002 /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* ModelStore.swift */; };
 		A10000000000000000000003 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* DesignSystem.swift */; };
-		A10000000000000000000004 /* AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* AppShellView.swift */; };
-		A10000000000000000000005 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* HomeView.swift */; };
-		A10000000000000000000006 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* HistoryView.swift */; };
-		A1000000000000000000000A /* HistorySelectionPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000C /* HistorySelectionPolicy.swift */; };
 		A1000000000000000000000B /* AttachmentImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000D /* AttachmentImporter.swift */; };
-		A1000000000000000000000C /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000E /* ReviewView.swift */; };
 		A1000000000000000000000D /* ReviewInteractionPolicies.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000F /* ReviewInteractionPolicies.swift */; };
-		A1000000000000000000000E /* ReviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000010 /* ReviewComponents.swift */; };
-		A1000000000000000000000F /* EditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000011 /* EditorView.swift */; };
-		A10000000000000000000010 /* AttachmentViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* AttachmentViews.swift */; };
-		A10000000000000000000011 /* IdeaGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* IdeaGroupView.swift */; };
-		A10000000000000000000012 /* GroupPickerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* GroupPickerViews.swift */; };
-		A10000000000000000000013 /* HistoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* HistoryRow.swift */; };
-		A10000000000000000000014 /* ReviewView+Interactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* ReviewView+Interactions.swift */; };
 		A10000000000000000000015 /* DynamicTypeSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* DynamicTypeSupport.swift */; };
-		A10000000000000000000016 /* NoteBackupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* NoteBackupService.swift */; };
-		A10000000000000000000017 /* AppShortcutSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* AppShortcutSupport.swift */; };
-		A10000000000000000000018 /* HomeComposerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* HomeComposerState.swift */; };
-		A10000000000000000000019 /* SpeechTranscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* SpeechTranscriptionService.swift */; };
-		A1000000000000000000001A /* HomeComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* HomeComposerView.swift */; };
 		A1000000000000000000001B /* V02Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* V02Store.swift */; };
 		A1000000000000000000001C /* V02AppShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* V02AppShellView.swift */; };
 		A10000000000000000000025 /* V02CardDeck.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* V02CardDeck.swift */; };
@@ -56,12 +39,9 @@
 		A10000000000000000000008 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000001 /* LaunchScreen.storyboard */; };
 		A10000000000000000000009 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A30000000000000000000002 /* Localizable.strings */; };
 		B10000000000000000000001 /* NoteStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* NoteStoreTests.swift */; };
-		B10000000000000000000002 /* NoteStorePersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* NoteStorePersistenceTests.swift */; };
-		B10000000000000000000003 /* HistorySelectionPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* HistorySelectionPolicyTests.swift */; };
-		B10000000000000000000004 /* NoteStoreGroupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* NoteStoreGroupTests.swift */; };
 		B10000000000000000000005 /* AttachmentImporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* AttachmentImporterTests.swift */; };
-		B10000000000000000000006 /* HomeComposerStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* HomeComposerStateTests.swift */; };
-		B10000000000000000000007 /* SpeechTranscriptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* SpeechTranscriptionTests.swift */; };
+		1D06E7DD975443FBB81E090A /* AttachmentSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D06E7DD975443FBB81E090A2 /* AttachmentSupport.swift */; };
+		1D06E7DD975443FBB81E090A2 /* AttachmentSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentSupport.swift; sourceTree = "<group>"; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,31 +58,14 @@
 		A20000000000000000000001 /* NOTE1App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOTE1App.swift; sourceTree = "<group>"; };
 		A20000000000000000000002 /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000003 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
-		A20000000000000000000004 /* AppShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShellView.swift; sourceTree = "<group>"; };
-		A20000000000000000000005 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
-		A20000000000000000000006 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000009 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A2000000000000000000000A /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		A2000000000000000000000C /* HistorySelectionPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySelectionPolicy.swift; sourceTree = "<group>"; };
 		A2000000000000000000000D /* AttachmentImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentImporter.swift; sourceTree = "<group>"; };
-		A2000000000000000000000E /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		A2000000000000000000000F /* ReviewInteractionPolicies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewInteractionPolicies.swift; sourceTree = "<group>"; };
-		A20000000000000000000010 /* ReviewComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewComponents.swift; sourceTree = "<group>"; };
-		A20000000000000000000011 /* EditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorView.swift; sourceTree = "<group>"; };
-		A20000000000000000000012 /* AttachmentViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentViews.swift; sourceTree = "<group>"; };
-		A20000000000000000000013 /* IdeaGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdeaGroupView.swift; sourceTree = "<group>"; };
-		A20000000000000000000014 /* GroupPickerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupPickerViews.swift; sourceTree = "<group>"; };
-		A20000000000000000000015 /* HistoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryRow.swift; sourceTree = "<group>"; };
-		A20000000000000000000016 /* ReviewView+Interactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ReviewView+Interactions.swift"; sourceTree = "<group>"; };
 		A20000000000000000000017 /* DynamicTypeSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicTypeSupport.swift; sourceTree = "<group>"; };
-		A20000000000000000000018 /* NoteBackupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteBackupService.swift; sourceTree = "<group>"; };
-		A20000000000000000000019 /* AppShortcutSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShortcutSupport.swift; sourceTree = "<group>"; };
-		A2000000000000000000001A /* HomeComposerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerState.swift; sourceTree = "<group>"; };
-		A2000000000000000000001B /* SpeechTranscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriptionService.swift; sourceTree = "<group>"; };
-		A2000000000000000000001C /* HomeComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerView.swift; sourceTree = "<group>"; };
 		A2000000000000000000001D /* V02Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02Store.swift; sourceTree = "<group>"; };
 		A2000000000000000000001E /* V02AppShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02AppShellView.swift; sourceTree = "<group>"; };
 		A20000000000000000000027 /* V02CardDeck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CardDeck.swift; sourceTree = "<group>"; };
@@ -127,12 +90,7 @@
 		A20000000000000000000034 /* V02CollectionAttachmentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V02CollectionAttachmentView.swift; sourceTree = "<group>"; };
 		B20000000000000000000001 /* NoteStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStoreTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000002 /* AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		B20000000000000000000003 /* NoteStorePersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStorePersistenceTests.swift; sourceTree = "<group>"; };
-		B20000000000000000000004 /* HistorySelectionPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistorySelectionPolicyTests.swift; sourceTree = "<group>"; };
-		B20000000000000000000005 /* NoteStoreGroupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStoreGroupTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000006 /* AttachmentImporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentImporterTests.swift; sourceTree = "<group>"; };
-		B20000000000000000000007 /* HomeComposerStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeComposerStateTests.swift; sourceTree = "<group>"; };
-		B20000000000000000000008 /* SpeechTranscriptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechTranscriptionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,12 +117,8 @@
 				A20000000000000000000001 /* NOTE1App.swift */,
 				A20000000000000000000002 /* ModelStore.swift */,
 				A20000000000000000000003 /* DesignSystem.swift */,
-				A20000000000000000000017 /* DynamicTypeSupport.swift */,
-				A20000000000000000000018 /* NoteBackupService.swift */,
-				A20000000000000000000019 /* AppShortcutSupport.swift */,
-				A2000000000000000000001A /* HomeComposerState.swift */,
-				A2000000000000000000001B /* SpeechTranscriptionService.swift */,
-				A2000000000000000000001C /* HomeComposerView.swift */,
+									1D06E7DD975443FBB81E090A2 /* AttachmentSupport.swift */,
+A20000000000000000000017 /* DynamicTypeSupport.swift */,
 				A2000000000000000000001D /* V02Store.swift */,
 				A2000000000000000000001E /* V02AppShellView.swift */,
 				A20000000000000000000030 /* V02InspirationViews.swift */,
@@ -187,19 +141,7 @@
 				A2000000000000000000002B /* V02ReceiptBookView.swift */,
 				A2000000000000000000002C /* V02ReceiptDetailView.swift */,
 				A2000000000000000000002D /* V02ReceiptGenerationView.swift */,
-				A20000000000000000000004 /* AppShellView.swift */,
-				A20000000000000000000005 /* HomeView.swift */,
-				A2000000000000000000000E /* ReviewView.swift */,
-				A20000000000000000000016 /* ReviewView+Interactions.swift */,
 				A2000000000000000000000F /* ReviewInteractionPolicies.swift */,
-				A20000000000000000000010 /* ReviewComponents.swift */,
-				A20000000000000000000006 /* HistoryView.swift */,
-				A20000000000000000000011 /* EditorView.swift */,
-				A20000000000000000000012 /* AttachmentViews.swift */,
-				A20000000000000000000013 /* IdeaGroupView.swift */,
-				A20000000000000000000014 /* GroupPickerViews.swift */,
-				A20000000000000000000015 /* HistoryRow.swift */,
-				A2000000000000000000000C /* HistorySelectionPolicy.swift */,
 				A2000000000000000000000D /* AttachmentImporter.swift */,
 				A20000000000000000000007 /* Assets.xcassets */,
 				A30000000000000000000001 /* LaunchScreen.storyboard */,
@@ -213,12 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				B20000000000000000000001 /* NoteStoreTests.swift */,
-				B20000000000000000000003 /* NoteStorePersistenceTests.swift */,
-				B20000000000000000000004 /* HistorySelectionPolicyTests.swift */,
-				B20000000000000000000005 /* NoteStoreGroupTests.swift */,
 				B20000000000000000000006 /* AttachmentImporterTests.swift */,
-				B20000000000000000000007 /* HomeComposerStateTests.swift */,
-				B20000000000000000000008 /* SpeechTranscriptionTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
@@ -351,14 +288,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* NOTE1App.swift in Sources */,
+				1D06E7DD975443FBB81E090A /* AttachmentSupport.swift in Sources */,
 				A10000000000000000000002 /* ModelStore.swift in Sources */,
 				A10000000000000000000003 /* DesignSystem.swift in Sources */,
 				A10000000000000000000015 /* DynamicTypeSupport.swift in Sources */,
-				A10000000000000000000016 /* NoteBackupService.swift in Sources */,
-				A10000000000000000000017 /* AppShortcutSupport.swift in Sources */,
-				A10000000000000000000018 /* HomeComposerState.swift in Sources */,
-				A10000000000000000000019 /* SpeechTranscriptionService.swift in Sources */,
-				A1000000000000000000001A /* HomeComposerView.swift in Sources */,
 				A1000000000000000000001B /* V02Store.swift in Sources */,
 				A1000000000000000000001C /* V02AppShellView.swift in Sources */,
 				A10000000000000000000030 /* V02InspirationViews.swift in Sources */,
@@ -381,19 +314,7 @@
 				A1000000000000000000002B /* V02ReceiptBookView.swift in Sources */,
 				A1000000000000000000002C /* V02ReceiptDetailView.swift in Sources */,
 				A1000000000000000000002D /* V02ReceiptGenerationView.swift in Sources */,
-				A10000000000000000000004 /* AppShellView.swift in Sources */,
-				A10000000000000000000005 /* HomeView.swift in Sources */,
-				A1000000000000000000000C /* ReviewView.swift in Sources */,
-				A10000000000000000000014 /* ReviewView+Interactions.swift in Sources */,
 				A1000000000000000000000D /* ReviewInteractionPolicies.swift in Sources */,
-				A1000000000000000000000E /* ReviewComponents.swift in Sources */,
-				A10000000000000000000006 /* HistoryView.swift in Sources */,
-				A1000000000000000000000F /* EditorView.swift in Sources */,
-				A10000000000000000000010 /* AttachmentViews.swift in Sources */,
-				A10000000000000000000011 /* IdeaGroupView.swift in Sources */,
-				A10000000000000000000012 /* GroupPickerViews.swift in Sources */,
-				A10000000000000000000013 /* HistoryRow.swift in Sources */,
-				A1000000000000000000000A /* HistorySelectionPolicy.swift in Sources */,
 				A1000000000000000000000B /* AttachmentImporter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -403,12 +324,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B10000000000000000000001 /* NoteStoreTests.swift in Sources */,
-				B10000000000000000000002 /* NoteStorePersistenceTests.swift in Sources */,
-				B10000000000000000000003 /* HistorySelectionPolicyTests.swift in Sources */,
-				B10000000000000000000004 /* NoteStoreGroupTests.swift in Sources */,
 				B10000000000000000000005 /* AttachmentImporterTests.swift in Sources */,
-				B10000000000000000000006 /* HomeComposerStateTests.swift in Sources */,
-				B10000000000000000000007 /* SpeechTranscriptionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

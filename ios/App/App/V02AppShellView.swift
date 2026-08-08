@@ -21,32 +21,42 @@ enum V02PrimaryPage: String, CaseIterable, Identifiable {
     }
 }
 
+enum V02AppSheet: Identifiable {
+    case composer
+    case settings
+    case trash
+    case search
+    case history
+    case receipt(V02Receipt)
+
+    var id: String {
+        switch self {
+        case .composer: "composer"
+        case .settings: "settings"
+        case .trash: "trash"
+        case .search: "search"
+        case .history: "history"
+        case .receipt(let r): "receipt.\(r.id)"
+        }
+    }
+}
+
 struct V02AppShellView: View {
     @ObservedObject var store: V02Store
     @State private var page: V02PrimaryPage = .inspirations
-    @State private var isPresentingComposer = false
-    @State private var isPresentingSettings = false
-    @State private var isPresentingTrash = false
-    @State private var isPresentingSearch = false
-    @State private var isPresentingHistory = false
-    @State private var isManagingSelection = false
+    @State private var sheet: V02AppSheet?
     @State private var error: UserFacingAlert?
     @State private var generatedReceipt: V02Receipt?
-    @State private var presentedReceipt: V02Receipt?
     @State private var isCollectionWorkbenchPresented = false
     @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
+    @State private var isManagingSelection = false
     @State private var isCardOverlayPresented = false
     @State private var isReceiptOverlayPresented = false
 
     private var isPresentedRootModal: Bool {
-        presentedReceipt != nil
+        sheet != nil
             || isChildEditorPresented
-            || isPresentingComposer
-            || isPresentingSettings
-            || isPresentingTrash
-            || isPresentingSearch
-            || isPresentingHistory
             || isReceiptOverlayPresented
     }
 
@@ -56,6 +66,15 @@ struct V02AppShellView: View {
 
     private var shouldHideTabBarAccessibility: Bool {
         shouldHidePrimaryContentAccessibility || isCollectionWorkbenchPresented
+    }
+
+    private var shouldHideFloatingComposer: Bool {
+        sheet != nil
+            || isManagingSelection
+            || isCollectionWorkbenchPresented
+            || isChildEditorPresented
+            || isCardOverlayPresented
+            || generatedReceipt != nil
     }
 
     var body: some View {
@@ -79,11 +98,6 @@ struct V02AppShellView: View {
                     }
                 }
                     .toolbar(isChildEditorPresented ? .hidden : .visible, for: .tabBar)
-                    // The receipt-generation layer is a focused modal state
-                    // owned by the shell. Keep the underlying tabs out of the
-                    // accessibility tree while that layer is visible; the
-                    // tabs remain visually present behind the settled paper
-                    // but must not compete with its actions in VoiceOver.
                     .accessibilityHidden(
                         shouldHidePrimaryContentAccessibility
                     )
@@ -95,7 +109,7 @@ struct V02AppShellView: View {
                     store: store,
                     receipt: generatedReceipt,
                     onView: { receipt in
-                        presentedReceipt = receipt
+                        sheet = .receipt(receipt)
                         self.generatedReceipt = nil
                     },
                     onReturn: { self.generatedReceipt = nil },
@@ -122,24 +136,14 @@ struct V02AppShellView: View {
         .overlay(alignment: .bottomTrailing) {
             if V02NavigationLayoutPolicy.showsFloatingComposer(
                 on: page,
-                isOverlayPresented: isPresentingComposer
-                    || isPresentingSearch
-                    || isPresentingHistory
-                    || isPresentingSettings
-                    || isPresentingTrash
-                    || isManagingSelection
-                    || isCollectionWorkbenchPresented
-                    || isChildEditorPresented
-                    || isCardOverlayPresented
-                    || generatedReceipt != nil
-                    || presentedReceipt != nil
+                isOverlayPresented: shouldHideFloatingComposer || generatedReceipt != nil
             ) {
                 V02FloatingComposerButton(
                     action: {
                         if page == .collections {
                             isRequestingNewCollection = true
                         } else {
-                            isPresentingComposer = true
+                            sheet = .composer
                         }
                     },
                     label: V02NavigationLayoutPolicy.composerLabel(for: page)
@@ -149,33 +153,29 @@ struct V02AppShellView: View {
                     .zIndex(V02ReceiptGenerationLayoutPolicy.composerZIndex)
             }
         }
-        .sheet(isPresented: $isPresentingComposer) {
-            V02ComposerView(store: store) { error in
-                self.error = UserFacingAlert(error: error)
+        .sheet(item: $sheet) { item in
+            switch item {
+            case .composer:
+                V02ComposerView(store: store) { error in
+                    self.error = UserFacingAlert(error: error)
+                }
+            case .settings:
+                V02SettingsView(store: store)
+            case .trash:
+                V02TrashView(store: store)
+            case .search:
+                V02SearchView(store: store)
+            case .history:
+                V02CollectionHistoryView(store: store) { error in
+                    self.error = UserFacingAlert(error: error)
+                }
+            case .receipt(let receipt):
+                V02ReceiptDetailView(store: store, receipt: receipt)
             }
-        }
-        .sheet(isPresented: $isPresentingSettings) {
-            V02SettingsView(store: store)
-        }
-        .sheet(isPresented: $isPresentingTrash) {
-            V02TrashView(store: store)
-        }
-        .sheet(isPresented: $isPresentingSearch) {
-            V02SearchView(store: store)
-        }
-        .sheet(isPresented: $isPresentingHistory) {
-            V02CollectionHistoryView(store: store) { error in
-                self.error = UserFacingAlert(error: error)
-            }
-        }
-        .sheet(item: $presentedReceipt) { receipt in
-            V02ReceiptDetailView(store: store, receipt: receipt)
         }
         .tint(NoteTheme.ink)
         .noteErrorAlert($error)
         .onChange(of: page) { _, newPage in
-            // Selection is local to the page that owns it; never carry a
-            // hidden selection mode into another primary destination.
             isManagingSelection = false
             if newPage != .collections {
                 isCollectionWorkbenchPresented = false
@@ -190,9 +190,9 @@ struct V02AppShellView: View {
             V02InspirationListView(
                 store: store,
                 isSelecting: $isManagingSelection,
-                showSettings: { isPresentingSettings = true },
-                showTrash: { isPresentingTrash = true },
-                showSearch: { isPresentingSearch = true },
+                showSettings: { sheet = .settings },
+                showTrash: { sheet = .trash },
+                showSearch: { sheet = .search },
                 onEditingChange: { isChildEditorPresented = $0 }
             ) { error in
                 self.error = UserFacingAlert(error: error)
@@ -201,7 +201,7 @@ struct V02AppShellView: View {
             V02CardPreviewView(
                 store: store,
                 onBack: { page = .inspirations },
-                onHistory: { isPresentingHistory = true },
+                onHistory: { sheet = .history },
                 reportError: { error in
                 self.error = UserFacingAlert(error: error)
                 },

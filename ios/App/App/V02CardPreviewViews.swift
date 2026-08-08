@@ -320,7 +320,7 @@ struct V02CardPreviewView: View {
             try store.assign(inspirationID, to: collectionID)
             pendingInspirationID = nil
             isShowingCollectionPicker = false
-        } catch NoteStoreError.invalidOperation(_) {
+        } catch StoreError.invalidOperation(_) {
             capacityError = "当前版本每个构思集只支持 10 条灵感"
         } catch V02DomainError.collectionCapacity {
             capacityError = "当前版本每个构思集只支持 10 条灵感"

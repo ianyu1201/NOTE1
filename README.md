@@ -2,7 +2,7 @@
 
 NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App。产品主张是“简单记，快速看”。
 
-当前工程使用原生 SwiftUI，最低 iOS 17，不包含浏览器版本、PWA、WebView、后端、登录、云同步或 AI。
+当前工程使用原生 SwiftUI，最低 iOS 17，不包含浏览器版本、PWA、WebView、后端、登录、云同步或 AI。正式代码路径已收敛到 V0.2 领域模型与 `V02*` 页面；V0.1 通过 Git 标签保留历史事实，不再参与当前 target 编译。
 
 ## 当前状态
 
@@ -73,10 +73,11 @@ NOTE1/
 - 一级外壳：`ios/App/App/V02AppShellView.swift`
 - 设计系统：`ios/App/App/DesignSystem.swift`
 - 领域与持久化：`ios/App/App/V02Store.swift`、`ios/App/App/ModelStore.swift`
+- 共享附件能力：`ios/App/App/AttachmentImporter.swift`、`ios/App/App/AttachmentSupport.swift`
 - 四个核心页面：`V02InspirationViews.swift`、`V02CardPreviewViews.swift`、`V02CollectionViews.swift`、`V02ReceiptBookView.swift`
 - 测试：`ios/App/AppTests/`
 
-V0.1 与 V0.2 文件目前同时存在。未经能力映射、测试和用户授权，不得删除旧实现。
+V0.1 旧实现已经完成能力映射和 target 清理；历史源码保留在 `v0.1.0` 标签及治理前本机备份中，当前 App 只编译 V0.2 活跃代码。
 
 ## Xcode 运行
 
@@ -116,7 +117,7 @@ xcodebuild \
 
 ## 当前验证边界
 
-2026-08-04 在当前正式目录治理分支独立运行 100 项 XCTest，通过 100、失败 0；通用 iOS 构建和静态分析均成功。该结果不替代：
+2026-08-08 在当前代码治理结果上独立运行 69 项 XCTest，通过 69、失败 0；通用 iOS 构建和静态分析均成功。历史提交的 86 项或 100 项结果只对应清理前测试集合。自动化结果不替代：
 
 - 真机完整闭环；
 - VoiceOver 真实语音导航；

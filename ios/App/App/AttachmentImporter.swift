@@ -18,8 +18,8 @@ enum AttachmentImporter {
 
         let values = try url.resourceValues(forKeys: [.fileSizeKey, .contentTypeKey])
         if let fileSize = values.fileSize,
-           fileSize > NoteStore.maximumAttachmentSize {
-            throw NoteStoreError.attachmentTooLarge(name: url.lastPathComponent)
+           fileSize > V02Store.maximumResourceSize {
+            throw StoreError.attachmentTooLarge(name: url.lastPathComponent)
         }
 
         return AttachmentInput(
