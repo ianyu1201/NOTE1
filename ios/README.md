@@ -1,7 +1,7 @@
 # NOTE1 iOS 工程入口
 
-> 当前代码治理分支：`codex/note1-current-folder-governance`
-> 当前代码基线：`6aafa9b1198def7e08c63693c13d3b5accd8b9a4`
+> 当前产品与设计分支：`codex/note1-v03-product-design`
+> 当前现状代码基线：`b403277d61335eaf1ea0c930faca338686624d8c`
 > 最近验证：2026-08-08，69 项 XCTest 全部通过，通用 iOS 构建和静态分析成功
 
 ## 运行入口
@@ -45,3 +45,11 @@
 3. `xcuserdata`、DerivedData、`.DS_Store` 和临时截图不进入版本库。
 4. V0.3 产品基准冻结前，不做大规模业务架构重写。
 5. 当前自动化结果来自 iPhone 13 mini / iOS 26.5 模拟器，不替代真机 VoiceOver、最大辅助字号和 iOS 17–25 材质降级验收。
+
+## 唯一开发依据
+
+1. `docs/01_产品/V0.3/NOTE1_PRD_V0.3.md`
+2. `docs/02_设计/V0.3/NOTE1_V0.3产品设计与交互规格.md`
+3. `docs/03_工程/V0.3/NOTE1_V0.3开发与运行验收基线.md`
+
+旧版本文档不再参与开发裁决；历史事实通过 Git、ADR、`media/` 和 `evidence/` 查询。
