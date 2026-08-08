@@ -1,6 +1,8 @@
 # NOTE1 iOS 工程入口
 
-> 当前代码基线：`v0.3-product-start-20260803`
+> 当前代码治理分支：`codex/note1-current-folder-governance`
+> 当前代码基线：`6aafa9b1198def7e08c63693c13d3b5accd8b9a4`
+> 最近验证：2026-08-08，69 项 XCTest 全部通过，通用 iOS 构建和静态分析成功
 
 ## 运行入口
 
@@ -42,3 +44,4 @@
 2. 移动 Swift 文件必须同步 `project.pbxproj`，并完成构建与全部测试。
 3. `xcuserdata`、DerivedData、`.DS_Store` 和临时截图不进入版本库。
 4. V0.3 产品基准冻结前，不做大规模业务架构重写。
+5. 当前自动化结果来自 iPhone 13 mini / iOS 26.5 模拟器，不替代真机 VoiceOver、最大辅助字号和 iOS 17–25 材质降级验收。

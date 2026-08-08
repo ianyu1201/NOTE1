@@ -2,8 +2,9 @@
 
 > 文档用途：新 V0.3 产品会话的唯一启动入口  
 > 状态：产品探索交接基线，不授权业务代码开发  
-> 封存标签：`v0.3-product-start-20260803`  
-> 更新日期：2026-08-03
+> 历史探索标签：`v0.3-product-start-20260803`
+> 当前代码治理基线：`codex/note1-current-folder-governance@6aafa9b1198d`
+> 更新日期：2026-08-08
 
 ## 1. 交接目标
 
@@ -22,9 +23,9 @@
 
 ### 2.1 Git 入口
 
-- 封存标签：`v0.3-product-start-20260803`
-- 封存分支：`codex/note1-v03-product-baseline`
-- 最新 V0.2 代码来源：`codex/note1-v02@b7a4e0744861`
+- 历史产品探索标签：`v0.3-product-start-20260803`
+- 当前代码治理分支：`codex/note1-current-folder-governance`
+- 当前 V0.2 代码基线：`6aafa9b1198def7e08c63693c13d3b5accd8b9a4`
 - V0.1 历史版本：`v0.1.0`
 
 新会话开工时先执行：
@@ -36,7 +37,7 @@ git describe --tags --always
 git worktree list
 ```
 
-如果当前提交不是封存标签对应提交，先停止产品结论输出，说明实际基线差异。
+如果当前代码不是上述治理基线或其仅含文档更新的后继提交，先说明实际基线差异，再形成产品或开发结论。
 
 ### 2.2 当前工程事实
 
@@ -46,11 +47,12 @@ git worktree list
 - App 入口：`NOTE1App.swift`；
 - 当前运行外壳：`V02AppShellView`；
 - 当前领域与持久化入口：`V02Store`、`V02DomainEngine`；
+- 当前 App target 只编译 V0.2 活跃实现；V0.1 源码由 `v0.1.0` 标签和 Git 历史保存；
 - 当前四个一级页面：灵感、卡片预览、构思集、小票册；
 - 数据与附件完全保存在本机；
 - 无登录、无后端、无云同步、无 AI。
 
-2026-08-03 在 `b7a4e0744861` 上独立运行 86 项 XCTest，通过 86、失败 0。该数字只对应这一提交，不代表 V0.3 后续提交，也不替代真机验收。
+2026-08-08 在 `6aafa9b1198d` 上独立运行 69 项 XCTest，通过 69、失败 0；通用 iOS 构建和静态分析均成功。该数字只对应当前代码治理基线，不代表 V0.3 后续提交，也不替代真机验收。
 
 ## 3. 信息源优先级
 
@@ -125,11 +127,11 @@ git worktree list
 | 小票与小票册 | `V02ReceiptBookView.swift`、`V02ReceiptDeck.swift`、`V02ReceiptPaper.swift`、`V02ReceiptGenerationView.swift` |
 | 搜索、设置与回收站 | `V02SearchView.swift`、`V02SettingsView.swift`、`V02TrashView.swift` |
 | 领域与持久化 | `V02Store.swift`、`ModelStore.swift` |
-| 附件、音频与导出 | `AttachmentImporter.swift`、`AttachmentViews.swift`、`V02AudioPlayback.swift`、`V02ReceiptExport*.swift` |
-| 备份恢复 | `V02BackupService.swift`、`NoteBackupService.swift` |
+| 附件、音频与导出 | `AttachmentImporter.swift`、`AttachmentSupport.swift`、`V02AudioPlayback.swift`、`V02ReceiptExport*.swift` |
+| 备份恢复 | `V02BackupService.swift` |
 | 自动化测试 | `ios/App/AppTests/` 全目录 |
 
-V0.1 与 V0.2 文件同时存在。新会话必须确认实际入口和 target 编译关系，不能因文件名较旧就擅自删除。
+当前正式 target 已按 ADR-004 收敛到 V0.2 单一活跃代码路径。新会话仍需确认实际入口和 target 编译关系；如需恢复 V0.1 能力，只能从历史基线核对后重新适配到 V0.2，不得直接恢复旧外壳。
 
 ## 5. 当前产品基线
 
@@ -192,11 +194,12 @@ NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App�
 
 ### 6.2 已知工程问题
 
-1. 附件预览/图标存在重复标识风险；
+1. 附件预览/图标的唯一标识仍需在代表性数据上复验；
 2. 大备份与恢复可能阻塞主线程；
-3. V0.1 与 V0.2 双实现同时编译，需要审计后再决定隔离或删除；
-4. 高频完整状态保存需要性能测量；
-5. 真机 VoiceOver、文件提供器权限、中文键盘、分享最终投递和 iOS 17–25 材质降级仍有手工证据缺口。
+3. 高频完整状态保存需要性能测量；
+4. 真机 VoiceOver、文件提供器权限、中文键盘、分享最终投递和 iOS 17–25 材质降级仍有手工证据缺口。
+
+V0.1/V0.2 双实现同时编译的问题已按 ADR-004 关闭，不再作为下一阶段阻断项。
 
 详细内容见 `NOTE1_V0.2源码审查与V0.2.1稳定化建议.md`。
 
@@ -305,7 +308,6 @@ NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App�
 - V0.3 现有复盘文档已经治理冲突，但不是最终 V0.3 PRD；
 - 当前没有冻结 V0.3 新视觉，后续由新产品会话与用户重新确认；
 - 当前 V0.2 代码是 V0.3 的功能与工程起点，不是最终 UI；
-- 86 项测试不替代真机与完整体验验收；
+- 当前 69 项自动化测试不替代真机与完整体验验收；
 - 根 README 曾长期滞后，本次封存已更新，但历史文档仍需按信息源优先级理解；
 - 外部 Skill 的结论只保留有证据且不冲突的部分。
-

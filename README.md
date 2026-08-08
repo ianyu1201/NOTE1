@@ -77,7 +77,7 @@ NOTE1/
 - 四个核心页面：`V02InspirationViews.swift`、`V02CardPreviewViews.swift`、`V02CollectionViews.swift`、`V02ReceiptBookView.swift`
 - 测试：`ios/App/AppTests/`
 
-V0.1 旧实现已经完成能力映射和 target 清理；历史源码保留在 `v0.1.0` 标签及治理前本机备份中，当前 App 只编译 V0.2 活跃代码。
+V0.1 旧实现已经完成能力映射和 target 清理；历史源码保留在 `v0.1.0` 标签和 Git 历史中，当前 App 只编译 V0.2 活跃代码。
 
 ## Xcode 运行
 
