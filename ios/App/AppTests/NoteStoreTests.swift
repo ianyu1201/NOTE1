@@ -1435,6 +1435,102 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertTrue(snapshot.statistics.detailText.contains("最终文字数量：7 字"))
     }
 
+    func testV03CoreOfflineJourneySurvivesRestartBackupAndRestore() throws {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let sourceDirectory = directory.appendingPathComponent("v03-core-journey-source")
+        let restoredDirectory = directory.appendingPathComponent("v03-core-journey-restored")
+        let source = V02Store(storageDirectory: sourceDirectory)
+        let attachmentData = Data("NOTE1 attachment".utf8)
+        let attachment = try source.createResource(
+            input: AttachmentInput(
+                name: "核心闭环.txt",
+                mimeType: "text/plain",
+                data: attachmentData
+            ),
+            source: .importedAttachment,
+            now: base
+        )
+        let inspiration = try source.createInspiration(
+            text: "第一轮原始灵感",
+            resourceIDs: [attachment.id],
+            now: base.addingTimeInterval(1)
+        )
+
+        try source.tuckAway(inspiration.id, now: base.addingTimeInterval(2))
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: source.state, scope: .tuckedAway).map(\.id),
+            ["inspiration.\(inspiration.id.uuidString)"]
+        )
+        try source.returnToCardFlow(inspiration.id, now: base.addingTimeInterval(3))
+        XCTAssertTrue(V02HistoryCenterPolicy.entries(state: source.state, scope: .tuckedAway).isEmpty)
+
+        let collection = try source.createCollectionAndRoundAndAssign(
+            inspirationID: inspiration.id,
+            name: "完整功能闭环",
+            now: base.addingTimeInterval(4)
+        )
+        XCTAssertTrue(source.cardPreviewEntries.isEmpty)
+        try source.updateInspiration(
+            inspiration.id,
+            text: "第一轮已编辑",
+            now: base.addingTimeInterval(5)
+        )
+        let firstRoundID = try XCTUnwrap(
+            source.activeCollections.first(where: { $0.id == collection.id })?.currentRoundID
+        )
+        let firstReceipt = try source.endRound(firstRoundID, now: base.addingTimeInterval(6))
+
+        let secondRound = try source.continueThinking(
+            in: collection.id,
+            now: base.addingTimeInterval(7)
+        )
+        try source.updateInspiration(
+            inspiration.id,
+            text: "第二轮结论",
+            now: base.addingTimeInterval(8)
+        )
+        let secondReceipt = try source.endRound(secondRound.id, now: base.addingTimeInterval(9))
+
+        XCTAssertEqual(firstReceipt.snapshot.members.map(\.text), ["第一轮已编辑"])
+        XCTAssertEqual(secondReceipt.snapshot.members.map(\.text), ["第二轮结论"])
+        XCTAssertEqual(firstReceipt.snapshot.roundNumber, 1)
+        XCTAssertEqual(secondReceipt.snapshot.roundNumber, 2)
+        XCTAssertEqual(secondReceipt.statistics.attachmentCount, 1)
+        XCTAssertTrue(V02ReceiptExport.markdown(for: secondReceipt).contains("第 2 轮构思"))
+        XCTAssertEqual(source.search("第一轮已编辑", scope: .receipts).count, 1)
+        XCTAssertEqual(source.search("第二轮结论", scope: .receipts).count, 1)
+
+        let trashIDs = try source.deleteInspiration(
+            inspiration.id,
+            now: base.addingTimeInterval(10)
+        )
+        XCTAssertEqual(trashIDs.count, 1)
+        XCTAssertTrue(source.state.inspirations.isEmpty)
+        XCTAssertEqual(source.state.receipts.count, 2)
+
+        let backupData = try source.exportBackupData(now: base.addingTimeInterval(11))
+        let target = V02Store(storageDirectory: restoredDirectory)
+        try target.restoreBackupData(backupData)
+        let reloaded = V02Store(storageDirectory: restoredDirectory)
+
+        XCTAssertEqual(Set(reloaded.state.receipts.map { $0.snapshot.roundNumber }), Set([1, 2]))
+        XCTAssertEqual(reloaded.state.trash.count, 1)
+        let restoredAttachment = try XCTUnwrap(reloaded.state.resources.first { $0.id == attachment.id })
+        XCTAssertEqual(try Data(contentsOf: reloaded.resourceURL(restoredAttachment)), attachmentData)
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: reloaded.state, scope: .receipts).count,
+            2
+        )
+
+        let trashEntryID = try XCTUnwrap(reloaded.state.trash.first?.id)
+        try reloaded.restoreTrash(trashEntryID, now: base.addingTimeInterval(12))
+        let restoredInspiration = try XCTUnwrap(reloaded.state.inspirations.first)
+        XCTAssertEqual(restoredInspiration.id, inspiration.id)
+        XCTAssertEqual(restoredInspiration.text, "第二轮结论")
+        XCTAssertNil(restoredInspiration.collectionID)
+        XCTAssertEqual(reloaded.cardPreviewEntries.map(\.id), [inspiration.id])
+    }
+
     func testV03LegacyOrphanReceiptsMigrateAcrossActiveAndTrashBuckets() throws {
         let base = Date(timeIntervalSince1970: 1_700_000_000)
         let collectionID = UUID()
