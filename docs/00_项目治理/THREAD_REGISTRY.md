@@ -4,7 +4,7 @@
 
 | 任务 ID | 角色与阶段 | 工作目录 | 分支 | 固定起点 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `019fe09c-5903-7293-bd06-37e5f915fca0` | V0.3 产品与设计，S2→S3 | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` | `codex/note1-v03-product-design` | `b403277d61335eaf1ea0c930faca338686624d8c` | active；已确认全局历史中心及“全部、已收起、构思历程、小票”分类文案；V0.3 未冻结 | 确认历史中心页面标题与综合时间线视觉，再进入卡片堆、归入按钮和真实小票的视觉方案确认 |
+| `019fe09c-5903-7293-bd06-37e5f915fca0` | V0.3 产品与设计，S2→S3 | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` | `codex/note1-v03-product-design` | `b403277d61335eaf1ea0c930faca338686624d8c` | active；全局历史中心标题、分类和入口规则已确认；V0.3 未冻结 | 集中确认剩余产品与视觉问题，再形成确认视觉并复核 S3 门禁 |
 
 ## 当前边界
 
