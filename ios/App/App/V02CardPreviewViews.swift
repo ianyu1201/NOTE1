@@ -219,45 +219,18 @@ struct V02CardPreviewView: View {
                 .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
         }
         .background(NoteTheme.background.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
-        // The card paper starts immediately below the title band; keep the
-        // native toolbar surface opaque so card text never ghosts behind the
-        // back/history controls while the deck changes pages.
-        .toolbarBackground(NoteTheme.background, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
-            }
-            .noteSharedBackgroundHidden()
-            ToolbarItem(placement: .principal) {
-                Text("NOTE1")
-                    .noteFontCapped(
-                        size: 20,
-                        maximumScale: 1.2,
-                        weight: .medium,
-                        design: .rounded,
-                        relativeTo: .headline
-                    )
-                    .tracking(6)
-                    .foregroundStyle(NoteTheme.ink)
-                    .accessibilityAddTraits(.isHeader)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 4) {
-                    V02GlassIconButton(
-                        systemName: "clock.arrow.circlepath",
-                        label: "历史记录",
-                        action: showHistory
-                    )
-                    V02GlassIconButton(
-                        systemName: "magnifyingglass",
-                        label: "搜索",
-                        action: showSearch
-                    )
+        .toolbar(.hidden, for: .navigationBar)
+        .notePrimaryHeader {
+            if editingInspiration == nil {
+                V02PrimaryPageHeader(
+                    showTrash: showTrash,
+                    showSettings: showSettings,
+                    showHistory: showHistory,
+                    showSearch: showSearch
+                ) {
+                    V02PrimaryHeaderTitle()
                 }
             }
-            .noteSharedBackgroundHidden()
         }
         }
         .accessibilityHidden(editingInspiration != nil)

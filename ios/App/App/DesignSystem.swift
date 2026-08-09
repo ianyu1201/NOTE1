@@ -116,6 +116,15 @@ enum V02NavigationLayoutPolicy {
     }
 }
 
+/// One geometry and brand contract for the four primary-page headers. Page
+/// actions may differ, but the left, center, and right anchors never do.
+enum V02PrimaryHeaderPolicy {
+    static let title = "NOTE1"
+    static let titleWidth: CGFloat = 120
+    static let titleTracking: CGFloat = 5
+    static let actionSpacing: CGFloat = 4
+}
+
 struct GlassSurface: ViewModifier {
     var cornerRadius: CGFloat = NoteTheme.cornerRadius
     var strokeOpacity: Double = 0.76
@@ -298,6 +307,82 @@ struct V02GlobalMenuButton: View {
             V02GlassIconLabel(systemName: "line.3.horizontal")
         }
         .accessibilityLabel("本机功能与设置")
+    }
+}
+
+struct V02PrimaryHeaderTitle: View {
+    var showsMenuIndicator = false
+
+    var body: some View {
+        ZStack {
+            Text(V02PrimaryHeaderPolicy.title)
+                .noteFontCapped(
+                    size: 20,
+                    maximumScale: 1.2,
+                    weight: .semibold,
+                    design: .rounded,
+                    relativeTo: .headline
+                )
+                .tracking(V02PrimaryHeaderPolicy.titleTracking)
+
+            if showsMenuIndicator {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+                    .offset(x: 55)
+                    .accessibilityHidden(true)
+            }
+        }
+        .frame(width: V02PrimaryHeaderPolicy.titleWidth, height: NoteTheme.controlSize)
+        .foregroundStyle(NoteTheme.ink)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+struct V02PrimaryPageHeader<Center: View>: View {
+    let showTrash: () -> Void
+    let showSettings: () -> Void
+    let showHistory: () -> Void
+    let showSearch: () -> Void
+    let center: Center
+
+    init(
+        showTrash: @escaping () -> Void,
+        showSettings: @escaping () -> Void,
+        showHistory: @escaping () -> Void,
+        showSearch: @escaping () -> Void,
+        @ViewBuilder center: () -> Center
+    ) {
+        self.showTrash = showTrash
+        self.showSettings = showSettings
+        self.showHistory = showHistory
+        self.showSearch = showSearch
+        self.center = center()
+    }
+
+    var body: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
+                Spacer(minLength: 0)
+                HStack(spacing: V02PrimaryHeaderPolicy.actionSpacing) {
+                    V02GlassIconButton(
+                        systemName: "clock.arrow.circlepath",
+                        label: "历史记录",
+                        action: showHistory
+                    )
+                    V02GlassIconButton(
+                        systemName: "magnifyingglass",
+                        label: "搜索",
+                        action: showSearch
+                    )
+                }
+            }
+
+            center
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
+        .background(NoteTheme.background)
     }
 }
 

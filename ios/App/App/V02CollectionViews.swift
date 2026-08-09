@@ -208,34 +208,14 @@ struct V02CollectionListView: View {
     }
 
     private var collectionHeader: some View {
-        ZStack {
-            Text("构思集")
-                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                .foregroundStyle(NoteTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack(spacing: 10) {
-                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
-
-                Spacer(minLength: 0)
-
-                Button {
-                    showHistory()
-                } label: {
-                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
-                }
-                .accessibilityLabel("历史")
-                Button {
-                    showSearch()
-                } label: {
-                    V02GlassIconLabel(systemName: "magnifyingglass")
-                }
-                .accessibilityLabel("搜索构思集")
-            }
+        V02PrimaryPageHeader(
+            showTrash: showTrash,
+            showSettings: showSettings,
+            showHistory: showHistory,
+            showSearch: showSearch
+        ) {
+            V02PrimaryHeaderTitle()
         }
-        .padding(.horizontal, NoteTheme.horizontalPadding)
-        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
-        .background(NoteTheme.background)
     }
 
     private func finishRound(_ round: V02ThinkingRound) {

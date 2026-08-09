@@ -110,13 +110,12 @@ struct V02InspirationListView: View {
                     .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
                     .allowsHitTesting(false)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(editingInspiration == nil ? .visible : .hidden, for: .navigationBar)
-            // Keep the native toolbar semantics while giving the title band an
-            // opaque page surface. A transparent toolbar lets scrolled rows
-            // bleed through the title and top controls on compact viewports.
-            .toolbarBackground(NoteTheme.background, for: .navigationBar)
-            .toolbar { inspirationToolbar }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader {
+                if editingInspiration == nil {
+                    inspirationHeader
+                }
+            }
         }
         .alert("删除选中的灵感？", isPresented: $isConfirmingDelete) {
             Button("删除", role: .destructive) {
@@ -139,43 +138,21 @@ struct V02InspirationListView: View {
         }
     }
 
-    @ToolbarContentBuilder
-    private var inspirationToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
-        }
-        .noteSharedBackgroundHidden()
-        ToolbarItem(placement: .principal) {
+    private var inspirationHeader: some View {
+        V02PrimaryPageHeader(
+            showTrash: showTrash,
+            showSettings: showSettings,
+            showHistory: showHistory,
+            showSearch: showSearch
+        ) {
             Menu {
                 Button("创建时间从新到旧") { isAscending = false }
                 Button("创建时间从旧到新") { isAscending = true }
             } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("NOTE1")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .tracking(4)
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .foregroundStyle(NoteTheme.ink)
+                V02PrimaryHeaderTitle(showsMenuIndicator: true)
             }
             .accessibilityLabel("NOTE1，排序")
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            HStack(spacing: 4) {
-                V02GlassIconButton(
-                    systemName: "clock.arrow.circlepath",
-                    label: "历史记录",
-                    action: showHistory
-                )
-                V02GlassIconButton(
-                    systemName: "magnifyingglass",
-                    label: "搜索",
-                    action: showSearch
-                )
-            }
-        }
-        .noteSharedBackgroundHidden()
     }
 
     private var selectionToolbar: some View {

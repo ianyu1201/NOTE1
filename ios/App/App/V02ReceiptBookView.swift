@@ -132,29 +132,14 @@ struct V02ReceiptBookView: View {
     }
 
     private var receiptHeader: some View {
-        ZStack {
-            HStack {
-                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
-                Spacer(minLength: 0)
-                HStack(spacing: 4) {
-                    V02GlassIconButton(
-                        systemName: "clock.arrow.circlepath",
-                        label: "历史记录",
-                        action: showHistory
-                    )
-                    V02GlassIconButton(
-                        systemName: "magnifyingglass",
-                        label: "搜索",
-                        action: showSearch
-                    )
-                }
-            }
-
+        V02PrimaryPageHeader(
+            showTrash: showTrash,
+            showSettings: showSettings,
+            showHistory: showHistory,
+            showSearch: showSearch
+        ) {
             receiptTitleMenu
         }
-        .padding(.horizontal, NoteTheme.horizontalPadding)
-        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
-        .background(NoteTheme.background)
     }
 
     private var receiptTitleMenu: some View {
@@ -178,16 +163,9 @@ struct V02ReceiptBookView: View {
                 if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
             }
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("小票册")
-                    .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-            }
-            .foregroundStyle(NoteTheme.ink)
-            .accessibilityAddTraits(.isHeader)
+            V02PrimaryHeaderTitle(showsMenuIndicator: true)
         }
-        .accessibilityLabel("小票册，更多操作")
+        .accessibilityLabel("NOTE1，小票更多操作")
     }
 
     private var selectionToolbar: some View {
