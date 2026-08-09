@@ -135,6 +135,11 @@ enum V02PrimaryContentLayoutPolicy {
     static let stackedPaperMiddleOffset: CGFloat = 5
 }
 
+enum V02PrimaryTypographyPolicy {
+    static let contextLabelSize: CGFloat = 14
+    static let contextLabelMaximumScale: CGFloat = 1.25
+}
+
 struct GlassSurface: ViewModifier {
     var cornerRadius: CGFloat = NoteTheme.cornerRadius
     var strokeOpacity: Double = 0.76

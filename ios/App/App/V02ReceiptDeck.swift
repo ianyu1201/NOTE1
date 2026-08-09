@@ -39,6 +39,34 @@ enum V02ReceiptGesturePolicy {
     }
 }
 
+enum V02ReceiptLayoutPolicy {
+    static let minimumPaperHeight: CGFloat = 560
+    static let baseTextHeight: CGFloat = 420
+    static let memberRowHeight: CGFloat = 28
+    static let textLineHeight: CGFloat = 20
+    static let attachmentBlockHeight: CGFloat = 58
+    static let photoStripHeight: CGFloat = 110
+
+    static func estimatedPaperHeight(
+        memberCount: Int,
+        textLineCount: Int,
+        hasAttachments: Bool,
+        hasPhotoStrip: Bool,
+        textScale: CGFloat
+    ) -> CGFloat {
+        let safeMemberCount = CGFloat(max(memberCount, 1))
+        let safeLineCount = CGFloat(max(textLineCount, 1))
+        let safeScale = max(textScale, 1)
+        let scalableHeight = baseTextHeight
+            + safeMemberCount * memberRowHeight
+            + safeLineCount * textLineHeight
+            + (hasAttachments ? attachmentBlockHeight : 0)
+        let estimatedHeight = scalableHeight * safeScale
+            + (hasPhotoStrip ? photoStripHeight : 0)
+        return max(estimatedHeight, minimumPaperHeight)
+    }
+}
+
 /// P0-C2 会在此容器加入统一的水平/向下手势状态；C1 先固定层级与纸边，避免正文穿透。
 struct V02ReceiptDeck: View {
     @ObservedObject var store: V02Store
@@ -49,11 +77,9 @@ struct V02ReceiptDeck: View {
     let openReceipt: (V02Receipt) -> Void
     let minimumPaperHeight: CGFloat
     let templateFor: (V02Receipt) -> V02ReceiptTemplate
+    let translation: CGSize
+    let axis: V02ReceiptGestureAxis
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var translation: CGSize = .zero
-    @State private var axis: V02ReceiptGestureAxis = .none
-    @State private var gestureStartedAtEdge = false
-    @State private var gestureStartedAtExtractionHandle = false
 
     private var currentReceipt: V02Receipt? {
         guard receipts.indices.contains(index) else { return nil }
@@ -63,7 +89,6 @@ struct V02ReceiptDeck: View {
     var body: some View {
         GeometryReader { proxy in
             let width = max(proxy.size.width, 1)
-            let edgeInset = min(32, width * 0.08)
             let extractionDistance = max(proxy.size.height * 1.25, 1)
             let horizontalProgress = V02ReceiptGesturePolicy.normalizedProgress(translation: translation.width, extent: width)
             let downwardProgress = V02ReceiptGesturePolicy.normalizedProgress(translation: max(translation.height, 0), extent: extractionDistance)
@@ -132,80 +157,6 @@ struct V02ReceiptDeck: View {
                 .onTapGesture {
                     if !isSelecting { openReceipt(receipt) }
                 }
-                .simultaneousGesture(isSelecting ? nil : DragGesture(minimumDistance: 10)
-                    .onChanged { value in
-                        if value.startLocation.x < edgeInset || value.startLocation.x > width - edgeInset {
-                            gestureStartedAtEdge = true
-                            return
-                        }
-                        guard !gestureStartedAtEdge else { return }
-                        if axis == .none {
-                            let proposedAxis = V02ReceiptGesturePolicy.axis(for: value.translation)
-                            if proposedAxis == .downward {
-                                gestureStartedAtExtractionHandle = V02ReceiptGesturePolicy.canStartExtraction(at: value.startLocation)
-                                guard gestureStartedAtExtractionHandle else { return }
-                            }
-                            axis = proposedAxis
-                        }
-                        translation = value.translation
-                    }
-                    .onEnded { value in
-                        guard !gestureStartedAtEdge else {
-                            gestureStartedAtEdge = false
-                            gestureStartedAtExtractionHandle = false
-                            axis = .none
-                            translation = .zero
-                            return
-                        }
-                        let locked = axis
-                        switch locked {
-                        case .horizontal:
-                            if let target = V02ReceiptGesturePolicy.horizontalTarget(index: index, count: receipts.count, translation: value.translation.width) {
-                                let duration = reduceMotion ? 0.12 : 0.32
-                                withAnimation(reduceMotion ? .easeOut(duration: duration) : .smooth(duration: duration)) {
-                                    translation.width = reduceMotion
-                                        ? (value.translation.width < 0 ? -24 : 24)
-                                        : (value.translation.width < 0 ? -width : width)
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
-                                    index = target
-                                    translation = .zero
-                                    axis = .none
-                                    gestureStartedAtExtractionHandle = false
-                                }
-                            } else {
-                                withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
-                                    translation = .zero
-                                    axis = .none
-                                    gestureStartedAtExtractionHandle = false
-                                }
-                            }
-                        case .downward:
-                            if gestureStartedAtExtractionHandle,
-                               V02ReceiptGesturePolicy.shouldExtract(value.translation.height) {
-                                withAnimation(.easeIn(duration: reduceMotion ? 0.16 : 0.28)) { translation.height = extractionDistance }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.18 : 0.3)) {
-                                    openReceipt(receipt)
-                                    translation = .zero
-                                    axis = .none
-                                    gestureStartedAtExtractionHandle = false
-                                }
-                            } else {
-                                withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
-                                    translation = .zero
-                                    axis = .none
-                                    gestureStartedAtExtractionHandle = false
-                                }
-                            }
-                        case .none:
-                            withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
-                                translation = .zero
-                                axis = .none
-                                gestureStartedAtExtractionHandle = false
-                            }
-                        }
-                    }
-                )
                 .accessibilityIdentifier("v02.receipt.current")
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint("点按查看小票；向下抽取可进入详情。")

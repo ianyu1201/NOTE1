@@ -34,7 +34,12 @@ struct V02CollectionListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                 Text("你的灵感容器 · 持续积累，随时启发")
-                    .noteFont(size: 13, relativeTo: .caption)
+                    .noteFontCapped(
+                        size: V02PrimaryTypographyPolicy.contextLabelSize,
+                        maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+                        weight: .medium,
+                        relativeTo: .subheadline
+                    )
                     .foregroundStyle(NoteTheme.secondaryInk)
                     .frame(maxWidth: .infinity)
                 if V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: store.activeCollections.count) {

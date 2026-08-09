@@ -648,6 +648,36 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 420)))
     }
 
+    func testV03ReceiptLayoutExpandsForContentAndDynamicType() {
+        let short = V02ReceiptLayoutPolicy.estimatedPaperHeight(
+            memberCount: 1,
+            textLineCount: 1,
+            hasAttachments: false,
+            hasPhotoStrip: false,
+            textScale: 1
+        )
+        XCTAssertEqual(short, V02ReceiptLayoutPolicy.minimumPaperHeight)
+
+        let longDefault = V02ReceiptLayoutPolicy.estimatedPaperHeight(
+            memberCount: 4,
+            textLineCount: 8,
+            hasAttachments: true,
+            hasPhotoStrip: true,
+            textScale: 1
+        )
+        let longAccessible = V02ReceiptLayoutPolicy.estimatedPaperHeight(
+            memberCount: 4,
+            textLineCount: 8,
+            hasAttachments: true,
+            hasPhotoStrip: true,
+            textScale: 1.8
+        )
+        XCTAssertGreaterThan(longDefault, short)
+        XCTAssertGreaterThan(longAccessible, longDefault)
+        XCTAssertGreaterThanOrEqual(V02ReceiptTypographyPolicy.sequenceMarkerWidth, 24)
+        XCTAssertLessThanOrEqual(V02ReceiptTypographyPolicy.sequenceMarkerMaximumScale, 1.5)
+    }
+
     func testV02ReceiptCandidateAndProgressAreAvailableBeforeCommitThreshold() {
         XCTAssertEqual(V02ReceiptGesturePolicy.candidateIndex(index: 0, count: 2, translation: -8), 1)
         XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 2, translation: -8))
@@ -1225,6 +1255,12 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02PrimaryContentLayoutPolicy.topSpacing, 8)
         XCTAssertEqual(V02PrimaryContentLayoutPolicy.stackedPaperBackOffset, 9)
         XCTAssertEqual(V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset, 5)
+    }
+
+    func testV03PrimaryContextTypographyRemainsReadableAndBounded() {
+        XCTAssertGreaterThanOrEqual(V02PrimaryTypographyPolicy.contextLabelSize, 14)
+        XCTAssertGreaterThanOrEqual(V02PrimaryTypographyPolicy.contextLabelMaximumScale, 1)
+        XCTAssertLessThanOrEqual(V02PrimaryTypographyPolicy.contextLabelMaximumScale, 1.5)
     }
 
     func testV02AppSheetUsesStableMutuallyExclusiveIdentities() {

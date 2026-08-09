@@ -19,6 +19,11 @@ enum V02ReceiptTemplate: String, CaseIterable, Identifiable {
     }
 }
 
+enum V02ReceiptTypographyPolicy {
+    static let sequenceMarkerMaximumScale: CGFloat = 1.4
+    static let sequenceMarkerWidth: CGFloat = 24
+}
+
 struct V02ReceiptPaper: View {
     enum Presentation { case preview, detail }
 
@@ -168,9 +173,15 @@ struct V02ReceiptPaper: View {
                 ForEach(Array(receipt.snapshot.members.enumerated()), id: \.element.inspirationID) { offset, member in
                     HStack(alignment: .top, spacing: 8) {
                         Text(String(format: "%02d", offset + 1))
-                            .noteFont(size: 10, weight: .bold, design: .monospaced, relativeTo: .caption)
+                            .noteFontCapped(
+                                size: 10,
+                                maximumScale: V02ReceiptTypographyPolicy.sequenceMarkerMaximumScale,
+                                weight: .bold,
+                                design: .monospaced,
+                                relativeTo: .caption
+                            )
                             .foregroundStyle(NoteTheme.receiptSecondaryInk)
-                            .frame(width: 20, alignment: .leading)
+                            .frame(width: V02ReceiptTypographyPolicy.sequenceMarkerWidth, alignment: .leading)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(member.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "未命名灵感" : member.text)
                                 .noteFont(size: isPreview ? 13 : 16, design: .monospaced, relativeTo: .body)

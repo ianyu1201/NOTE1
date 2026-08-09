@@ -16,6 +16,12 @@ struct V02ReceiptBookView: View {
     @State private var detailReceipt: V02Receipt?
     @State private var undoTrashEntryIDs = Set<UUID>()
     @State private var templateOverrides: [UUID: V02ReceiptTemplate] = [:]
+    @State private var receiptTranslation: CGSize = .zero
+    @State private var receiptGestureAxis: V02ReceiptGestureAxis = .none
+    @State private var receiptGestureStartedAtEdge = false
+    @State private var receiptGestureStartedAtExtractionHandle = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric(relativeTo: .body) private var receiptTextScale: CGFloat = 1
 
     private var selectedReceipts: [V02Receipt] {
         store.state.receipts.filter { selectedIDs.contains($0.id) }
@@ -36,54 +42,64 @@ struct V02ReceiptBookView: View {
 
     var body: some View {
         NavigationStack {
-          ScrollView {
-            VStack(spacing: 14) {
-                if isSelecting { selectionToolbar }
-                if receipts.isEmpty {
-                    emptyBook
-                } else {
-                    V02ReceiptDeck(
-                        store: store,
-                        receipts: receipts,
-                        index: $receiptIndex,
-                        isSelecting: isSelecting,
-                        selectedIDs: $selectedIDs,
-                        openReceipt: { detailReceipt = $0 },
-                        minimumPaperHeight: currentReceipt.map(receiptPaperHeight) ?? 560,
-                        templateFor: { receipt in
-                            templateOverrides[receipt.id]
-                                ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
-                        }
-                    )
-                    .zIndex(1)
-                    Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
-                        .noteFont(size: 13, relativeTo: .caption)
-                        .foregroundStyle(NoteTheme.secondaryInk)
-                        .monospacedDigit()
-                        .padding(.horizontal, 11)
-                        .padding(.vertical, 6)
-                        .background(NoteTheme.ink.opacity(0.045), in: Capsule())
-                        .accessibilityLabel("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张。可左右切换或向下抽取。")
-                        .padding(.top, 18)
+            ScrollView {
+                VStack(spacing: 14) {
+                    if isSelecting { selectionToolbar }
+                    if receipts.isEmpty {
+                        emptyBook
+                    } else {
+                        V02ReceiptDeck(
+                            store: store,
+                            receipts: receipts,
+                            index: $receiptIndex,
+                            isSelecting: isSelecting,
+                            selectedIDs: $selectedIDs,
+                            openReceipt: { detailReceipt = $0 },
+                            minimumPaperHeight: currentReceipt.map(receiptPaperHeight)
+                                ?? V02ReceiptLayoutPolicy.minimumPaperHeight,
+                            templateFor: { receipt in
+                                templateOverrides[receipt.id]
+                                    ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
+                            },
+                            translation: receiptTranslation,
+                            axis: receiptGestureAxis
+                        )
+                        .zIndex(1)
+                        Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
+                            .noteFont(size: 13, relativeTo: .caption)
+                            .foregroundStyle(NoteTheme.secondaryInk)
+                            .monospacedDigit()
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 6)
+                            .background(NoteTheme.ink.opacity(0.045), in: Capsule())
+                            .accessibilityLabel("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张。可左右切换或向下抽取。")
+                            .padding(.top, 18)
+                    }
+                }
+                .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
+                .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
+            }
+            .scrollIndicators(.hidden)
+            // Receipt navigation belongs to the same gesture arena as the
+            // reading ScrollView. Upward and non-handle vertical drags are
+            // therefore left to scrolling, while a locked horizontal drag or
+            // explicit top-handle pull drives the paper deck.
+            .simultaneousGesture(
+                receipts.isEmpty || isSelecting ? nil : receiptNavigationGesture()
+            )
+            .accessibilityHidden(localOverlayPresented)
+            .background(NoteTheme.background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Color.clear
+                    .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
+                    .allowsHitTesting(false)
+            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader {
+                if !localOverlayPresented {
+                    receiptHeader
                 }
             }
-            .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
-            .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
-        }
-            .scrollIndicators(.hidden)
-          .accessibilityHidden(localOverlayPresented)
-          .background(NoteTheme.background.ignoresSafeArea())
-          .safeAreaInset(edge: .bottom, spacing: 0) {
-              Color.clear
-                  .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
-                  .allowsHitTesting(false)
-          }
-          .toolbar(.hidden, for: .navigationBar)
-          .notePrimaryHeader {
-              if !localOverlayPresented {
-                  receiptHeader
-              }
-          }
         }
         .onAppear { onOverlayChange(localOverlayPresented) }
         .onChange(of: localOverlayPresented) { _, presented in
@@ -269,19 +285,126 @@ struct V02ReceiptBookView: View {
     }
 
     private func receiptPaperHeight(_ receipt: V02Receipt) -> CGFloat {
-        let textCount = receipt.snapshot.members.reduce(0) { $0 + $1.text.count }
-        let memberCount = CGFloat(max(receipt.snapshot.members.count, 1))
-        let estimatedTextLines = CGFloat(max(1, Int(ceil(Double(max(textCount, 1)) / 18.0))))
-        let timelineHeight = memberCount * 72
-        let attachmentCount = receipt.snapshot.members.flatMap(\.attachments).count
-        let attachmentHeight = attachmentCount == 0 ? 0 : CGFloat(58 + ((attachmentCount + 3) / 4) * 42)
-        let photoHeight = V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources) == .film ? 148.0 : 0.0
-        // The root book is an archive rail with a natural long ticket. Keep a
-        // readable timeline and attachment/photo state in the paper itself;
-        // detail may reveal further actions but must not be the only place
-        // where the receipt's contents are legible.
-        let naturalHeight = 360 + timelineHeight + estimatedTextLines * 22 + attachmentHeight + photoHeight
-        return min(max(naturalHeight, 560), 1800)
+        let members = receipt.snapshot.members
+        let memberCount = CGFloat(max(members.count, 1))
+        let estimatedTextLines = CGFloat(members.reduce(0) { partial, member in
+            let count = member.text.trimmingCharacters(in: .whitespacesAndNewlines).count
+            return partial + max(1, Int(ceil(Double(max(count, 1)) / 18.0)))
+        })
+        let hasAttachments = !members.flatMap(\.attachments).isEmpty
+        let hasPhotoStrip = V02ReceiptTemplate.recommended(
+            for: receipt,
+            resources: store.state.resources
+        ) == .film
+
+        // Reserve one measured line budget rather than counting both a full
+        // card row and all of its text twice. The ticket remains long enough
+        // for wrapping, while its footer no longer trails a large blank tail.
+        return V02ReceiptLayoutPolicy.estimatedPaperHeight(
+            memberCount: Int(memberCount),
+            textLineCount: Int(estimatedTextLines),
+            hasAttachments: hasAttachments,
+            hasPhotoStrip: hasPhotoStrip,
+            textScale: receiptTextScale
+        )
+    }
+
+    private func receiptNavigationGesture() -> some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                let width = max(UIScreen.main.bounds.width, 1)
+                let edgeInset = min(32, width * 0.08)
+                if value.startLocation.x < edgeInset || value.startLocation.x > width - edgeInset {
+                    receiptGestureStartedAtEdge = true
+                    return
+                }
+                guard !receiptGestureStartedAtEdge else { return }
+
+                if receiptGestureAxis == .none {
+                    let proposedAxis = V02ReceiptGesturePolicy.axis(for: value.translation)
+                    if proposedAxis == .downward {
+                        receiptGestureStartedAtExtractionHandle = V02ReceiptGesturePolicy.canStartExtraction(
+                            at: value.startLocation
+                        )
+                        guard receiptGestureStartedAtExtractionHandle else { return }
+                    }
+                    guard proposedAxis != .none else { return }
+                    receiptGestureAxis = proposedAxis
+                }
+
+                receiptTranslation = value.translation
+            }
+            .onEnded { value in
+                guard !receiptGestureStartedAtEdge else {
+                    resetReceiptGesture()
+                    return
+                }
+
+                switch receiptGestureAxis {
+                case .horizontal:
+                    finishHorizontalReceiptGesture(value)
+                case .downward:
+                    finishExtractionGesture(value)
+                case .none:
+                    resetReceiptGesture(animated: true)
+                }
+            }
+    }
+
+    private func finishHorizontalReceiptGesture(_ value: DragGesture.Value) {
+        guard let target = V02ReceiptGesturePolicy.horizontalTarget(
+            index: receiptIndex,
+            count: receipts.count,
+            translation: value.translation.width
+        ) else {
+            resetReceiptGesture(animated: true)
+            return
+        }
+
+        let duration = reduceMotion ? 0.12 : 0.32
+        let width = max(UIScreen.main.bounds.width, 1)
+        withAnimation(reduceMotion ? .easeOut(duration: duration) : .smooth(duration: duration)) {
+            receiptTranslation.width = reduceMotion
+                ? (value.translation.width < 0 ? -24 : 24)
+                : (value.translation.width < 0 ? -width : width)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
+            receiptIndex = target
+            resetReceiptGesture()
+        }
+    }
+
+    private func finishExtractionGesture(_ value: DragGesture.Value) {
+        guard receiptGestureStartedAtExtractionHandle,
+              V02ReceiptGesturePolicy.shouldExtract(value.translation.height),
+              let currentReceipt else {
+            resetReceiptGesture(animated: true)
+            return
+        }
+
+        let duration = reduceMotion ? 0.16 : 0.28
+        let extractionDistance = max(UIScreen.main.bounds.height * 1.25, 1)
+        withAnimation(.easeIn(duration: duration)) {
+            receiptTranslation.height = extractionDistance
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.02) {
+            detailReceipt = currentReceipt
+            resetReceiptGesture()
+        }
+    }
+
+    private func resetReceiptGesture(animated: Bool = false) {
+        let changes = {
+            receiptTranslation = .zero
+            receiptGestureAxis = .none
+            receiptGestureStartedAtEdge = false
+            receiptGestureStartedAtExtractionHandle = false
+        }
+        if animated {
+            withAnimation(NoteMotion.settle(reduceMotion: reduceMotion), changes)
+        } else {
+            changes()
+        }
     }
 
     private func setTemplate(_ template: V02ReceiptTemplate) {
