@@ -59,11 +59,15 @@ struct V02InspirationListView: View {
                 } else {
                     ForEach(dateGroups) { group in
                         HStack(alignment: .firstTextBaseline) {
+                            Capsule()
+                                .fill(NoteTheme.ink)
+                                .frame(width: 4, height: 18)
+                                .accessibilityHidden(true)
                             Text(NoteDateFormatter.group.string(from: group.date))
                                 .noteFontCapped(size: 18, maximumScale: 1.2, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(NoteTheme.ink)
                             Spacer()
-                            Text("\(group.items.count) 条灵感⌄")
+                            Text("\(group.items.count) 条灵感")
                                 .noteFontCapped(size: 13, maximumScale: 1.2, weight: .medium, relativeTo: .subheadline)
                                 .foregroundStyle(NoteTheme.secondaryInk)
                         }

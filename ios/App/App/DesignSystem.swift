@@ -6,9 +6,11 @@ enum NoteTheme {
     static let secondaryInk = Color(red: 0.48, green: 0.54, blue: 0.67)
     static let accent = ink
     static let danger = Color(red: 0.91, green: 0.24, blue: 0.27)
-    static let canvas = Color(red: 0.955, green: 0.955, blue: 1.0)
-    static let paper = Color(red: 0.988, green: 0.987, blue: 0.998)
-    static let divider = Color.white.opacity(0.72)
+    static let canvas = Color(red: 0.953, green: 0.956, blue: 0.995)
+    static let paper = Color(red: 0.988, green: 0.986, blue: 0.996)
+    static let receiptPaper = Color(red: 0.984, green: 0.975, blue: 0.944)
+    static let paperBorder = secondaryInk.opacity(0.15)
+    static let divider = secondaryInk.opacity(0.13)
 
     static let horizontalPadding: CGFloat = 22
     static let topBarHeight: CGFloat = 72
@@ -21,12 +23,47 @@ enum NoteTheme {
 
     static let background = LinearGradient(
         colors: [
-            Color(red: 0.965, green: 0.965, blue: 1.0),
-            Color(red: 0.92, green: 0.925, blue: 0.995)
+            Color(red: 0.976, green: 0.977, blue: 1.0),
+            Color(red: 0.943, green: 0.947, blue: 0.998),
+            Color(red: 0.912, green: 0.922, blue: 0.988)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+
+    static let paperSurface = LinearGradient(
+        colors: [
+            Color(red: 0.997, green: 0.996, blue: 1.0),
+            paper,
+            Color(red: 0.968, green: 0.968, blue: 0.988)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let receiptPaperSurface = LinearGradient(
+        colors: [
+            Color(red: 1.0, green: 0.996, blue: 0.976),
+            receiptPaper,
+            Color(red: 0.955, green: 0.944, blue: 0.908)
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+}
+
+enum NoteMotion {
+    static func press(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.1) : .spring(response: 0.22, dampingFraction: 0.86)
+    }
+
+    static func reveal(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.34, dampingFraction: 0.82)
+    }
+
+    static func settle(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeOut(duration: 0.14) : .spring(response: 0.36, dampingFraction: 0.88)
+    }
 }
 
 /// Shared geometry decisions for the four primary destinations. Keeping these
@@ -299,13 +336,10 @@ struct RoundGlassPressedFeedback: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isPressed && !reduceMotion ? 0.95 : 1)
-            .brightness(isPressed ? -0.1 : 0)
-            .saturation(isPressed ? 0.82 : 1)
-            .animation(
-                reduceMotion ? nil : .spring(response: 0.2, dampingFraction: 0.76),
-                value: isPressed
-            )
+            .scaleEffect(isPressed && !reduceMotion ? 0.965 : 1)
+            .brightness(isPressed ? -0.055 : 0)
+            .saturation(isPressed ? 0.9 : 1)
+            .animation(NoteMotion.press(reduceMotion: reduceMotion), value: isPressed)
     }
 }
 
@@ -325,12 +359,9 @@ struct PressScaleButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.94 : 1)
-            .opacity(configuration.isPressed ? 0.72 : 1)
-            .animation(
-                reduceMotion ? nil : .spring(response: 0.24, dampingFraction: 0.72),
-                value: configuration.isPressed
-            )
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.965 : 1)
+            .opacity(configuration.isPressed ? 0.84 : 1)
+            .animation(NoteMotion.press(reduceMotion: reduceMotion), value: configuration.isPressed)
     }
 }
 

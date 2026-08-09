@@ -39,10 +39,10 @@ enum V02CardDeckPolicy {
 enum V02CardPreviewLayoutPolicy {
     /// The confirmed card-preview composition gives the primary paper enough
     /// height to own the first screen, including sparse collection cards. A
-    /// 520pt floor keeps the paper visually primary on the 368pt × 800pt
-    /// compact viewport instead of reducing it to a short white card.
-    static let compactHeight: CGFloat = 520
-    static let maximumHeight: CGFloat = 560
+    /// A 480pt floor keeps the paper visually primary on the 368pt × 800pt
+    /// compact viewport while preserving visible canvas above the navigation.
+    static let compactHeight: CGFloat = 480
+    static let maximumHeight: CGFloat = 540
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
@@ -51,6 +51,13 @@ enum V02CardPreviewLayoutPolicy {
     /// height. The compact floor only protects unusually short containers.
     static func pageHeight(for availableHeight: CGFloat) -> CGFloat {
         max(availableHeight, compactHeight)
+    }
+
+    /// Standalone card preview keeps a visible band of canvas around the paper.
+    /// The workbench continues to use the full available page height because it
+    /// owns an editor and action row rather than a single-focus review surface.
+    static func previewPageHeight(for availableHeight: CGFloat, entry: V02CardPreviewEntry) -> CGFloat {
+        min(pageHeight(for: availableHeight), deckHeight(for: entry))
     }
 
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
@@ -87,6 +94,7 @@ enum V02TuckPolicy {
 /// neighbouring papers progressively reveal before the page index changes.
 struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let cards: [Card]
     @Binding var index: Int
     let deckHeight: CGFloat
@@ -130,6 +138,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     var body: some View {
         GeometryReader { proxy in
             let resolvedIndex = min(max(index, 0), max(cards.count - 1, 0))
+            let verticalProgress = min(abs(verticalOffset) / max(proxy.size.height, 1), 1)
             ZStack {
                 if horizontalOffset < -36, onTuck != nil, !cards.isEmpty {
                     RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
@@ -149,13 +158,27 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                     paperEdge
                         .scaleEffect(0.974)
                         .offset(y: -20 + max(verticalOffset, 0) * 0.16)
-                        .opacity(verticalOffset > 0 ? 1 : 0.56)
+                        .opacity((verticalOffset > 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
                 }
                 if resolvedIndex + 1 < cards.count {
                     paperEdge
                         .scaleEffect(0.974)
                         .offset(y: 28 + min(verticalOffset, 0) * 0.16)
-                        .opacity(verticalOffset < 0 ? 1 : 0.56)
+                        .opacity((verticalOffset < 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
+                }
+                if verticalOffset > 0, resolvedIndex > 0 {
+                    paper(cards[resolvedIndex - 1])
+                        .offset(y: -proxy.size.height + verticalOffset)
+                        .scaleEffect(0.985 + verticalProgress * 0.015)
+                        .opacity(0.72 + verticalProgress * 0.28)
+                        .accessibilityHidden(true)
+                }
+                if verticalOffset < 0, resolvedIndex + 1 < cards.count {
+                    paper(cards[resolvedIndex + 1])
+                        .offset(y: proxy.size.height + verticalOffset)
+                        .scaleEffect(0.985 + verticalProgress * 0.015)
+                        .opacity(0.72 + verticalProgress * 0.28)
+                        .accessibilityHidden(true)
                 }
                 if !cards.isEmpty {
                     if showsLayeredPaper {
@@ -193,12 +216,19 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         content(card)
             .padding(26)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(NoteTheme.paper.opacity(0.94), in: RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous))
+            .background(NoteTheme.paperSurface, in: RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.92), lineWidth: 1)
+                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
             }
-            .shadow(color: NoteTheme.ink.opacity(0.10), radius: 22, y: 12)
+            .overlay(alignment: .top) {
+                Capsule()
+                    .fill(NoteTheme.ink.opacity(0.09))
+                    .frame(width: 62, height: 2)
+                    .padding(.top, 10)
+                    .accessibilityHidden(true)
+            }
+            .shadow(color: NoteTheme.ink.opacity(0.12), radius: 24, y: 13)
             .padding(.horizontal, paperHorizontalPadding)
     }
 
@@ -224,10 +254,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
 
     private var paperLayer: some View {
         RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-            .fill(NoteTheme.paper.opacity(0.84))
+            .fill(NoteTheme.paperSurface)
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.84), lineWidth: 1)
+                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
             }
             .shadow(color: NoteTheme.ink.opacity(0.05), radius: 12, y: 7)
             .padding(.horizontal, paperHorizontalPadding)
@@ -236,10 +266,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
 
     private var paperEdge: some View {
         RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-            .fill(NoteTheme.paper.opacity(0.82))
+            .fill(NoteTheme.paperSurface)
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.98), lineWidth: 1)
+                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
             }
             .shadow(color: NoteTheme.ink.opacity(0.07), radius: 14, y: 8)
             .padding(.horizontal, paperHorizontalPadding)
@@ -296,18 +326,21 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 ), !cards.isEmpty {
                     let target = min(max(resolvedIndex + direction, 0), cards.count - 1)
                     guard target != resolvedIndex else {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { verticalOffset = 0 }
+                        withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) { verticalOffset = 0 }
                         return
                     }
-                    withAnimation(.easeOut(duration: 0.15)) {
-                        verticalOffset = direction > 0 ? -height : height
+                    let duration = reduceMotion ? 0.12 : 0.24
+                    withAnimation(reduceMotion ? .easeOut(duration: duration) : .smooth(duration: duration)) {
+                        verticalOffset = reduceMotion
+                            ? (direction > 0 ? -24 : 24)
+                            : (direction > 0 ? -height : height)
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
                         index = target
                         verticalOffset = 0
                     }
                 } else {
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                    withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
                         verticalOffset = 0
                         horizontalOffset = 0
                     }

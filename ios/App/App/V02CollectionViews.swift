@@ -296,12 +296,12 @@ private struct V02CollectionPaperCard: View {
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(NoteTheme.paper.opacity(0.24))
-                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.48), lineWidth: 1) }
+                .fill(NoteTheme.paper.opacity(0.34))
+                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.7), lineWidth: 1) }
                 .offset(x: 9, y: 9)
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(NoteTheme.paper.opacity(0.48))
-                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.62), lineWidth: 1) }
+                .fill(NoteTheme.paper.opacity(0.62))
+                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.8), lineWidth: 1) }
                 .offset(x: 5, y: 5)
             HStack(spacing: 15) {
                 V02CollectionThumbnail(image: previewImage)
@@ -330,8 +330,9 @@ private struct V02CollectionPaperCard: View {
             }
             .padding(.horizontal, 18)
             .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)
-            .background(NoteTheme.paper.opacity(0.76), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.82), lineWidth: 1) }
+            .background(NoteTheme.paperSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder, lineWidth: 1) }
+            .shadow(color: NoteTheme.ink.opacity(0.075), radius: 16, y: 9)
         }
         .padding(.trailing, 9)
         .padding(.bottom, 9)

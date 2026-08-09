@@ -138,18 +138,35 @@ final class NoteStoreTests: XCTestCase {
         let longHeight = V02CardPreviewLayoutPolicy.deckHeight(for: .inspiration(long))
 
         XCTAssertEqual(sparseHeight, V02CardPreviewLayoutPolicy.compactHeight)
-        XCTAssertGreaterThanOrEqual(sparseHeight, 500)
+        XCTAssertGreaterThanOrEqual(sparseHeight, 460)
         XCTAssertGreaterThanOrEqual(longHeight, sparseHeight)
         XCTAssertLessThanOrEqual(longHeight, V02CardPreviewLayoutPolicy.maximumHeight)
     }
 
     func testV02CardPreviewAndWorkbenchShareAvailablePageHeightPolicy() {
+        let fixture = V02Inspiration(
+            id: UUID(),
+            text: "短内容",
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: .now,
+            updatedAt: .now,
+            resourceIDs: []
+        )
         XCTAssertEqual(
             V02CardPreviewLayoutPolicy.pageHeight(for: 640),
             640
         )
         XCTAssertEqual(
             V02CardPreviewLayoutPolicy.pageHeight(for: 480),
+            V02CardPreviewLayoutPolicy.compactHeight
+        )
+        XCTAssertEqual(
+            V02CardPreviewLayoutPolicy.previewPageHeight(for: 640, entry: .inspiration(fixture)),
+            V02CardPreviewLayoutPolicy.compactHeight
+        )
+        XCTAssertEqual(
+            V02CardPreviewLayoutPolicy.previewPageHeight(for: 480, entry: .inspiration(fixture)),
             V02CardPreviewLayoutPolicy.compactHeight
         )
     }

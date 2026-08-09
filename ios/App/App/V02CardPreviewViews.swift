@@ -10,6 +10,7 @@ struct V02CardPreviewView: View {
     let reportError: (Error) -> Void
     let onEditingChange: (Bool) -> Void
     let onOverlayChange: (Bool) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index = 0
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
     @State private var undoTuckedInspiration: V02Inspiration?
@@ -47,7 +48,11 @@ struct V02CardPreviewView: View {
                     // the shared TabView instead of leaving a second blank module
                     // for the card action.
                     GeometryReader { proxy in
-                        let deckHeight = V02CardPreviewLayoutPolicy.pageHeight(for: proxy.size.height)
+                        let currentCard = cards[min(index, cards.count - 1)]
+                        let deckHeight = V02CardPreviewLayoutPolicy.previewPageHeight(
+                            for: proxy.size.height,
+                            entry: currentCard
+                        )
                         V02CardDeck(
                             cards: cards,
                             index: $index,
@@ -62,7 +67,8 @@ struct V02CardPreviewView: View {
                                 catch { reportError(error) }
                             }
                         }
-                        .padding(.horizontal, 2)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 8)
                         .accessibilityHidden(editingInspiration != nil)
                         .overlay(alignment: .bottom) {
                             VStack(spacing: 5) {
@@ -113,18 +119,26 @@ struct V02CardPreviewView: View {
                                             // upward, so it never needs the paper's old bottom slot.
                                             .offset(y: -64)
                                             .allowsHitTesting(!isDraggingGroup)
-                                            .transition(.opacity)
+                                            .transition(
+                                                .scale(scale: 0.72, anchor: .bottom)
+                                                    .combined(with: .opacity)
+                                                    .combined(with: .move(edge: .bottom))
+                                            )
                                         }
                                     }
                                 }
                                 Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
                                     .noteFontCapped(size: 13, maximumScale: 1.25, relativeTo: .caption)
                                     .foregroundStyle(NoteTheme.secondaryInk)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(NoteTheme.ink.opacity(0.045), in: Capsule())
                             }
                             // Keep the action readable above the TabView while
                             // still making it part of the paper, not a separate
                             // floating module below it.
                             .padding(.bottom, 14)
+                            .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: isShowingGroupTray)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -420,25 +434,41 @@ struct V02CardPreviewView: View {
 private struct V02GroupEntryButton: View {
     let action: () -> Void
     var onDrag: (CGPoint, CGSize, Bool) -> Void = { _, _, _ in }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @GestureState private var isPressed = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 20, weight: .semibold))
+            ZStack {
+                Circle()
+                    .fill(NoteTheme.paperSurface)
+                Circle()
+                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
+                Circle()
+                    .stroke(NoteTheme.ink.opacity(0.08), lineWidth: 1)
+                    .padding(6)
+                Image(systemName: "square.stack.3d.up.fill")
+                    .font(.system(size: 19, weight: .semibold))
                     .foregroundStyle(NoteTheme.ink)
-                    .frame(width: 52, height: 52)
-                    .background(Color.white.opacity(0.72), in: Circle())
-                    .overlay { Circle().stroke(Color.white.opacity(0.9), lineWidth: 1) }
-                Image(systemName: "plus")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
-                    .background(NoteTheme.ink, in: Circle())
-                    .offset(x: 4, y: -3)
+            }
+            .frame(width: 54, height: 54)
+            .shadow(color: NoteTheme.ink.opacity(isPressed ? 0.08 : 0.15), radius: isPressed ? 8 : 15, y: isPressed ? 4 : 8)
+
+            Image(systemName: "plus")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 19, height: 19)
+                .background(NoteTheme.ink, in: Circle())
+                .overlay { Circle().stroke(Color.white.opacity(0.38), lineWidth: 1) }
+                .offset(x: 4, y: -3)
         }
+        .scaleEffect(isPressed && !reduceMotion ? 0.94 : 1)
+        .rotationEffect(.degrees(isPressed && !reduceMotion ? -1.5 : 0))
+        .animation(NoteMotion.press(reduceMotion: reduceMotion), value: isPressed)
         .contentShape(Circle())
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                .updating($isPressed) { _, pressed, _ in pressed = true }
                 .onChanged { value in
                     guard abs(value.translation.height) >= 10 || abs(value.translation.width) >= 10 else { return }
                     onDrag(value.location, value.translation, false)
@@ -471,6 +501,7 @@ private struct V02GroupPickerTray: View {
     let activeTargetID: String?
     let onSelect: () -> Void
     let onCreate: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 8) {
@@ -549,15 +580,23 @@ private struct V02GroupPickerTray: View {
                 Text(title)
             }
             .noteFont(size: 13, weight: .medium, relativeTo: .caption)
-            .foregroundStyle(NoteTheme.ink)
+            .foregroundStyle(activeTargetID == id ? Color.white : NoteTheme.ink)
             .padding(.horizontal, 12)
             .frame(minWidth: 142, minHeight: 60)
-            .background(
-                activeTargetID == id ? NoteTheme.ink.opacity(0.16) : Color.white.opacity(0.72),
-                in: Capsule()
-            )
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(activeTargetID == id ? NoteTheme.ink : NoteTheme.paper)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(activeTargetID == id ? Color.white.opacity(0.24) : NoteTheme.paperBorder, lineWidth: 1)
+                    }
+                    .shadow(color: NoteTheme.ink.opacity(activeTargetID == id ? 0.16 : 0.09), radius: 12, y: 7)
+            }
+            .scaleEffect(activeTargetID == id ? 1.045 : 1)
+            .offset(y: activeTargetID == id ? -3 : 0)
         }
         .buttonStyle(RoundGlassPressButtonStyle())
+        .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: activeTargetID == id)
         .accessibilityLabel(title)
         .background(GeometryReader { proxy in
             let visibleFrame = proxy.frame(in: .global)

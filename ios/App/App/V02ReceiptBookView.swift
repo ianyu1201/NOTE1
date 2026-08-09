@@ -59,6 +59,10 @@ struct V02ReceiptBookView: View {
                     Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
                         .noteFont(size: 13, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
+                        .monospacedDigit()
+                        .padding(.horizontal, 11)
+                        .padding(.vertical, 6)
+                        .background(NoteTheme.ink.opacity(0.045), in: Capsule())
                         .accessibilityLabel("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张。可左右切换或向下抽取。")
                         .padding(.top, 18)
                 }

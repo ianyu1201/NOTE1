@@ -5,17 +5,17 @@ struct V02TicketClip: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 9, style: .continuous)
-                .fill(NoteTheme.background.opacity(0.74))
+                .fill(NoteTheme.paperSurface)
                 .overlay {
                     RoundedRectangle(cornerRadius: 9, style: .continuous)
-                        .stroke(Color.white.opacity(0.8), lineWidth: 1)
+                        .stroke(NoteTheme.paperBorder, lineWidth: 1)
                 }
-                .shadow(color: NoteTheme.ink.opacity(0.08), radius: 14, y: 8)
+                .shadow(color: NoteTheme.ink.opacity(0.11), radius: 16, y: 9)
 
             HStack(spacing: 0) {
                 clipHandle
                 Rectangle()
-                    .fill(NoteTheme.paper.opacity(0.26))
+                    .fill(NoteTheme.receiptPaper.opacity(0.46))
                     .frame(maxWidth: .infinity, maxHeight: 18)
                 clipHandle
             }
@@ -39,6 +39,7 @@ struct V02TicketClip: View {
     private var clipHandle: some View {
         RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(Color.white.opacity(0.78))
+            .background(NoteTheme.receiptPaper.opacity(0.7), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .stroke(NoteTheme.secondaryInk.opacity(0.18), lineWidth: 1)

@@ -95,6 +95,7 @@ struct V02ReceiptPaper: View {
                 Text("NOTE1 · \(receipt.id.uuidString.prefix(6))")
                     .noteFont(size: 11, weight: .semibold, relativeTo: .caption)
                     .foregroundStyle(NoteTheme.secondaryInk)
+                    .monospacedDigit()
                 Text(receipt.snapshot.collectionName)
                     .noteFont(size: isPreview ? 22 : 28, weight: .semibold, design: .rounded, relativeTo: .title2)
                     .lineLimit(isPreview ? 1 : nil)
@@ -132,6 +133,7 @@ struct V02ReceiptPaper: View {
         VStack(alignment: .leading, spacing: 3) {
             Text("回顾 · \(receipt.statistics.roundTitle)")
             Text("\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .omitted)) – \(receipt.snapshot.endedAt.formatted(date: .numeric, time: .omitted))")
+                .monospacedDigit()
         }
         .noteFont(size: 11, relativeTo: .caption)
         .foregroundStyle(NoteTheme.secondaryInk)
@@ -206,6 +208,7 @@ struct V02ReceiptPaper: View {
         }
         .noteFont(size: 13, relativeTo: .caption)
         .foregroundStyle(NoteTheme.secondaryInk)
+        .monospacedDigit()
     }
 
     private func attachmentSymbol(for attachment: V02ReceiptSnapshot.Attachment) -> String {
@@ -217,12 +220,29 @@ struct V02ReceiptPaper: View {
 
     private var paperSurface: some View {
         V02ReceiptPaperShape()
-            .fill(NoteTheme.paper.opacity(isPreview ? 0.86 : 0.92))
+            .fill(NoteTheme.receiptPaperSurface)
             .overlay {
                 V02ReceiptPaperShape()
-                    .stroke(Color.white.opacity(isPreview ? 0.84 : 0.9), lineWidth: 1)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                NoteTheme.ink.opacity(0.018),
+                                .clear,
+                                Color.white.opacity(0.16),
+                                .clear,
+                                NoteTheme.ink.opacity(0.014)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
             }
-            .shadow(color: NoteTheme.ink.opacity(0.13), radius: 18, y: 10)
+            .overlay {
+                V02ReceiptPaperShape()
+                    .stroke(NoteTheme.secondaryInk.opacity(isPreview ? 0.18 : 0.22), lineWidth: 1)
+            }
+            .shadow(color: NoteTheme.ink.opacity(0.045), radius: 3, y: 1)
+            .shadow(color: NoteTheme.ink.opacity(0.15), radius: 20, y: 12)
     }
 
     private var ticketNotches: some View {
@@ -245,22 +265,22 @@ struct V02ReceiptPaper: View {
 /// 连续齿边的票据轮廓。它只定义纸张边缘，不承载任何图标语义。
 struct V02ReceiptPaperShape: Shape {
     func path(in rect: CGRect) -> Path {
-        let corner: CGFloat = 18
-        let tooth: CGFloat = 11
+        let corner: CGFloat = 8
+        let tooth: CGFloat = 9
         let count = max(8, Int((rect.width - corner * 2) / tooth))
         let spacing = (rect.width - corner * 2) / CGFloat(count)
         var path = Path()
         path.move(to: CGPoint(x: corner, y: 0))
         for item in 0..<count {
             let x = corner + CGFloat(item) * spacing
-            path.addQuadCurve(to: CGPoint(x: x + spacing, y: 0), control: CGPoint(x: x + spacing / 2, y: 3.5))
+            path.addQuadCurve(to: CGPoint(x: x + spacing, y: 0), control: CGPoint(x: x + spacing / 2, y: 2.8))
         }
         path.addQuadCurve(to: CGPoint(x: rect.width, y: corner), control: CGPoint(x: rect.width, y: 0))
         path.addLine(to: CGPoint(x: rect.width, y: rect.height - corner))
         path.addQuadCurve(to: CGPoint(x: rect.width - corner, y: rect.height), control: CGPoint(x: rect.width, y: rect.height))
         for item in stride(from: count - 1, through: 0, by: -1) {
             let x = corner + CGFloat(item) * spacing
-            path.addQuadCurve(to: CGPoint(x: x, y: rect.height), control: CGPoint(x: x + spacing / 2, y: rect.height - 3.5))
+            path.addQuadCurve(to: CGPoint(x: x, y: rect.height), control: CGPoint(x: x + spacing / 2, y: rect.height - 2.8))
         }
         path.addQuadCurve(to: CGPoint(x: 0, y: rect.height - corner), control: CGPoint(x: 0, y: rect.height))
         path.addLine(to: CGPoint(x: 0, y: corner))
@@ -271,14 +291,17 @@ struct V02ReceiptPaperShape: Shape {
 
 private struct V02ReceiptPerforationLine: View {
     var body: some View {
-        Rectangle()
-            .fill(NoteTheme.secondaryInk.opacity(0.36))
-            .frame(height: 1)
-            .overlay {
-                HStack(spacing: 4) {
-                    ForEach(0..<22, id: \.self) { _ in Circle().fill(Color.white.opacity(0.86)).frame(width: 3, height: 3) }
-                }
+        GeometryReader { proxy in
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: 0.5))
+                path.addLine(to: CGPoint(x: proxy.size.width, y: 0.5))
             }
+            .stroke(
+                NoteTheme.secondaryInk.opacity(0.34),
+                style: StrokeStyle(lineWidth: 1, lineCap: .round, dash: [4, 5])
+            )
+        }
+        .frame(height: 1)
     }
 }
 
@@ -301,7 +324,11 @@ private struct V02ReceiptPhotoStrip: View {
                 }
             }
             .padding(6)
-            .background(NoteTheme.ink.opacity(0.9), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .background(NoteTheme.ink.opacity(0.92), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(Color.white.opacity(0.22), lineWidth: 1)
+            }
         }
     }
 }

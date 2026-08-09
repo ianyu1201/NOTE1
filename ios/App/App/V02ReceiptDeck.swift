@@ -70,6 +70,7 @@ struct V02ReceiptDeck: View {
             ZStack(alignment: .top) {
             if let next = receipts[safe: index + 2] {
                 V02ReceiptPaperEdge(template: templateFor(next))
+                    .offset(x: translation.width * 0.025)
                     .offset(y: 12 - horizontalProgress * 5 - downwardProgress * 10)
                     .scaleEffect(0.98 + horizontalProgress * 0.02 + downwardProgress * 0.02)
                     .opacity(0.72 + horizontalProgress * 0.28)
@@ -78,6 +79,7 @@ struct V02ReceiptDeck: View {
             }
             if let next = receipts[safe: index + 1] {
                 V02ReceiptPaperEdge(template: templateFor(next))
+                    .offset(x: translation.width * 0.045)
                     .offset(y: 6 - horizontalProgress * 3 - downwardProgress * 6)
                     .scaleEffect(0.99 + horizontalProgress * 0.01 + downwardProgress * 0.01)
                     .opacity(0.82 + horizontalProgress * 0.18)
@@ -91,11 +93,12 @@ struct V02ReceiptDeck: View {
                     store: store,
                     receipt: receipts[targetIndex],
                     template: templateFor(receipts[targetIndex]),
-                    minimumHeight: max(proxy.size.height - 20, 258)
+                    minimumHeight: max(proxy.size.height - 20, minimumPaperHeight)
                 )
-                .offset(x: (translation.width < 0 ? width : -width) + translation.width, y: 20)
-                .scaleEffect(0.98 + horizontalProgress * 0.02)
-                .opacity(min(1, horizontalProgress + 0.08))
+                .offset(x: (translation.width < 0 ? width * 0.92 : -width * 0.92) + translation.width * 0.92, y: 26 - horizontalProgress * 6)
+                .rotationEffect(.degrees((translation.width < 0 ? 1.8 : -1.8) * Double(1 - horizontalProgress)))
+                .scaleEffect(0.97 + horizontalProgress * 0.03)
+                .opacity(0.72 + horizontalProgress * 0.28)
                 .zIndex(2)
                 .accessibilityHidden(true)
             }
@@ -158,15 +161,20 @@ struct V02ReceiptDeck: View {
                         switch locked {
                         case .horizontal:
                             if let target = V02ReceiptGesturePolicy.horizontalTarget(index: index, count: receipts.count, translation: value.translation.width) {
-                                withAnimation(.easeOut(duration: reduceMotion ? 0.16 : 0.28)) { translation.width = value.translation.width < 0 ? -width : width }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0.18 : 0.3)) {
+                                let duration = reduceMotion ? 0.12 : 0.32
+                                withAnimation(reduceMotion ? .easeOut(duration: duration) : .smooth(duration: duration)) {
+                                    translation.width = reduceMotion
+                                        ? (value.translation.width < 0 ? -24 : 24)
+                                        : (value.translation.width < 0 ? -width : width)
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
                                     index = target
                                     translation = .zero
                                     axis = .none
                                     gestureStartedAtExtractionHandle = false
                                 }
                             } else {
-                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                                withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
                                     translation = .zero
                                     axis = .none
                                     gestureStartedAtExtractionHandle = false
@@ -183,14 +191,14 @@ struct V02ReceiptDeck: View {
                                     gestureStartedAtExtractionHandle = false
                                 }
                             } else {
-                                withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                                withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
                                     translation = .zero
                                     axis = .none
                                     gestureStartedAtExtractionHandle = false
                                 }
                             }
                         case .none:
-                            withAnimation(.spring(response: reduceMotion ? 0.16 : 0.3, dampingFraction: 0.86)) {
+                            withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
                                 translation = .zero
                                 axis = .none
                                 gestureStartedAtExtractionHandle = false
@@ -213,9 +221,10 @@ struct V02ReceiptDeck: View {
                     }
                 }
                 .accessibilityAction(named: "抽取查看") { openReceipt(receipt) }
-                .offset(x: axis == .horizontal ? translation.width * 0.72 : 0, y: 20 + (axis == .downward ? translation.height * (reduceMotion ? 0.28 : 0.7) : 0))
-                .scaleEffect(1 - horizontalProgress * 0.04 - downwardProgress * 0.08)
-                .opacity(1 - horizontalProgress * 0.08 - downwardProgress * 0.12)
+                .offset(x: axis == .horizontal ? translation.width * (reduceMotion ? 0.18 : 0.86) : 0, y: 20 + (axis == .downward ? translation.height * (reduceMotion ? 0.28 : 0.7) : 0))
+                .rotationEffect(.degrees(axis == .horizontal && !reduceMotion ? Double(translation.width / width) * 3.2 : 0))
+                .scaleEffect(1 - horizontalProgress * 0.025 - downwardProgress * 0.08)
+                .opacity(1 - horizontalProgress * 0.035 - downwardProgress * 0.12)
                 .zIndex(3)
             }
             V02TicketClip()
@@ -234,7 +243,7 @@ private struct V02ReceiptPaperEdge: View {
 
     var body: some View {
         V02ReceiptPaperShape()
-            .fill(template == .film ? NoteTheme.ink.opacity(0.19) : Color.white.opacity(0.48))
+            .fill(template == .film ? NoteTheme.ink.opacity(0.16) : NoteTheme.receiptPaper.opacity(0.68))
             .overlay(alignment: .top) {
                 HStack(spacing: 4) {
                     ForEach(0..<26, id: \.self) { _ in Circle().fill(NoteTheme.background.opacity(0.9)).frame(width: 4, height: 4) }
@@ -243,7 +252,7 @@ private struct V02ReceiptPaperEdge: View {
             }
             .overlay {
                 V02ReceiptPaperShape()
-                    .stroke(Color.white.opacity(0.62), lineWidth: 1)
+                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
             }
             .frame(maxHeight: .infinity)
             .shadow(color: NoteTheme.ink.opacity(0.06), radius: 12, y: 7)
