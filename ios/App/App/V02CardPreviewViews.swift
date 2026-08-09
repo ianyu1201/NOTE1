@@ -109,8 +109,7 @@ struct V02CardPreviewView: View {
                                     .overlay(alignment: .bottom) {
                                         if isShowingGroupTray {
                                             V02GroupPickerTray(
-                                                collections: store.activeCollections,
-                                                mode: .actions,
+                                                activeCollectionCount: store.activeCollections.count,
                                                 targetFrames: $groupTargetFrames,
                                                 activeTargetID: activeGroupTargetID,
                                                 onSelect: { handleGroupOperation("existing") },
@@ -201,7 +200,7 @@ struct V02CardPreviewView: View {
         } message: {
             Text("为当前灵感新建一个构思集。")
         }
-        .alert("暂时无法归入", isPresented: Binding(
+        .alert("暂时无法完成", isPresented: Binding(
             get: { capacityError != nil },
             set: { if !$0 { capacityError = nil } }
         )) {
@@ -282,6 +281,12 @@ struct V02CardPreviewView: View {
         isDraggingGroup = false
         switch target {
         case "new":
+            guard V02CollectionOperationPolicy.canCreate(
+                activeCollectionCount: store.activeCollections.count
+            ) else {
+                capacityError = "已达到 5 个构思集上限。请先结束一个构思集，再新建。"
+                return
+            }
             newCollectionName = ""
             isShowingCreateCollection = true
         case "existing":
@@ -334,6 +339,8 @@ struct V02CardPreviewView: View {
                 name: trimmed.isEmpty ? nil : trimmed
             )
             pendingInspirationID = nil
+        } catch V02DomainError.collectionLimit {
+            capacityError = "已达到 5 个构思集上限。请先结束一个构思集，再新建。"
         } catch {
             reportError(error)
         }
@@ -465,13 +472,7 @@ private struct V02GroupEntryButton: View {
 }
 
 private struct V02GroupPickerTray: View {
-    enum Mode {
-        case actions
-        case existing
-    }
-
-    let collections: [V02ThinkingCollection]
-    let mode: Mode
+    let activeCollectionCount: Int
     @Binding var targetFrames: [String: CGRect]
     let activeTargetID: String?
     let onSelect: () -> Void
@@ -480,60 +481,30 @@ private struct V02GroupPickerTray: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            if mode == .actions {
-                let targetIDs = V02GroupOperationPolicy.targetIDs(activeCollectionCount: collections.count)
-                HStack(alignment: .center, spacing: 14) {
-                    if targetIDs.contains("new") {
-                        actionTarget(
-                            id: "new",
-                            systemName: "folder.badge.plus",
-                            title: "新建构思集",
-                            action: onCreate
-                        )
-                        .rotationEffect(.degrees(-4))
-                    }
-                    if targetIDs.contains("existing") {
-                        actionTarget(
-                            id: "existing",
-                            systemName: "folder.fill",
-                            title: "归入现有构思集",
-                            action: onSelect
-                        )
-                        .rotationEffect(.degrees(4))
-                    }
+            let targetIDs = V02GroupOperationPolicy.targetIDs(
+                activeCollectionCount: activeCollectionCount
+            )
+            HStack(alignment: .center, spacing: 14) {
+                if targetIDs.contains("new") {
+                    actionTarget(
+                        id: "new",
+                        systemName: "folder.badge.plus",
+                        title: "新建构思集",
+                        action: onCreate
+                    )
+                    .rotationEffect(.degrees(-4))
                 }
-                .frame(maxWidth: .infinity)
-            }
-            /*
-             The concrete list is intentionally a second interaction after the
-             operation target is chosen. Keeping the drag tray to two stable
-             operation targets prevents a finger from having to aim at a tiny
-             collection row while the card is moving.
-             */
-            if mode == .existing {
-                LazyVGrid(columns: [GridItem(.flexible())], spacing: 10) {
-                    ForEach(collections.prefix(5)) { collection in
-                        Button {
-                            onSelect()
-                        } label: {
-                            HStack {
-                                Image(systemName: "folder.fill")
-                                Text(collection.name).lineLimit(1)
-                                Spacer()
-                                Text(V02GroupOperationPolicy.capacityLabel(memberCount: memberCount(for: collection)))
-                                    .foregroundStyle(NoteTheme.secondaryInk)
-                            }
-                            .noteFont(size: 13, weight: .medium, relativeTo: .caption)
-                            .foregroundStyle(NoteTheme.ink)
-                            .padding(.horizontal, 14)
-                            .frame(maxWidth: .infinity, minHeight: 54)
-                            .background(Color.white.opacity(0.68), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        }
-                        .buttonStyle(RoundGlassPressButtonStyle())
-                        .opacity(V02GroupOperationPolicy.canAccept(memberCount: memberCount(for: collection)) ? 1 : 0.54)
-                    }
+                if targetIDs.contains("existing") {
+                    actionTarget(
+                        id: "existing",
+                        systemName: "folder.fill",
+                        title: "归入现有构思集",
+                        action: onSelect
+                    )
+                    .rotationEffect(.degrees(4))
                 }
             }
+            .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 4)
@@ -584,14 +555,6 @@ private struct V02GroupPickerTray: View {
         })
     }
 
-    private func memberCount(for collection: V02ThinkingCollection) -> Int {
-        collection.currentRoundID.flatMap { roundID in
-            // The operation tray only needs a compact count; this path is replaced by
-            // the card preview's live collection picker when a concrete target is tapped.
-            _ = roundID
-            return nil
-        } ?? 0
-    }
 }
 
 private struct V02ExistingCollectionPicker: View {
@@ -615,8 +578,9 @@ private struct V02ExistingCollectionPicker: View {
                 }
                 ForEach(collections.prefix(5)) { collection in
                     let count = memberCount(collection)
+                    let canAccept = V02GroupOperationPolicy.canAccept(memberCount: count)
                     Button {
-                            onSelect(collection)
+                        onSelect(collection)
                     } label: {
                         HStack {
                             Image(systemName: "folder.fill")
@@ -632,13 +596,33 @@ private struct V02ExistingCollectionPicker: View {
                         .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .buttonStyle(RoundGlassPressButtonStyle())
-                    .opacity(count >= 10 ? 0.54 : 1)
-                    .accessibilityLabel("归入 \(collection.name)，当前 \(count) 条，共 10 条")
+                    .disabled(!canAccept)
+                    .opacity(canAccept ? 1 : 0.54)
+                    .accessibilityLabel(
+                        canAccept
+                            ? "归入 \(collection.name)，当前 \(count) 条，共 10 条"
+                            : "\(collection.name)，已满 10 条，无法归入"
+                    )
+                    .accessibilityHint(
+                        canAccept
+                            ? "点按将当前灵感归入此构思集"
+                            : "请先从此构思集移出一条灵感"
+                    )
                 }
                 if collections.isEmpty {
-                    Text("当前没有构思中的构思集")
-                        .noteFont(size: 14, relativeTo: .body)
-                        .foregroundStyle(NoteTheme.secondaryInk)
+                    VStack(spacing: 8) {
+                        Image(systemName: "folder")
+                            .font(.system(size: 24, weight: .medium))
+                        Text("当前没有构思中的构思集")
+                            .noteFont(size: 15, weight: .medium, relativeTo: .body)
+                        Text("返回后选择“新建构思集”，即可归入当前灵感。")
+                            .noteFont(size: 13, relativeTo: .caption)
+                            .multilineTextAlignment(.center)
+                    }
+                    .foregroundStyle(NoteTheme.secondaryInk)
+                    .frame(maxWidth: .infinity, minHeight: 112)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("v02.collection-picker.empty")
                 }
             }
             .padding(22)
@@ -648,5 +632,6 @@ private struct V02ExistingCollectionPicker: View {
             .padding(.bottom, NoteTheme.navigationHeight + 12)
         }
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("v02.collection-picker")
     }
 }

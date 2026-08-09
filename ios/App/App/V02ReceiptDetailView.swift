@@ -6,7 +6,6 @@ import UIKit
 struct V02ReceiptDetailView: View {
     @ObservedObject var store: V02Store
     let receipt: V02Receipt
-    let export: ((V02Receipt, V02ReceiptExportFormat) -> Void)?
     let onDelete: ((Set<UUID>) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
@@ -23,18 +22,12 @@ struct V02ReceiptDetailView: View {
     init(
         store: V02Store,
         receipt: V02Receipt,
-        export: ((V02Receipt, V02ReceiptExportFormat) -> Void)? = nil,
         onDelete: ((Set<UUID>) -> Void)? = nil
     ) {
         self.store = store
         self.receipt = receipt
-        self.export = export
         self.onDelete = onDelete
         _template = State(initialValue: V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources))
-    }
-
-    init(store: V02Store, receipt: V02Receipt) {
-        self.init(store: store, receipt: receipt, export: nil, onDelete: nil)
     }
 
     var body: some View {
@@ -356,10 +349,6 @@ struct V02ReceiptDetailView: View {
     }
 
     private func handleExport(_ format: V02ReceiptExportFormat) {
-        if let export {
-            export(receipt, format)
-            return
-        }
         do {
             shareURLs = [try V02ReceiptExportFile.write(
                 receipt,

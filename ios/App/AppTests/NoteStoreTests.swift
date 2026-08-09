@@ -1,5 +1,6 @@
 import XCTest
 import UIKit
+import PDFKit
 @testable import App
 
 @MainActor
@@ -771,20 +772,70 @@ final class NoteStoreTests: XCTestCase {
 
     func testV02ReceiptExportWritesIndividuallyShareableFiles() throws {
         let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let attachmentID = UUID()
         let receipt = V02Receipt(
             id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: now,
             snapshot: .init(collectionName: "分享测试", startedAt: now, endedAt: now, effectiveEditCount: 0,
-                            members: [.init(inspirationID: UUID(), text: "可导出内容", resourceIDs: [])])
+                            members: [.init(
+                                inspirationID: UUID(),
+                                text: "可导出内容",
+                                resourceIDs: [attachmentID],
+                                attachments: [.init(
+                                    id: attachmentID,
+                                    filename: "现场参考.txt",
+                                    mimeType: "text/plain",
+                                    relativePath: "现场参考.txt",
+                                    size: 12,
+                                    createdAt: now
+                                )]
+                            )])
         )
         let pdfURL = try V02ReceiptExportFile.write(receipt, format: .pdf)
         let markdownURL = try V02ReceiptExportFile.write(receipt, format: .markdown)
+        let textURL = try V02ReceiptExportFile.write(receipt, format: .plainText)
         defer {
             try? FileManager.default.removeItem(at: pdfURL)
             try? FileManager.default.removeItem(at: markdownURL)
+            try? FileManager.default.removeItem(at: textURL)
         }
 
         XCTAssertTrue(try Data(contentsOf: pdfURL).starts(with: Data("%PDF".utf8)))
-        XCTAssertTrue(try String(contentsOf: markdownURL).contains("# 分享测试"))
+        let markdown = try String(contentsOf: markdownURL)
+        let plainText = try String(contentsOf: textURL)
+        XCTAssertEqual(pdfURL.pathExtension, "pdf")
+        XCTAssertEqual(markdownURL.pathExtension, "md")
+        XCTAssertEqual(textURL.pathExtension, "txt")
+        XCTAssertTrue(markdown.contains("# 分享测试"))
+        XCTAssertTrue(markdown.contains("现场参考.txt"))
+        XCTAssertTrue(markdown.contains("text/plain"))
+        XCTAssertTrue(plainText.contains("分享测试"))
+        XCTAssertTrue(plainText.contains("现场参考.txt"))
+        XCTAssertTrue(plainText.contains("text/plain"))
+    }
+
+    func testV03ReceiptExportLabelsLegacyAttachmentReferencesAccurately() throws {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let receipt = V02Receipt(
+            id: UUID(), roundID: UUID(), collectionID: UUID(), createdAt: now,
+            snapshot: .init(
+                collectionName: "旧小票",
+                startedAt: now,
+                endedAt: now,
+                effectiveEditCount: 0,
+                members: [.init(
+                    inspirationID: UUID(),
+                    text: "仍有附件引用",
+                    resourceIDs: [UUID(), UUID()],
+                    attachments: []
+                )]
+            )
+        )
+
+        XCTAssertTrue(V02ReceiptExport.plainText(for: receipt).contains("附件：2 个（旧小票未保留附件元数据）"))
+        XCTAssertTrue(V02ReceiptExport.markdown(for: receipt).contains("附件：2 个（旧小票未保留附件元数据）"))
+        let pdfText = try XCTUnwrap(PDFDocument(data: V02ReceiptExport.pdfData(for: receipt))?.string)
+        let compactPDFText = pdfText.components(separatedBy: .whitespacesAndNewlines).joined()
+        XCTAssertTrue(compactPDFText.contains("附件：2个（旧小票未保留附件元数据）"))
     }
 
     func testV02PDFExportCarriesSnapshotImagesWhenAResolverIsProvided() throws {

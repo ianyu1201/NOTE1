@@ -118,7 +118,6 @@ struct V02ReceiptBookView: View {
             V02ReceiptDetailView(
                 store: store,
                 receipt: receipt,
-                export: export,
                 onDelete: { entryIDs in undoTrashEntryIDs.formUnion(entryIDs) }
             )
         }

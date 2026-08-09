@@ -5,7 +5,8 @@ enum V02ReceiptExport {
     static func plainText(for receipt: V02Receipt) -> String {
         let header = "NOTE1 · \(receipt.id.uuidString.prefix(8))\n\(receipt.snapshot.collectionName)\n\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .shortened)) – \(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))\n\(statistics(for: receipt))\n"
         let content = receipt.snapshot.members.enumerated().map { index, member in
-            "\(index + 1). \(member.text)"
+            let body = member.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return "\(index + 1). \(body.isEmpty ? "未命名灵感" : body)\(plainAttachmentSummary(for: member))"
         }.joined(separator: "\n\n")
         return "\(header)\n时间路线\n\(timeline(for: receipt))\n\n\(content)"
     }
@@ -13,7 +14,8 @@ enum V02ReceiptExport {
     static func markdown(for receipt: V02Receipt) -> String {
         let header = "# \(receipt.snapshot.collectionName)\n\n- 编号：NOTE1-\(receipt.id.uuidString.prefix(8))\n- \(statistics(for: receipt))\n- 开始：\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .shortened))\n- 结束：\(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))\n"
         let content = receipt.snapshot.members.enumerated().map { index, member in
-            "## \(index + 1)\n\n\(member.text)"
+            let body = member.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return "## \(index + 1)\n\n\(body.isEmpty ? "未命名灵感" : body)\(markdownAttachmentSummary(for: member))"
         }.joined(separator: "\n\n")
         return "\(header)\n## 时间路线\n\n\(timeline(for: receipt))\n\n\(content)"
     }
@@ -50,8 +52,15 @@ enum V02ReceiptExport {
                     font: .boldSystemFont(ofSize: 15),
                     spacingAfter: 8
                 )
-                if member.attachments.isEmpty {
+                if member.attachments.isEmpty, member.resourceIDs.isEmpty {
                     writer.drawText("无附件", font: .systemFont(ofSize: 11), color: .secondaryLabel, spacingAfter: 14)
+                } else if member.attachments.isEmpty {
+                    writer.drawText(
+                        "附件：\(member.resourceIDs.count) 个（旧小票未保留附件元数据）",
+                        font: .systemFont(ofSize: 11),
+                        color: .secondaryLabel,
+                        spacingAfter: 14
+                    )
                 } else {
                     for attachment in member.attachments {
                         writer.drawAttachment(attachment, resourceURL: resourceURL, spacingAfter: 10)
@@ -74,6 +83,34 @@ enum V02ReceiptExport {
 
     private static func statistics(for receipt: V02Receipt) -> String {
         receipt.statistics.compactText
+    }
+
+    private static func plainAttachmentSummary(
+        for member: V02ReceiptSnapshot.Member
+    ) -> String {
+        if !member.attachments.isEmpty {
+            return "\n" + member.attachments.map { attachment in
+                "附件：\(attachment.filename) · \(attachment.mimeType) · \(formattedSize(attachment.size))"
+            }.joined(separator: "\n")
+        }
+        guard !member.resourceIDs.isEmpty else { return "\n无附件" }
+        return "\n附件：\(member.resourceIDs.count) 个（旧小票未保留附件元数据）"
+    }
+
+    private static func markdownAttachmentSummary(
+        for member: V02ReceiptSnapshot.Member
+    ) -> String {
+        if !member.attachments.isEmpty {
+            return "\n\n" + member.attachments.map { attachment in
+                "- 附件：\(attachment.filename) · `\(attachment.mimeType)` · \(formattedSize(attachment.size))"
+            }.joined(separator: "\n")
+        }
+        guard !member.resourceIDs.isEmpty else { return "\n\n- 无附件" }
+        return "\n\n- 附件：\(member.resourceIDs.count) 个（旧小票未保留附件元数据）"
+    }
+
+    private static func formattedSize(_ size: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
     }
 
     private static func timeline(for receipt: V02Receipt) -> String {
