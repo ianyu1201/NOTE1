@@ -7,6 +7,7 @@ struct V02InspirationListView: View {
     let showSettings: () -> Void
     let showTrash: () -> Void
     let showSearch: () -> Void
+    let showHistory: () -> Void
     let onEditingChange: (Bool) -> Void
     let reportError: (Error) -> Void
     @State private var selectedIDs = Set<UUID>()
@@ -51,16 +52,6 @@ struct V02InspirationListView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                if !recentSummary.isEmpty {
-                    Text(recentSummary)
-                        .noteFontCapped(size: 15, maximumScale: 1.3, relativeTo: .subheadline)
-                        .foregroundStyle(NoteTheme.secondaryInk)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-                        .allowsTightening(true)
-                        .padding(.top, 10)
-                        .padding(.bottom, 22)
-                }
                 if isSelecting { selectionToolbar }
                 if store.state.inspirations.isEmpty {
                     EmptyStateView(systemName: "sparkles", title: "留住此刻", message: "点按右下角记录一条灵感。")
@@ -87,26 +78,16 @@ struct V02InspirationListView: View {
                                 isSelecting: isSelecting,
                                 isSelected: selectedIDs.contains(item.id),
                                 onSelect: { toggleSelection(item.id) },
+                                onLongPress: {
+                                    // Long press is the batch-selection entry
+                                    // point. Preserve an existing selection and
+                                    // add the pressed item so repeated presses
+                                    // can build a batch without losing context.
+                                    isSelecting = true
+                                    selectedIDs.insert(item.id)
+                                },
                                 onOpen: { editingInspiration = item; onEditingChange(true) }
                             )
-                            .contextMenu {
-                                if item.cardFlowState == .tuckedAway {
-                                    Button("放回卡片流", systemImage: "arrow.uturn.backward") {
-                                        do { try store.returnToCardFlow(item.id) }
-                                        catch { reportError(error) }
-                                    }
-                                }
-                                if item.collectionID == nil, !store.activeCollections.isEmpty {
-                                    Menu("归入构思集") {
-                                        ForEach(store.activeCollections) { collection in
-                                            Button(collection.name) {
-                                                do { try store.assign(item.id, to: collection.id) }
-                                                catch { reportError(error) }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -157,17 +138,7 @@ struct V02InspirationListView: View {
     @ToolbarContentBuilder
     private var inspirationToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            Menu {
-                Button(isSelecting ? "取消选择" : "选择灵感", systemImage: "checkmark.square") {
-                    isSelecting.toggle()
-                    if !isSelecting { selectedIDs.removeAll() }
-                }
-                Button("回收站", systemImage: "trash", action: showTrash)
-                Button("设置", systemImage: "gearshape", action: showSettings)
-            } label: {
-                V02GlassIconLabel(systemName: "line.3.horizontal")
-            }
-            .accessibilityLabel("本机功能与设置")
+            V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
         }
         .noteSharedBackgroundHidden()
         ToolbarItem(placement: .principal) {
@@ -187,10 +158,18 @@ struct V02InspirationListView: View {
             .accessibilityLabel("NOTE1，排序")
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Button(action: showSearch) {
-                V02GlassIconLabel(systemName: "magnifyingglass")
+            HStack(spacing: 4) {
+                V02GlassIconButton(
+                    systemName: "clock.arrow.circlepath",
+                    label: "历史记录",
+                    action: showHistory
+                )
+                V02GlassIconButton(
+                    systemName: "magnifyingglass",
+                    label: "搜索",
+                    action: showSearch
+                )
             }
-            .accessibilityLabel("搜索")
         }
         .noteSharedBackgroundHidden()
     }
@@ -291,18 +270,6 @@ struct V02InspirationListView: View {
         }.first
     }
 
-    private var recentSummary: String {
-        let calendar = Calendar.current
-        guard let start = calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: .now)) else { return "" }
-        let inspirations = store.state.inspirations.filter { $0.createdAt >= start }.count
-        let rounds = store.state.rounds.filter { ($0.endedAt ?? .distantPast) >= start }.count
-        let receipts = store.state.receipts.filter { $0.createdAt >= start }.count
-        return [
-            inspirations > 0 ? "本周新增 \(inspirations) 条灵感" : nil,
-            rounds > 0 ? "结束 \(rounds) 轮构思" : nil,
-            receipts > 0 ? "留下 \(receipts) 张小票" : nil
-        ].compactMap { $0 }.joined(separator: " · ")
-    }
 }
 private struct V02InspirationDateGroup: Identifiable {
     let date: Date
@@ -319,6 +286,7 @@ private struct V02InspirationTimelineRow: View {
     let isSelecting: Bool
     let isSelected: Bool
     let onSelect: () -> Void
+    let onLongPress: () -> Void
     let onOpen: () -> Void
 
     var body: some View {
@@ -381,6 +349,13 @@ private struct V02InspirationTimelineRow: View {
             }
             .buttonStyle(.plain)
         }
+        // Let a completed long press win over the nested tap button. Using a
+        // simultaneous recognizer would also fire the button on release and
+        // incorrectly open the editor after entering batch selection.
+        .highPriorityGesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onEnded { _ in onLongPress() }
+        )
         .padding(.vertical, 14)
         .overlay(alignment: .bottom) {
             Rectangle()
@@ -388,5 +363,6 @@ private struct V02InspirationTimelineRow: View {
                 .frame(height: 1)
         }
         .accessibilityElement(children: .contain)
+        .accessibilityAction(named: "选择灵感") { onLongPress() }
     }
 }

@@ -191,7 +191,7 @@ struct V02ReceiptDetailView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(template.rawValue)，\(receipt.snapshot.collectionName)小票，\(receipt.snapshot.members.count) 条灵感")
+        .accessibilityLabel("\(template.rawValue)，\(receipt.snapshot.collectionName)小票，\(receipt.statistics.detailText)")
         .accessibilityAction(named: "在小票中查找") { isSearching = true }
     }
 
@@ -209,10 +209,10 @@ struct V02ReceiptDetailView: View {
                     .noteFont(size: 12, weight: .semibold, relativeTo: .caption)
                     .foregroundStyle(NoteTheme.ink)
             }
-            Text("本轮构思已结束 · \(receipt.snapshot.members.count) 条灵感")
+            Text("本轮构思已结束")
                 .noteFont(size: 15, relativeTo: .subheadline)
                 .foregroundStyle(NoteTheme.secondaryInk)
-            Text("开始：\(receipt.snapshot.startedAt.formatted(date: .abbreviated, time: .shortened))\n结束：\(receipt.snapshot.endedAt.formatted(date: .abbreviated, time: .shortened))\n持续：\(receipt.snapshot.endedAt.timeIntervalSince(receipt.snapshot.startedAt).formattedDuration) · 有效编辑：\(receipt.snapshot.effectiveEditCount) 次")
+            Text("开始：\(receipt.snapshot.startedAt.formatted(date: .abbreviated, time: .shortened))\n结束：\(receipt.snapshot.endedAt.formatted(date: .abbreviated, time: .shortened))\n\(receipt.statistics.detailText)")
                 .noteFont(size: 14, relativeTo: .subheadline)
                 .foregroundStyle(NoteTheme.secondaryInk)
         }

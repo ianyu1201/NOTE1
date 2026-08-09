@@ -193,6 +193,7 @@ struct V02AppShellView: View {
                 showSettings: { sheet = .settings },
                 showTrash: { sheet = .trash },
                 showSearch: { sheet = .search },
+                showHistory: { sheet = .history },
                 onEditingChange: { isChildEditorPresented = $0 }
             ) { error in
                 self.error = UserFacingAlert(error: error)
@@ -200,8 +201,10 @@ struct V02AppShellView: View {
         case .cards:
             V02CardPreviewView(
                 store: store,
-                onBack: { page = .inspirations },
-                onHistory: { sheet = .history },
+                showSettings: { sheet = .settings },
+                showTrash: { sheet = .trash },
+                showHistory: { sheet = .history },
+                showSearch: { sheet = .search },
                 reportError: { error in
                 self.error = UserFacingAlert(error: error)
                 },
@@ -214,6 +217,10 @@ struct V02AppShellView: View {
                 isWorkbenchPresented: $isCollectionWorkbenchPresented,
                 isRequestingNewCollection: $isRequestingNewCollection,
                 isGenerationPresented: generatedReceipt != nil,
+                showSettings: { sheet = .settings },
+                showTrash: { sheet = .trash },
+                showSearch: { sheet = .search },
+                showHistory: { sheet = .history },
                 showGeneration: { receipt in generatedReceipt = receipt }
             ) { error in
                 self.error = UserFacingAlert(error: error)
@@ -222,6 +229,10 @@ struct V02AppShellView: View {
             V02ReceiptBookView(
                 store: store,
                 isSelecting: $isManagingSelection,
+                showSettings: { sheet = .settings },
+                showTrash: { sheet = .trash },
+                showHistory: { sheet = .history },
+                showSearch: { sheet = .search },
                 onOverlayChange: { isReceiptOverlayPresented = $0 }
             )
         }

@@ -6,6 +6,10 @@ struct V02CollectionListView: View {
     @Binding var isWorkbenchPresented: Bool
     @Binding var isRequestingNewCollection: Bool
     let isGenerationPresented: Bool
+    let showSettings: () -> Void
+    let showTrash: () -> Void
+    let showSearch: () -> Void
+    let showHistory: () -> Void
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
     @State private var endingRound: V02ThinkingRound?
@@ -16,8 +20,6 @@ struct V02CollectionListView: View {
     @State private var editingInspiration: V02Inspiration?
     @State private var addingToCollection: V02ThinkingCollection?
     @State private var workingCollection: V02ThinkingCollection?
-    @State private var isShowingHistory = false
-    @State private var isPresentingSearch = false
     @State private var isCreatingCollection = false
     @State private var newCollectionName = ""
     @State private var capacityNotice = false
@@ -200,12 +202,6 @@ struct V02CollectionListView: View {
         .sheet(item: $addingToCollection) { collection in
             V02ComposerView(store: store, initialCollectionID: collection.id, reportError: reportError)
         }
-        .sheet(isPresented: $isShowingHistory) {
-            V02CollectionHistoryView(store: store, reportError: reportError)
-        }
-        .sheet(isPresented: $isPresentingSearch) {
-            V02SearchView(store: store, initialScope: .collections, locksScope: true)
-        }
         .onChange(of: isWorkbenchPresented) { _, presented in
             if !presented { workingCollection = nil }
         }
@@ -219,27 +215,22 @@ struct V02CollectionListView: View {
                 .accessibilityAddTraits(.isHeader)
 
             HStack(spacing: 10) {
-                Menu {
-                    Button("新建构思集", systemImage: "plus", action: requestNewCollection)
-                } label: {
-                    V02GlassIconLabel(systemName: "line.3.horizontal")
-                }
-                .accessibilityLabel("构思集菜单")
+                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
 
                 Spacer(minLength: 0)
 
                 Button {
-                    isPresentingSearch = true
+                    showHistory()
+                } label: {
+                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
+                }
+                .accessibilityLabel("历史")
+                Button {
+                    showSearch()
                 } label: {
                     V02GlassIconLabel(systemName: "magnifyingglass")
                 }
                 .accessibilityLabel("搜索构思集")
-                Button {
-                    isShowingHistory = true
-                } label: {
-                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
-                }
-                .accessibilityLabel("构思历程")
             }
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
@@ -803,59 +794,624 @@ struct V02MemberAttachmentSummary: View {
     }
 }
 
+/// The four root pages route to one shared history center. Keep the scope and
+/// entry policy free of view state so the ordering and exclusions can be
+/// asserted without constructing SwiftUI views.
+enum V02HistoryScope: String, CaseIterable, Identifiable {
+    case all
+    case tuckedAway
+    case thinkingHistory
+    case receipts
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all: "全部"
+        case .tuckedAway: "已收起"
+        case .thinkingHistory: "构思历程"
+        case .receipts: "小票"
+        }
+    }
+}
+
+enum V02HistoryEntry: Identifiable {
+    case tuckedAwayInspiration(V02Inspiration)
+    case endedRound(V02ThinkingRound, collection: V02ThinkingCollection?)
+    case receipt(V02Receipt)
+
+    var id: String {
+        switch self {
+        case .tuckedAwayInspiration(let inspiration): "inspiration.\(inspiration.id.uuidString)"
+        case .endedRound(let round, _): "round.\(round.id.uuidString)"
+        case .receipt(let receipt): "receipt.\(receipt.id.uuidString)"
+        }
+    }
+
+    var date: Date {
+        switch self {
+        case .tuckedAwayInspiration(let inspiration): inspiration.updatedAt
+        case .endedRound(let round, _): round.endedAt ?? round.startedAt
+        case .receipt(let receipt): receipt.createdAt
+        }
+    }
+
+    var scope: V02HistoryScope {
+        switch self {
+        case .tuckedAwayInspiration: .tuckedAway
+        case .endedRound: .thinkingHistory
+        case .receipt: .receipts
+        }
+    }
+}
+
+enum V02HistoryCenterPolicy {
+    static func entries(
+        state: V02DomainState,
+        scope: V02HistoryScope = .all
+    ) -> [V02HistoryEntry] {
+        var values: [V02HistoryEntry] = []
+
+        if scope == .all || scope == .tuckedAway {
+            // A tucked-away entry is historical only while it remains an
+            // independent inspiration. Collection members belong to their
+            // round/history, not to this bucket.
+            values += state.inspirations
+                .filter { $0.collectionID == nil && $0.cardFlowState == .tuckedAway }
+                .map(V02HistoryEntry.tuckedAwayInspiration)
+        }
+
+        if scope == .all || scope == .thinkingHistory {
+            let collectionsByID = Dictionary(uniqueKeysWithValues: state.collections.map { ($0.id, $0) })
+            values += state.rounds
+                .filter { $0.state == .ended }
+                .map { V02HistoryEntry.endedRound($0, collection: collectionsByID[$0.collectionID]) }
+        }
+
+        if scope == .all || scope == .receipts {
+            values += state.receipts.map(V02HistoryEntry.receipt)
+        }
+
+        return values.sorted {
+            if $0.date != $1.date { return $0.date > $1.date }
+            // Stable tie-breaking keeps deterministic test fixtures and
+            // avoids rows jumping when two objects share a timestamp.
+            return $0.id < $1.id
+        }
+    }
+}
+
 struct V02CollectionHistoryView: View {
     @ObservedObject var store: V02Store
     let reportError: (Error) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var isPresentingSearch = false
+    @State private var scope: V02HistoryScope = .all
+    @State private var selectedEntry: V02HistoryEntry?
 
-    private var collections: [V02ThinkingCollection] { store.state.collections.filter { $0.currentRoundID == nil } }
+    private var entries: [V02HistoryEntry] {
+        V02HistoryCenterPolicy.entries(state: store.state, scope: scope)
+    }
+
     var body: some View {
         NavigationStack {
-            List(collections) { collection in
-                HStack {
-                    VStack(alignment: .leading) {
-                        Text(collection.name)
-                        Text("已结束构思，可从小票册查看成果")
-                            .noteFont(size: 13, relativeTo: .caption)
-                            .foregroundStyle(NoteTheme.secondaryInk)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    scopePicker
+                    if entries.isEmpty {
+                        V02HistoryEmptyState(scope: scope)
+                            .frame(maxWidth: .infinity, minHeight: 360)
+                            .padding(.top, 26)
+                    } else if scope == .all {
+                        V02HistoryTimeline(entries: entries) { selectedEntry = $0 }
+                    } else {
+                        V02HistoryEntryList(entries: entries) { selectedEntry = $0 }
                     }
-                    Spacer()
-                    Button("继续") { do { _ = try store.continueThinking(in: collection.id); dismiss() } catch { reportError(error) } }
                 }
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.bottom, V02NavigationLayoutPolicy.primaryContentBottomPadding)
             }
+            .scrollIndicators(.hidden)
+            .accessibilityHidden(selectedEntry != nil)
+            .background(NoteTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .notePrimaryHeader {
-                historyHeader
-            }
-            .sheet(isPresented: $isPresentingSearch) {
-                V02SearchView(store: store, initialScope: .collections, locksScope: true)
+            .notePrimaryHeader { historyHeader }
+        }
+        .sheet(item: $selectedEntry) { entry in
+            switch entry {
+            case .tuckedAwayInspiration(let inspiration):
+                V02HistoryInspirationDetailView(
+                    store: store,
+                    inspirationID: inspiration.id,
+                    reportError: reportError
+                )
+            case .endedRound(let round, let collection):
+                V02HistoryCollectionDetailView(
+                    store: store,
+                    round: round,
+                    collection: collection,
+                    reportError: reportError
+                )
+            case .receipt(let receipt):
+                V02ReceiptDetailView(store: store, receipt: receipt)
             }
         }
     }
 
     private var historyHeader: some View {
         ZStack {
-            Text("构思历程")
+            Text("历史")
                 .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
                 .foregroundStyle(NoteTheme.ink)
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: 10) {
-                Spacer(minLength: 0)
+            HStack {
                 Button {
-                    isPresentingSearch = true
+                    dismiss()
                 } label: {
-                    V02GlassIconLabel(systemName: "magnifyingglass")
+                    V02GlassIconLabel(systemName: "chevron.left")
                 }
-                .accessibilityLabel("搜索构思历程")
-                Button("完成") { dismiss() }
-                    .frame(minHeight: 48)
+                .accessibilityLabel("返回")
+                Spacer(minLength: 0)
             }
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
         .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
         .background(NoteTheme.background)
+    }
+
+    private var scopePicker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("当前范围")
+                .noteFont(size: 15, weight: .semibold, relativeTo: .subheadline)
+                .foregroundStyle(NoteTheme.secondaryInk)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(V02HistoryScope.allCases) { item in
+                        Button {
+                            withAnimation(.easeOut(duration: 0.18)) { scope = item }
+                        } label: {
+                            Text(item.title)
+                                .noteFont(size: 16, weight: .semibold, relativeTo: .body)
+                                .foregroundStyle(scope == item ? Color.white : NoteTheme.ink)
+                                .frame(minWidth: 60, minHeight: 46)
+                                .padding(.horizontal, 4)
+                                .background(scope == item ? NoteTheme.ink : Color.clear, in: Capsule())
+                        }
+                        .buttonStyle(PressScaleButtonStyle())
+                        .accessibilityAddTraits(scope == item ? .isSelected : [])
+                        .accessibilityLabel("当前范围，\(item.title)")
+                    }
+                }
+                .padding(4)
+            }
+            .noteGlass(cornerRadius: 26, castsShadow: false)
+        }
+        .padding(.top, 14)
+        .padding(.bottom, 20)
+    }
+}
+
+private struct V02HistoryTimeline: View {
+    let entries: [V02HistoryEntry]
+    let onSelect: (V02HistoryEntry) -> Void
+
+    private var groups: [(date: Date, entries: [V02HistoryEntry])] {
+        let grouped = Dictionary(grouping: entries) { Calendar.current.startOfDay(for: $0.date) }
+        return grouped.keys.sorted(by: >).map { date in
+            (date: date, entries: grouped[date, default: []].sorted { $0.date > $1.date })
+        }
+    }
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 22) {
+            ForEach(groups, id: \.date) { group in
+                HStack(alignment: .top, spacing: 10) {
+                    V02HistoryDateRail(date: group.date, rowCount: group.entries.count)
+                        .frame(width: 58)
+                    VStack(spacing: 12) {
+                        ForEach(group.entries) { entry in
+                            V02HistoryEntryRow(entry: entry, onSelect: onSelect)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct V02HistoryEntryList: View {
+    let entries: [V02HistoryEntry]
+    let onSelect: (V02HistoryEntry) -> Void
+
+    var body: some View {
+        LazyVStack(spacing: 12) {
+            ForEach(entries) { entry in
+                V02HistoryEntryRow(entry: entry, onSelect: onSelect)
+            }
+        }
+    }
+}
+
+private struct V02HistoryDateRail: View {
+    let date: Date
+    let rowCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(date, format: .dateTime.month().day())
+                .noteFont(size: 16, weight: .semibold, relativeTo: .headline)
+                .foregroundStyle(NoteTheme.secondaryInk)
+            Text(date, format: .dateTime.weekday(.wide))
+                .noteFont(size: 13, relativeTo: .caption)
+                .foregroundStyle(NoteTheme.secondaryInk)
+            VStack(spacing: 0) {
+                Circle()
+                    .fill(NoteTheme.ink)
+                    .frame(width: 10, height: 10)
+                    .padding(.top, 10)
+                Rectangle()
+                    .fill(NoteTheme.secondaryInk.opacity(0.35))
+                    .frame(width: 1)
+                    .frame(maxHeight: .infinity)
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .accessibilityHidden(true)
+        }
+        .frame(maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(date.formatted(date: .abbreviated, time: .omitted))，\(rowCount) 条历史内容")
+    }
+}
+
+private struct V02HistoryEntryRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    let entry: V02HistoryEntry
+    let onSelect: (V02HistoryEntry) -> Void
+
+    var body: some View {
+        Button { onSelect(entry) } label: {
+            HStack(alignment: .top, spacing: 14) {
+                icon
+                VStack(alignment: .leading, spacing: 7) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(kindLabel)
+                            .noteFont(size: 13, weight: .semibold, relativeTo: .subheadline)
+                            .foregroundStyle(NoteTheme.secondaryInk)
+                        Spacer(minLength: 4)
+                        Text(NoteDateFormatter.time.string(from: entry.date))
+                            .noteFont(size: 13, weight: .medium, relativeTo: .caption)
+                            .foregroundStyle(NoteTheme.ink)
+                    }
+                    Text(title)
+                        .noteFont(size: 19, weight: .semibold, relativeTo: .title3)
+                        .foregroundStyle(NoteTheme.ink)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                        .multilineTextAlignment(.leading)
+                    Text(summary)
+                        .noteFont(size: 14, relativeTo: .subheadline)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(paperBackground)
+            .overlay { paperBorder }
+        }
+        .buttonStyle(PressScaleButtonStyle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(kindLabel)，\(title)，\(summary)，\(NoteDateFormatter.time.string(from: entry.date))")
+        .accessibilityHint("点按查看详情")
+    }
+
+    @ViewBuilder
+    private var icon: some View {
+        switch entry {
+        case .tuckedAwayInspiration:
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(NoteTheme.paper.opacity(0.92))
+                Image(systemName: "star")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(NoteTheme.secondaryInk)
+            }
+            .frame(width: 66, height: 72)
+            .shadow(color: NoteTheme.ink.opacity(0.08), radius: 7, y: 3)
+        case .endedRound:
+            ZStack {
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .fill(NoteTheme.canvas.opacity(0.92))
+                Image(systemName: "folder")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(NoteTheme.ink)
+            }
+            .frame(width: 66, height: 72)
+        case .receipt:
+            ZStack {
+                V02ReceiptPaperShape()
+                    .fill(NoteTheme.paper.opacity(0.95))
+                    .overlay { V02ReceiptPaperShape().stroke(NoteTheme.secondaryInk.opacity(0.2), lineWidth: 1) }
+                Image(systemName: "ticket")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(NoteTheme.secondaryInk)
+            }
+            .frame(width: 66, height: 72)
+        }
+    }
+
+    private var kindLabel: String {
+        switch entry {
+        case .tuckedAwayInspiration: "灵感 · 已收起"
+        case .endedRound: "构思历程 · 已结束"
+        case .receipt: "构思小票"
+        }
+    }
+
+    private var title: String {
+        switch entry {
+        case .tuckedAwayInspiration(let inspiration):
+            let text = inspiration.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? "未命名灵感" : text
+        case .endedRound(_, let collection):
+            return collection?.name ?? "未命名构思集"
+        case .receipt(let receipt):
+            return receipt.snapshot.collectionName
+        }
+    }
+
+    private var summary: String {
+        switch entry {
+        case .tuckedAwayInspiration(let inspiration):
+            if inspiration.resourceIDs.isEmpty { return "已退出卡片流，可在详情中放回卡片流。" }
+            return "已退出卡片流 · 附件 \(inspiration.resourceIDs.count) 个"
+        case .endedRound(let round, _):
+            return "第 \(round.roundNumber) 轮构思 · \(round.memberIDs.count) 条灵感"
+        case .receipt(let receipt):
+            let attachments = receipt.statistics.attachmentCount
+            return "第 \(receipt.snapshot.roundNumber) 轮构思 · \(receipt.snapshot.members.count) 条灵感 · 附件 \(attachments) 个"
+        }
+    }
+
+    @ViewBuilder
+    private var paperBackground: some View {
+        switch entry {
+        case .tuckedAwayInspiration:
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(NoteTheme.paper.opacity(0.83))
+        case .endedRound:
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(NoteTheme.canvas.opacity(0.86))
+        case .receipt:
+            V02ReceiptPaperShape()
+                .fill(NoteTheme.paper.opacity(0.9))
+        }
+    }
+
+    private var paperBorder: some View {
+        Group {
+            switch entry {
+            case .tuckedAwayInspiration:
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .stroke(Color.white.opacity(0.82), lineWidth: 1)
+            case .endedRound:
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .stroke(NoteTheme.secondaryInk.opacity(0.14), lineWidth: 1)
+            case .receipt:
+                V02ReceiptPaperShape()
+                    .stroke(Color.white.opacity(0.84), lineWidth: 1)
+            }
+        }
+    }
+
+}
+
+private struct V02HistoryEmptyState: View {
+    let scope: V02HistoryScope
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: iconName)
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(NoteTheme.secondaryInk)
+            Text(emptyTitle)
+                .noteFont(size: 21, weight: .semibold, relativeTo: .title3)
+                .foregroundStyle(NoteTheme.ink)
+            Text(message)
+                .noteFont(size: 15, relativeTo: .subheadline)
+                .foregroundStyle(NoteTheme.secondaryInk)
+                .multilineTextAlignment(.center)
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var iconName: String {
+        switch scope {
+        case .all: "clock.arrow.circlepath"
+        case .tuckedAway: "archivebox"
+        case .thinkingHistory: "folder"
+        case .receipts: "ticket"
+        }
+    }
+
+    private var emptyTitle: String {
+        switch scope {
+        case .all: "还没有历史内容"
+        case .tuckedAway: "还没有已收起灵感"
+        case .thinkingHistory: "还没有构思历程"
+        case .receipts: "还没有构思小票"
+        }
+    }
+
+    private var message: String {
+        switch scope {
+        case .all: "收起灵感、结束构思或生成小票后，它们会在这里按时间出现。"
+        case .tuckedAway: "左滑收起的独立灵感会保留在这里，点开后可以放回卡片流。"
+        case .thinkingHistory: "结束一轮构思后，构思历程会保留本轮成员与时间。"
+        case .receipts: "结束本轮构思并生成构思小票后，它会出现在这里。"
+        }
+    }
+}
+
+private struct V02HistoryInspirationDetailView: View {
+    @ObservedObject var store: V02Store
+    let inspirationID: UUID
+    let reportError: (Error) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var inspiration: V02Inspiration? {
+        store.state.inspirations.first { $0.id == inspirationID }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(inspiration?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ? inspiration?.text ?? "未命名灵感" : "未命名灵感")
+                        .noteFont(size: 22, weight: .semibold, relativeTo: .title2)
+                        .foregroundStyle(NoteTheme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if let inspiration, !inspiration.resourceIDs.isEmpty {
+                        Text("附件 · \(inspiration.resourceIDs.count) 个")
+                            .noteFont(size: 15, weight: .semibold, relativeTo: .subheadline)
+                            .foregroundStyle(NoteTheme.secondaryInk)
+                        V02MemberAttachmentSummary(store: store, resourceIDs: inspiration.resourceIDs)
+                    }
+                    Text("已收起灵感")
+                        .noteFont(size: 14, relativeTo: .subheadline)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                    Text("\(inspiration?.createdAt.formatted(date: .abbreviated, time: .shortened) ?? "")")
+                        .noteFont(size: 13, relativeTo: .caption)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                }
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.top, 24)
+                .padding(.bottom, 110)
+            }
+            .background(NoteTheme.background.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
+                        .accessibilityLabel("返回历史")
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("灵感详情")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button {
+                    do {
+                        try store.returnToCardFlow(inspirationID)
+                        dismiss()
+                    } catch { reportError(error) }
+                } label: {
+                    Text("放回卡片流")
+                        .noteFontCapped(size: 16, maximumScale: 1.25, weight: .semibold, relativeTo: .body)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .noteGlass(cornerRadius: 24, castsShadow: false)
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.vertical, 10)
+                .background(NoteTheme.background.opacity(0.94))
+            }
+        }
+    }
+}
+
+private struct V02HistoryCollectionDetailView: View {
+    @ObservedObject var store: V02Store
+    let round: V02ThinkingRound
+    let collection: V02ThinkingCollection?
+    let reportError: (Error) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    private var isActive: Bool {
+        collection?.currentRoundID != nil
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text(collection?.name ?? "未命名构思集")
+                        .noteFont(size: 24, weight: .semibold, relativeTo: .title2)
+                        .foregroundStyle(NoteTheme.ink)
+                    Text("构思历程 · 已结束")
+                        .noteFont(size: 15, weight: .semibold, relativeTo: .subheadline)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                    Text("开始：\(round.startedAt.formatted(date: .abbreviated, time: .shortened))\n结束：\(round.endedAt?.formatted(date: .abbreviated, time: .shortened) ?? "")")
+                        .noteFont(size: 14, relativeTo: .subheadline)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                    Text("本轮保留 \(round.memberIDs.count) 条灵感")
+                        .noteFont(size: 17, weight: .semibold, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                    if round.memberIDs.isEmpty {
+                        Text("本轮没有可显示的灵感。")
+                            .foregroundStyle(NoteTheme.secondaryInk)
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(Array(round.memberIDs.enumerated()), id: \.element) { index, id in
+                                let text = store.state.inspirations.first(where: { $0.id == id })?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                                HStack(alignment: .top, spacing: 10) {
+                                    Text(String(format: "%02d", index + 1))
+                                        .noteFont(size: 12, weight: .semibold, relativeTo: .caption)
+                                        .foregroundStyle(NoteTheme.secondaryInk)
+                                    Text(text.isEmpty ? "未命名灵感" : text)
+                                        .noteFont(size: 16, relativeTo: .body)
+                                        .foregroundStyle(NoteTheme.ink)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.top, 24)
+                .padding(.bottom, 110)
+            }
+            .background(NoteTheme.background.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
+                        .accessibilityLabel("返回历史")
+                }
+                ToolbarItem(placement: .principal) {
+                    Text("构思历程详情")
+                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                Button {
+                    do {
+                        _ = try store.continueThinking(in: round.collectionID)
+                        dismiss()
+                    } catch { reportError(error) }
+                } label: {
+                    Text(isActive ? "当前构思中" : "继续构思")
+                        .noteFontCapped(size: 16, maximumScale: 1.25, weight: .semibold, relativeTo: .body)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .disabled(isActive || collection == nil)
+                .noteGlass(cornerRadius: 24, castsShadow: false)
+                .padding(.horizontal, NoteTheme.horizontalPadding)
+                .padding(.vertical, 10)
+                .background(NoteTheme.background.opacity(0.94))
+            }
+        }
     }
 }
 

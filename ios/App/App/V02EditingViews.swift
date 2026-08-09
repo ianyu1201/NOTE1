@@ -227,7 +227,7 @@ struct V02ComposerView: View {
                                 .foregroundStyle(NoteTheme.secondaryInk)
                         }
                     } else if voiceResourceID != nil {
-                        Label("已附加本机录音", systemImage: "waveform")
+                        Label("已附加本机录音（M4A）", systemImage: "waveform")
                             .foregroundStyle(NoteTheme.secondaryInk)
                     }
                     if !attachmentResourceIDs.isEmpty {
@@ -288,8 +288,9 @@ struct V02ComposerView: View {
                     .buttonStyle(.plain)
                     .noteGlass(cornerRadius: 24, castsShadow: false)
                     .accessibilityLabel(recorder.isRecording ? "停止录音" : "录制语音灵感")
+                    .accessibilityHint("原录音会以 M4A 保存在本机，可随时播放或删除")
                     Spacer(minLength: 0)
-                    Button("保存灵感") { saveDraft() }
+                    Button("保存") { saveDraft() }
                         .frame(minWidth: 96, minHeight: 48)
                         .buttonStyle(PressScaleButtonStyle())
                         .noteGlass(cornerRadius: 24, castsShadow: false)

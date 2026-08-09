@@ -1232,6 +1232,268 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02SearchScope.allCases.map(\.title), ["全部", "灵感", "构思集", "小票"])
     }
 
+    func testV03HistoryCenterUsesOneGlobalScopeOrderAndReverseChronology() {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let collectionID = UUID()
+        let tucked = V02Inspiration(
+            id: UUID(),
+            text: "已收起的独立灵感",
+            cardFlowState: .tuckedAway,
+            collectionID: nil,
+            createdAt: base,
+            updatedAt: base.addingTimeInterval(10),
+            resourceIDs: []
+        )
+        let tuckedCollectionMember = V02Inspiration(
+            id: UUID(),
+            text: "构思集成员不重复进入已收起",
+            cardFlowState: .tuckedAway,
+            collectionID: collectionID,
+            createdAt: base,
+            updatedAt: base.addingTimeInterval(40),
+            resourceIDs: []
+        )
+        let visible = V02Inspiration(
+            id: UUID(),
+            text: "仍在卡片流",
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: base,
+            updatedAt: base.addingTimeInterval(50),
+            resourceIDs: []
+        )
+        let collection = V02ThinkingCollection(
+            id: collectionID,
+            name: "历史测试",
+            createdAt: base,
+            currentRoundID: nil
+        )
+        let endedRound = V02ThinkingRound(
+            id: UUID(),
+            collectionID: collectionID,
+            state: .ended,
+            startedAt: base,
+            endedAt: base.addingTimeInterval(20),
+            memberIDs: [tuckedCollectionMember.id],
+            effectiveEditCount: 0,
+            roundNumber: 1
+        )
+        let activeRound = V02ThinkingRound(
+            id: UUID(),
+            collectionID: collectionID,
+            state: .thinking,
+            startedAt: base.addingTimeInterval(60),
+            endedAt: nil,
+            memberIDs: [],
+            effectiveEditCount: 0,
+            roundNumber: 2
+        )
+        let receipt = V02Receipt(
+            id: UUID(),
+            roundID: endedRound.id,
+            collectionID: collectionID,
+            createdAt: base.addingTimeInterval(30),
+            snapshot: .init(
+                collectionName: collection.name,
+                startedAt: base,
+                endedAt: base.addingTimeInterval(20),
+                effectiveEditCount: 0,
+                members: [],
+                roundNumber: 1
+            )
+        )
+
+        var state = V02DomainState()
+        state.inspirations = [tucked, tuckedCollectionMember, visible]
+        state.collections = [collection]
+        state.rounds = [endedRound, activeRound]
+        state.receipts = [receipt]
+
+        XCTAssertEqual(
+            V02HistoryScope.allCases.map(\.title),
+            ["全部", "已收起", "构思历程", "小票"]
+        )
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: state).map(\.id),
+            ["receipt.\(receipt.id.uuidString)", "round.\(endedRound.id.uuidString)", "inspiration.\(tucked.id.uuidString)"]
+        )
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: state, scope: .tuckedAway).map(\.id),
+            ["inspiration.\(tucked.id.uuidString)"]
+        )
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: state, scope: .thinkingHistory).map(\.id),
+            ["round.\(endedRound.id.uuidString)"]
+        )
+        XCTAssertEqual(
+            V02HistoryCenterPolicy.entries(state: state, scope: .receipts).map(\.id),
+            ["receipt.\(receipt.id.uuidString)"]
+        )
+    }
+
+    func testV03RoundNumberIsMonotonicAndIndependentFromEditCountOrReceiptDeletion() throws {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        var state = V02DomainState()
+        let inspiration = V02Inspiration(
+            id: UUID(),
+            text: "轮次测试",
+            cardFlowState: .visible,
+            collectionID: nil,
+            createdAt: base,
+            updatedAt: base,
+            resourceIDs: []
+        )
+        state.inspirations = [inspiration]
+        let collection = try V02DomainEngine.createCollection(in: &state, now: base)
+        let firstRound = try V02DomainEngine.startRound(collectionID: collection.id, in: &state, now: base)
+        try V02DomainEngine.assign(
+            inspirationID: inspiration.id,
+            to: collection.id,
+            in: &state,
+            now: base
+        )
+        let firstReceipt = try V02DomainEngine.endRound(
+            roundID: firstRound.id,
+            in: &state,
+            now: base.addingTimeInterval(10)
+        )
+        try V02DomainEngine.deleteReceipt(firstReceipt.id, in: &state, now: base.addingTimeInterval(11))
+
+        let secondRound = try V02DomainEngine.continueRound(
+            collectionID: collection.id,
+            in: &state,
+            now: base.addingTimeInterval(20)
+        )
+        let secondIndex = try XCTUnwrap(state.rounds.firstIndex { $0.id == secondRound.id })
+        state.rounds[secondIndex].effectiveEditCount = 12
+        let secondReceipt = try V02DomainEngine.endRound(
+            roundID: secondRound.id,
+            in: &state,
+            now: base.addingTimeInterval(30)
+        )
+        try V02DomainEngine.deleteReceipt(secondReceipt.id, in: &state, now: base.addingTimeInterval(31))
+
+        let thirdRound = try V02DomainEngine.continueRound(
+            collectionID: collection.id,
+            in: &state,
+            now: base.addingTimeInterval(40)
+        )
+
+        XCTAssertEqual(firstReceipt.snapshot.roundNumber, 1)
+        XCTAssertEqual(secondReceipt.snapshot.roundNumber, 2)
+        XCTAssertEqual(secondReceipt.snapshot.effectiveEditCount, 12)
+        XCTAssertEqual(secondReceipt.statistics.roundTitle, "第 2 轮构思")
+        XCTAssertEqual(thirdRound.roundNumber, 3)
+        XCTAssertEqual(state.collections.first?.nextRoundNumber, 4)
+    }
+
+    func testV03ReceiptStatisticsUseFrozenTextAndAttachmentUnion() {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let firstAttachmentID = UUID()
+        let secondAttachmentID = UUID()
+        let snapshot = V02ReceiptSnapshot(
+            collectionName: "统计测试",
+            startedAt: base,
+            endedAt: base.addingTimeInterval(90),
+            effectiveEditCount: 4,
+            members: [
+                .init(
+                    inspirationID: UUID(),
+                    text: "你好",
+                    resourceIDs: [firstAttachmentID],
+                    attachments: [
+                        .init(
+                            id: firstAttachmentID,
+                            filename: "one.jpg",
+                            mimeType: "image/jpeg",
+                            relativePath: "one.jpg",
+                            size: 10,
+                            createdAt: base
+                        ),
+                        .init(
+                            id: secondAttachmentID,
+                            filename: "two.pdf",
+                            mimeType: "application/pdf",
+                            relativePath: "two.pdf",
+                            size: 20,
+                            createdAt: base
+                        )
+                    ]
+                ),
+                .init(inspirationID: UUID(), text: "NOTE1", resourceIDs: [])
+            ],
+            roundNumber: 3
+        )
+
+        XCTAssertEqual(snapshot.statistics.roundNumber, 3)
+        XCTAssertEqual(snapshot.statistics.inspirationCount, 2)
+        XCTAssertEqual(snapshot.statistics.attachmentCount, 2)
+        XCTAssertEqual(snapshot.statistics.finalTextCount, 7)
+        XCTAssertEqual(snapshot.statistics.effectiveEditCount, 4)
+        XCTAssertEqual(snapshot.statistics.duration, 90)
+        XCTAssertTrue(snapshot.statistics.compactText.contains("第 3 轮构思"))
+        XCTAssertTrue(snapshot.statistics.detailText.contains("最终文字数量：7 字"))
+    }
+
+    func testV03LegacyOrphanReceiptsMigrateAcrossActiveAndTrashBuckets() throws {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let collectionID = UUID()
+        func makeReceipt(offset: TimeInterval) -> V02Receipt {
+            V02Receipt(
+                id: UUID(),
+                roundID: UUID(),
+                collectionID: collectionID,
+                createdAt: base.addingTimeInterval(offset + 5),
+                snapshot: .init(
+                    collectionName: "已删除构思集",
+                    startedAt: base.addingTimeInterval(offset),
+                    endedAt: base.addingTimeInterval(offset + 5),
+                    effectiveEditCount: 0,
+                    members: []
+                )
+            )
+        }
+        let earlierTrashReceipt = makeReceipt(offset: 10)
+        let laterActiveReceipt = makeReceipt(offset: 20)
+        var legacyState = V02DomainState()
+        legacyState.receipts = [laterActiveReceipt]
+        legacyState.trash = [
+            V02TrashEntry(
+                id: UUID(),
+                object: .receipt(earlierTrashReceipt),
+                deletedAt: base.addingTimeInterval(30)
+            )
+        ]
+
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let encoded = try encoder.encode(legacyState)
+        let object = try JSONSerialization.jsonObject(with: encoded)
+        func strippingRoundFields(from value: Any) -> Any {
+            if let dictionary = value as? [String: Any] {
+                return dictionary.reduce(into: [String: Any]()) { result, pair in
+                    guard pair.key != "roundNumber", pair.key != "nextRoundNumber" else { return }
+                    result[pair.key] = strippingRoundFields(from: pair.value)
+                }
+            }
+            if let array = value as? [Any] {
+                return array.map(strippingRoundFields(from:))
+            }
+            return value
+        }
+        let legacyData = try JSONSerialization.data(withJSONObject: strippingRoundFields(from: object))
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let migrated = try decoder.decode(V02DomainState.self, from: legacyData)
+
+        XCTAssertEqual(migrated.receipts.first?.snapshot.roundNumber, 2)
+        guard let migratedTrashObject = migrated.trash.first?.object,
+              case .receipt(let migratedTrashReceipt) = migratedTrashObject else {
+            return XCTFail("回收站中的旧小票应保持可解码")
+        }
+        XCTAssertEqual(migratedTrashReceipt.snapshot.roundNumber, 1)
+    }
+
     func testV02TuckAnimationGuardsDuplicateCommitUntilVisualExit() {
         XCTAssertTrue(V02TuckPolicy.commitDelay >= 0.22)
         XCTAssertTrue(V02TuckPolicy.mayBegin(isTucking: false))

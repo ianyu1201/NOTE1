@@ -34,6 +34,20 @@ struct V02ReceiptPaper: View {
     }
     private var photoResources: [V02AttachmentResource] {
         receipt.snapshot.members.flatMap(\.resourceIDs).compactMap { id in
+            if let metadata = receipt.snapshot.members
+                .flatMap(\.attachments)
+                .first(where: { $0.id == id }),
+               metadata.mimeType.hasPrefix("image/") {
+                return V02AttachmentResource(
+                    id: metadata.id,
+                    source: metadata.source,
+                    filename: metadata.filename,
+                    mimeType: metadata.mimeType,
+                    relativePath: metadata.relativePath,
+                    size: metadata.size,
+                    createdAt: metadata.createdAt
+                )
+            }
             guard let resource = store.state.resources.first(where: { $0.id == id }),
                   resource.mimeType.hasPrefix("image/") else { return nil }
             return resource
@@ -116,7 +130,7 @@ struct V02ReceiptPaper: View {
 
     private var receiptSummary: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("回顾 · 第 \(max(receipt.snapshot.effectiveEditCount, 1)) 轮")
+            Text("回顾 · \(receipt.statistics.roundTitle)")
             Text("\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .omitted)) – \(receipt.snapshot.endedAt.formatted(date: .numeric, time: .omitted))")
         }
         .noteFont(size: 11, relativeTo: .caption)
@@ -186,9 +200,12 @@ struct V02ReceiptPaper: View {
     }
 
     private var receiptMetrics: some View {
-        Text("开始 \(receipt.snapshot.startedAt.formatted(date: .omitted, time: .shortened)) · 持续 \(receipt.snapshot.endedAt.timeIntervalSince(receipt.snapshot.startedAt).formattedDuration) · 有效编辑 \(receipt.snapshot.effectiveEditCount) 次")
-            .noteFont(size: 13, relativeTo: .caption)
-            .foregroundStyle(NoteTheme.secondaryInk)
+        VStack(alignment: .leading, spacing: 3) {
+            Text("\(receipt.statistics.inspirationCount) 条灵感 · 附件 \(receipt.statistics.attachmentCount) 个 · 文字 \(receipt.statistics.finalTextCount) 字")
+            Text("开始 \(receipt.snapshot.startedAt.formatted(date: .omitted, time: .shortened)) · 持续 \(receipt.statistics.duration.formattedDuration) · 有效编辑 \(receipt.statistics.effectiveEditCount) 次")
+        }
+        .noteFont(size: 13, relativeTo: .caption)
+        .foregroundStyle(NoteTheme.secondaryInk)
     }
 
     private func attachmentSymbol(for attachment: V02ReceiptSnapshot.Attachment) -> String {

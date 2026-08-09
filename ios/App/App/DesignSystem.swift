@@ -243,6 +243,24 @@ struct V02GlassIconLabel: View {
     }
 }
 
+/// The same global menu is used by every primary page. Page-specific actions
+/// stay out of this menu so the left slot remains predictable: only local
+/// archive access (回收站) and app preferences (设置) are exposed here.
+struct V02GlobalMenuButton: View {
+    let showTrash: () -> Void
+    let showSettings: () -> Void
+
+    var body: some View {
+        Menu {
+            Button("回收站", systemImage: "trash", action: showTrash)
+            Button("设置", systemImage: "gearshape", action: showSettings)
+        } label: {
+            V02GlassIconLabel(systemName: "line.3.horizontal")
+        }
+        .accessibilityLabel("本机功能与设置")
+    }
+}
+
 extension ToolbarContent {
     @ToolbarContentBuilder
     func noteSharedBackgroundHidden() -> some ToolbarContent {

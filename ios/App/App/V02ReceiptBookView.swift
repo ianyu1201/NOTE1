@@ -3,6 +3,10 @@ import SwiftUI
 struct V02ReceiptBookView: View {
     @ObservedObject var store: V02Store
     @Binding var isSelecting: Bool
+    let showSettings: () -> Void
+    let showTrash: () -> Void
+    let showHistory: () -> Void
+    let showSearch: () -> Void
     let onOverlayChange: (Bool) -> Void
     @State private var selectedIDs = Set<UUID>()
     @State private var pendingDeleteIDs = Set<UUID>()
@@ -11,7 +15,6 @@ struct V02ReceiptBookView: View {
     @State private var receiptIndex = 0
     @State private var detailReceipt: V02Receipt?
     @State private var undoTrashEntryIDs = Set<UUID>()
-    @State private var isPresentingSearch = false
     @State private var templateOverrides: [UUID: V02ReceiptTemplate] = [:]
 
     private var selectedReceipts: [V02Receipt] {
@@ -28,7 +31,7 @@ struct V02ReceiptBookView: View {
     }
 
     private var localOverlayPresented: Bool {
-        detailReceipt != nil || isPresentingSearch || !shareURLs.isEmpty
+        detailReceipt != nil || !shareURLs.isEmpty
     }
 
     var body: some View {
@@ -94,9 +97,6 @@ struct V02ReceiptBookView: View {
                 onDelete: { entryIDs in undoTrashEntryIDs.formUnion(entryIDs) }
             )
         }
-        .sheet(isPresented: $isPresentingSearch) {
-            V02SearchView(store: store, initialScope: .receipts, locksScope: true)
-        }
         .sheet(isPresented: Binding(
             get: { !shareURLs.isEmpty },
             set: { if !$0 { shareURLs.removeAll() } }
@@ -129,28 +129,31 @@ struct V02ReceiptBookView: View {
 
     private var receiptHeader: some View {
         ZStack {
-            Text("小票册")
-                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                .foregroundStyle(NoteTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack(spacing: 10) {
+            HStack {
+                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
                 Spacer(minLength: 0)
-                Button {
-                    isPresentingSearch = true
-                } label: {
-                    V02GlassIconLabel(systemName: "magnifyingglass")
+                HStack(spacing: 4) {
+                    V02GlassIconButton(
+                        systemName: "clock.arrow.circlepath",
+                        label: "历史记录",
+                        action: showHistory
+                    )
+                    V02GlassIconButton(
+                        systemName: "magnifyingglass",
+                        label: "搜索",
+                        action: showSearch
+                    )
                 }
-                .accessibilityLabel("搜索小票")
-                receiptMenu
             }
+
+            receiptTitleMenu
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
         .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
         .background(NoteTheme.background)
     }
 
-    private var receiptMenu: some View {
+    private var receiptTitleMenu: some View {
         Menu {
             Button(isSelecting ? "取消选择" : "选择", systemImage: "checkmark.circle") {
                 isSelecting.toggle()
@@ -171,9 +174,16 @@ struct V02ReceiptBookView: View {
                 if let currentReceipt { pendingDeleteIDs = [currentReceipt.id] }
             }
         } label: {
-            V02GlassIconLabel(systemName: "ellipsis")
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text("小票册")
+                    .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(NoteTheme.ink)
+            .accessibilityAddTraits(.isHeader)
         }
-        .accessibilityLabel("更多小票册操作")
+        .accessibilityLabel("小票册，更多操作")
     }
 
     private var selectionToolbar: some View {

@@ -44,6 +44,47 @@ struct V02ThinkingCollection: Identifiable, Codable, Sendable {
     var name: String
     let createdAt: Date
     var currentRoundID: UUID?
+    /// The next round number for this collection. This counter is persisted
+    /// independently of receipts so deleting a receipt can never recycle a
+    /// previously issued number.
+    var nextRoundNumber: Int
+
+    /// Set only while decoding pre-V0.3 JSON that did not have a counter.
+    /// It is intentionally not part of Codable state.
+    var needsRoundSequenceMigration: Bool = false
+
+    init(
+        id: UUID,
+        name: String,
+        createdAt: Date,
+        currentRoundID: UUID?,
+        nextRoundNumber: Int = 1
+    ) {
+        self.id = id
+        self.name = name
+        self.createdAt = createdAt
+        self.currentRoundID = currentRoundID
+        self.nextRoundNumber = max(nextRoundNumber, 1)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, createdAt, currentRoundID, nextRoundNumber
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try values.decode(UUID.self, forKey: .id)
+        self.name = try values.decode(String.self, forKey: .name)
+        self.createdAt = try values.decode(Date.self, forKey: .createdAt)
+        self.currentRoundID = try values.decodeIfPresent(UUID.self, forKey: .currentRoundID)
+        if let number = try values.decodeIfPresent(Int.self, forKey: .nextRoundNumber) {
+            self.nextRoundNumber = max(number, 1)
+            self.needsRoundSequenceMigration = false
+        } else {
+            self.nextRoundNumber = 1
+            self.needsRoundSequenceMigration = true
+        }
+    }
 }
 
 enum V02RoundEventKind: String, Codable, Sendable {
@@ -69,7 +110,12 @@ struct V02ThinkingRound: Identifiable, Codable, Sendable {
     var endedAt: Date?
     var memberIDs: [UUID]
     var effectiveEditCount: Int
+    var roundNumber: Int
     var events: [V02RoundEvent]
+
+    /// Set only while decoding pre-V0.3 JSON that did not have a round number.
+    /// It is intentionally not part of Codable state.
+    var needsRoundNumberMigration: Bool = false
 
     init(
         id: UUID,
@@ -79,7 +125,8 @@ struct V02ThinkingRound: Identifiable, Codable, Sendable {
         endedAt: Date?,
         memberIDs: [UUID],
         effectiveEditCount: Int,
-        events: [V02RoundEvent] = []
+        events: [V02RoundEvent] = [],
+        roundNumber: Int = 1
     ) {
         self.id = id
         self.collectionID = collectionID
@@ -88,11 +135,12 @@ struct V02ThinkingRound: Identifiable, Codable, Sendable {
         self.endedAt = endedAt
         self.memberIDs = memberIDs
         self.effectiveEditCount = effectiveEditCount
+        self.roundNumber = max(roundNumber, 1)
         self.events = events
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, collectionID, state, startedAt, endedAt, memberIDs, effectiveEditCount, events
+        case id, collectionID, state, startedAt, endedAt, memberIDs, effectiveEditCount, roundNumber, events
     }
 
     init(from decoder: Decoder) throws {
@@ -105,8 +153,10 @@ struct V02ThinkingRound: Identifiable, Codable, Sendable {
             endedAt: try values.decodeIfPresent(Date.self, forKey: .endedAt),
             memberIDs: try values.decode([UUID].self, forKey: .memberIDs),
             effectiveEditCount: try values.decode(Int.self, forKey: .effectiveEditCount),
-            events: try values.decodeIfPresent([V02RoundEvent].self, forKey: .events) ?? []
+            events: try values.decodeIfPresent([V02RoundEvent].self, forKey: .events) ?? [],
+            roundNumber: try values.decodeIfPresent(Int.self, forKey: .roundNumber) ?? 1
         )
+        needsRoundNumberMigration = try values.decodeIfPresent(Int.self, forKey: .roundNumber) == nil
     }
 }
 
@@ -195,9 +245,16 @@ struct V02ReceiptSnapshot: Codable, Sendable {
     let collectionName: String
     let startedAt: Date
     let endedAt: Date
+    /// The persisted ordinal of this collection's round. It is independent
+    /// from effective edit events and remains stable after receipt deletion.
+    var roundNumber: Int
     let effectiveEditCount: Int
     let members: [Member]
     let events: [V02RoundEvent]
+
+    /// Set only while decoding pre-V0.3 JSON that did not have a round
+    /// number. It is intentionally not part of Codable state.
+    var needsRoundNumberMigration: Bool = false
 
     init(
         collectionName: String,
@@ -205,18 +262,42 @@ struct V02ReceiptSnapshot: Codable, Sendable {
         endedAt: Date,
         effectiveEditCount: Int,
         members: [Member],
-        events: [V02RoundEvent] = []
+        events: [V02RoundEvent] = [],
+        roundNumber: Int = 1
     ) {
         self.collectionName = collectionName
         self.startedAt = startedAt
         self.endedAt = endedAt
+        self.roundNumber = max(roundNumber, 1)
         self.effectiveEditCount = effectiveEditCount
         self.members = members
         self.events = events
     }
 
+    /// Argument-order compatibility for callers that place the new field
+    /// before the existing edit metric.
+    init(
+        collectionName: String,
+        startedAt: Date,
+        endedAt: Date,
+        roundNumber: Int,
+        effectiveEditCount: Int,
+        members: [Member],
+        events: [V02RoundEvent] = []
+    ) {
+        self.init(
+            collectionName: collectionName,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            effectiveEditCount: effectiveEditCount,
+            members: members,
+            events: events,
+            roundNumber: roundNumber
+        )
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case collectionName, startedAt, endedAt, effectiveEditCount, members, events
+        case collectionName, startedAt, endedAt, roundNumber, effectiveEditCount, members, events
     }
 
     init(from decoder: Decoder) throws {
@@ -227,7 +308,21 @@ struct V02ReceiptSnapshot: Codable, Sendable {
             endedAt: try values.decode(Date.self, forKey: .endedAt),
             effectiveEditCount: try values.decode(Int.self, forKey: .effectiveEditCount),
             members: try values.decode([Member].self, forKey: .members),
-            events: try values.decodeIfPresent([V02RoundEvent].self, forKey: .events) ?? []
+            events: try values.decodeIfPresent([V02RoundEvent].self, forKey: .events) ?? [],
+            roundNumber: try values.decodeIfPresent(Int.self, forKey: .roundNumber) ?? 1
+        )
+        needsRoundNumberMigration = try values.decodeIfPresent(Int.self, forKey: .roundNumber) == nil
+    }
+
+    func withRoundNumber(_ number: Int) -> Self {
+        Self(
+            collectionName: collectionName,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            effectiveEditCount: effectiveEditCount,
+            members: members,
+            events: events,
+            roundNumber: max(number, 1)
         )
     }
 }
@@ -238,6 +333,57 @@ struct V02Receipt: Identifiable, Codable, Sendable {
     let collectionID: UUID
     let createdAt: Date
     let snapshot: V02ReceiptSnapshot
+}
+
+/// Frozen values shown on a receipt. Keeping the calculation next to the
+/// immutable snapshot makes the paper, detail view and every export agree,
+/// including for legacy snapshots whose attachment metadata was not embedded.
+struct V02ReceiptStatistics: Equatable, Sendable {
+    let roundNumber: Int
+    let inspirationCount: Int
+    let attachmentCount: Int
+    let finalTextCount: Int
+    let effectiveEditCount: Int
+    let duration: TimeInterval
+
+    init(snapshot: V02ReceiptSnapshot) {
+        roundNumber = max(snapshot.roundNumber, 1)
+        inspirationCount = snapshot.members.count
+        attachmentCount = snapshot.members.reduce(0) { total, member in
+            // V0.2 snapshots only carried resourceIDs. V0.3 snapshots also
+            // carry frozen attachment metadata. Valid backups require these
+            // sets to agree; taking their union keeps direct legacy values
+            // readable without silently dropping either side if they differ.
+            total + Set(member.resourceIDs).union(member.attachments.map(\.id)).count
+        }
+        finalTextCount = snapshot.members.reduce(0) { $0 + $1.text.count }
+        effectiveEditCount = max(snapshot.effectiveEditCount, 0)
+        duration = max(0, snapshot.endedAt.timeIntervalSince(snapshot.startedAt))
+    }
+
+    init(receipt: V02Receipt) {
+        self.init(snapshot: receipt.snapshot)
+    }
+
+    var roundTitle: String { "第 \(roundNumber) 轮构思" }
+
+    /// Compact wording for a paper preview or export header.
+    var compactText: String {
+        "\(roundTitle) · \(inspirationCount) 条灵感 · 附件 \(attachmentCount) 个 · 文字 \(finalTextCount) 字 · 有效编辑 \(effectiveEditCount) 次"
+    }
+
+    /// Full wording for the detail view and accessibility summaries.
+    var detailText: String {
+        "\(roundTitle)\n灵感数量：\(inspirationCount) 条\n附件数量：\(attachmentCount) 个\n最终文字数量：\(finalTextCount) 字\n有效编辑次数：\(effectiveEditCount) 次\n持续时间：\(duration.formattedDuration)"
+    }
+}
+
+extension V02ReceiptSnapshot {
+    var statistics: V02ReceiptStatistics { V02ReceiptStatistics(snapshot: self) }
+}
+
+extension V02Receipt {
+    var statistics: V02ReceiptStatistics { snapshot.statistics }
 }
 
 enum V02TrashObject: Codable, Sendable {
@@ -312,6 +458,161 @@ struct V02DomainState: Codable, Sendable {
     var resources: [V02AttachmentResource] = []
     var receipts: [V02Receipt] = []
     var trash: [V02TrashEntry] = []
+
+    private enum CodingKeys: String, CodingKey {
+        case version, nextCollectionNumber, inspirations, collections, rounds, resources, receipts, trash
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        let decodedVersion = try values.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        // Versions up to the current schema are migrated in memory and are
+        // written back in the current shape on the next transaction. Future
+        // versions stay visible to the store so it can enter read-only mode.
+        version = decodedVersion <= Self.currentVersion ? Self.currentVersion : decodedVersion
+        nextCollectionNumber = try values.decodeIfPresent(Int.self, forKey: .nextCollectionNumber) ?? 1
+        inspirations = try values.decodeIfPresent([V02Inspiration].self, forKey: .inspirations) ?? []
+        collections = try values.decodeIfPresent([V02ThinkingCollection].self, forKey: .collections) ?? []
+        rounds = try values.decodeIfPresent([V02ThinkingRound].self, forKey: .rounds) ?? []
+        resources = try values.decodeIfPresent([V02AttachmentResource].self, forKey: .resources) ?? []
+        receipts = try values.decodeIfPresent([V02Receipt].self, forKey: .receipts) ?? []
+        trash = try values.decodeIfPresent([V02TrashEntry].self, forKey: .trash) ?? []
+        migrateLegacyRoundNumbers()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var values = encoder.container(keyedBy: CodingKeys.self)
+        try values.encode(version, forKey: .version)
+        try values.encode(nextCollectionNumber, forKey: .nextCollectionNumber)
+        try values.encode(inspirations, forKey: .inspirations)
+        try values.encode(collections, forKey: .collections)
+        try values.encode(rounds, forKey: .rounds)
+        try values.encode(resources, forKey: .resources)
+        try values.encode(receipts, forKey: .receipts)
+        try values.encode(trash, forKey: .trash)
+    }
+
+    /// Backfill real per-collection ordinals for old JSON/backup payloads.
+    /// Legacy rounds did not persist a number; chronological order is the
+    /// only stable evidence available, so it becomes 1…N. New rounds use the
+    /// collection's monotonic counter and never come through this path.
+    private mutating func migrateLegacyRoundNumbers() {
+        var collectionIDs = Set(collections.map(\.id))
+        collectionIDs.formUnion(rounds.map(\.collectionID))
+        collectionIDs.formUnion(receipts.map(\.collectionID))
+        for entry in trash {
+            if case .receipt(let receipt) = entry.object {
+                collectionIDs.insert(receipt.collectionID)
+            }
+        }
+
+        // A receipt can remain after its collection and rounds have been
+        // deleted. Keep active and trashed receipts in one chronological
+        // sequence so orphan snapshots do not all fall back to round 1.
+        typealias ReceiptLocation = (isTrash: Bool, index: Int, receipt: V02Receipt)
+        func receiptPrecedes(_ lhs: V02Receipt, _ rhs: V02Receipt) -> Bool {
+            if lhs.snapshot.startedAt != rhs.snapshot.startedAt {
+                return lhs.snapshot.startedAt < rhs.snapshot.startedAt
+            }
+            if lhs.snapshot.endedAt != rhs.snapshot.endedAt {
+                return lhs.snapshot.endedAt < rhs.snapshot.endedAt
+            }
+            if lhs.createdAt != rhs.createdAt {
+                return lhs.createdAt < rhs.createdAt
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+
+        for collectionID in collectionIDs.sorted(by: { $0.uuidString < $1.uuidString }) {
+            var roundIndices = rounds.indices.filter { rounds[$0].collectionID == collectionID }
+            roundIndices.sort { lhs, rhs in
+                if rounds[lhs].startedAt != rounds[rhs].startedAt {
+                    return rounds[lhs].startedAt < rounds[rhs].startedAt
+                }
+                if rounds[lhs].endedAt != rounds[rhs].endedAt {
+                    return (rounds[lhs].endedAt ?? .distantFuture) < (rounds[rhs].endedAt ?? .distantFuture)
+                }
+                return rounds[lhs].id.uuidString < rounds[rhs].id.uuidString
+            }
+
+            var usedNumbers = Set<Int>()
+            var nextAvailable = 1
+            for roundIndex in roundIndices {
+                let legacy = rounds[roundIndex].needsRoundNumberMigration
+                let supplied = max(rounds[roundIndex].roundNumber, 1)
+                if legacy || usedNumbers.contains(supplied) {
+                    while usedNumbers.contains(nextAvailable) { nextAvailable += 1 }
+                    rounds[roundIndex].roundNumber = nextAvailable
+                } else {
+                    rounds[roundIndex].roundNumber = supplied
+                }
+                usedNumbers.insert(rounds[roundIndex].roundNumber)
+                nextAvailable = max(nextAvailable, rounds[roundIndex].roundNumber + 1)
+                rounds[roundIndex].needsRoundNumberMigration = false
+            }
+
+            let roundValueByID = Dictionary(uniqueKeysWithValues: roundIndices.map {
+                (rounds[$0].id, rounds[$0].roundNumber)
+            })
+            var receiptLocations: [ReceiptLocation] = receipts.indices
+                .filter { receipts[$0].collectionID == collectionID }
+                .map { (false, $0, receipts[$0]) }
+            receiptLocations.append(contentsOf: trash.indices.compactMap { index in
+                guard case .receipt(let receipt) = trash[index].object,
+                      receipt.collectionID == collectionID else { return nil }
+                return (true, index, receipt)
+            })
+            receiptLocations.sort { receiptPrecedes($0.receipt, $1.receipt) }
+
+            for location in receiptLocations {
+                let receipt = location.receipt
+                let mappedNumber = roundValueByID[receipt.roundID]
+                let number: Int
+                if let mappedNumber {
+                    // A retained round is authoritative. This keeps a
+                    // snapshot and its source round aligned even if a legacy
+                    // snapshot had no field or an inconsistent value.
+                    number = mappedNumber
+                } else if receipt.snapshot.needsRoundNumberMigration {
+                    while usedNumbers.contains(nextAvailable) { nextAvailable += 1 }
+                    number = nextAvailable
+                    nextAvailable += 1
+                } else {
+                    number = max(receipt.snapshot.roundNumber, 1)
+                }
+                usedNumbers.insert(number)
+                nextAvailable = max(nextAvailable, number + 1)
+                guard receipt.snapshot.roundNumber != number || receipt.snapshot.needsRoundNumberMigration else {
+                    continue
+                }
+                let migratedReceipt = V02Receipt(
+                    id: receipt.id,
+                    roundID: receipt.roundID,
+                    collectionID: receipt.collectionID,
+                    createdAt: receipt.createdAt,
+                    snapshot: receipt.snapshot.withRoundNumber(number)
+                )
+                if location.isTrash {
+                    let entry = trash[location.index]
+                    trash[location.index] = V02TrashEntry(
+                        id: entry.id,
+                        object: .receipt(migratedReceipt),
+                        deletedAt: entry.deletedAt
+                    )
+                } else {
+                    receipts[location.index] = migratedReceipt
+                }
+            }
+
+            if let collectionIndex = collections.firstIndex(where: { $0.id == collectionID }) {
+                let storedNext = max(collections[collectionIndex].nextRoundNumber, 1)
+                collections[collectionIndex].nextRoundNumber = max(storedNext, nextAvailable)
+                collections[collectionIndex].needsRoundSequenceMigration = false
+            }
+        }
+    }
 }
 
 /// Pure transaction engine. Persistence owns one `V02DomainState` value and
@@ -346,15 +647,22 @@ struct V02DomainEngine {
         guard let index = state.collections.firstIndex(where: { $0.id == collectionID }) else { throw V02DomainError.collectionNotFound }
         guard state.collections[index].currentRoundID == nil else { throw V02DomainError.activeRoundRequired }
         guard memberIDs.count <= maximumMembersPerCollection else { throw V02DomainError.collectionCapacity }
+        let previousMax = state.rounds
+            .filter { $0.collectionID == collectionID }
+            .map(\.roundNumber)
+            .max() ?? 0
+        let roundNumber = max(state.collections[index].nextRoundNumber, previousMax + 1, 1)
         let round = V02ThinkingRound(
             id: UUID(), collectionID: collectionID, state: .thinking, startedAt: now, endedAt: nil,
             memberIDs: memberIDs, effectiveEditCount: 0,
             events: [.init(id: UUID(), kind: .started, occurredAt: now, inspirationID: nil)] + memberIDs.map {
                 .init(id: UUID(), kind: .memberAdded, occurredAt: now, inspirationID: $0)
-            }
+            },
+            roundNumber: roundNumber
         )
         state.rounds.append(round)
         state.collections[index].currentRoundID = round.id
+        state.collections[index].nextRoundNumber = roundNumber + 1
         return round
     }
 
@@ -409,7 +717,21 @@ struct V02DomainEngine {
             )
         }
         state.rounds[index].events.append(.init(id: UUID(), kind: .ended, occurredAt: now, inspirationID: nil))
-        let receipt = V02Receipt(id: UUID(), roundID: round.id, collectionID: round.collectionID, createdAt: now, snapshot: .init(collectionName: state.collections[collectionIndex].name, startedAt: round.startedAt, endedAt: now, effectiveEditCount: round.effectiveEditCount, members: members, events: state.rounds[index].events))
+        let receipt = V02Receipt(
+            id: UUID(),
+            roundID: round.id,
+            collectionID: round.collectionID,
+            createdAt: now,
+            snapshot: .init(
+                collectionName: state.collections[collectionIndex].name,
+                startedAt: round.startedAt,
+                endedAt: now,
+                effectiveEditCount: round.effectiveEditCount,
+                members: members,
+                events: state.rounds[index].events,
+                roundNumber: round.roundNumber
+            )
+        )
         state.rounds[index].state = .ended
         state.rounds[index].endedAt = now
         state.collections[collectionIndex].currentRoundID = nil
@@ -448,20 +770,12 @@ struct V02DomainEngine {
             state.rounds[oldRoundIndex].memberIDs.removeAll { $0 == memberID }
             state.rounds[oldRoundIndex].events.append(.init(id: UUID(), kind: .memberRemoved, occurredAt: now, inspirationID: memberID))
         }
-        let round = V02ThinkingRound(
-            id: UUID(),
+        let round = try startRound(
             collectionID: collectionID,
-            state: .thinking,
-            startedAt: now,
-            endedAt: nil,
+            in: &state,
             memberIDs: previous.memberIDs,
-            effectiveEditCount: 0,
-            events: [.init(id: UUID(), kind: .started, occurredAt: now, inspirationID: nil)] + previous.memberIDs.map {
-                .init(id: UUID(), kind: .memberAdded, occurredAt: now, inspirationID: $0)
-            }
+            now: now
         )
-        state.rounds.append(round)
-        state.collections[collectionIndex].currentRoundID = round.id
         for index in state.inspirations.indices where previous.memberIDs.contains(state.inspirations[index].id) {
             state.inspirations[index].collectionID = collectionID
             state.inspirations[index].cardFlowState = .visible

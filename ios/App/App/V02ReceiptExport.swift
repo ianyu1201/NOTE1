@@ -11,7 +11,7 @@ enum V02ReceiptExport {
     }
 
     static func markdown(for receipt: V02Receipt) -> String {
-        let header = "# \(receipt.snapshot.collectionName)\n\n- 编号：NOTE1-\(receipt.id.uuidString.prefix(8))\n- 开始：\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .shortened))\n- 结束：\(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))\n- \(statistics(for: receipt))\n"
+        let header = "# \(receipt.snapshot.collectionName)\n\n- 编号：NOTE1-\(receipt.id.uuidString.prefix(8))\n- \(statistics(for: receipt))\n- 开始：\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .shortened))\n- 结束：\(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))\n"
         let content = receipt.snapshot.members.enumerated().map { index, member in
             "## \(index + 1)\n\n\(member.text)"
         }.joined(separator: "\n\n")
@@ -73,10 +73,7 @@ enum V02ReceiptExport {
     }
 
     private static func statistics(for receipt: V02Receipt) -> String {
-        let duration = max(0, Int(receipt.snapshot.endedAt.timeIntervalSince(receipt.snapshot.startedAt)) / 60)
-        let attachments = receipt.snapshot.members.flatMap(\.resourceIDs).count
-        let characters = receipt.snapshot.members.reduce(0) { $0 + $1.text.count }
-        return "本轮构思已结束，\(receipt.snapshot.members.count) 条灵感 · \(duration) 分钟 · 有效编辑 \(receipt.snapshot.effectiveEditCount) 次 · 附件 \(attachments) 个 · 文字 \(characters) 字"
+        receipt.statistics.compactText
     }
 
     private static func timeline(for receipt: V02Receipt) -> String {

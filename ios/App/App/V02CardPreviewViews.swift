@@ -3,8 +3,10 @@ import UIKit
 
 struct V02CardPreviewView: View {
     @ObservedObject var store: V02Store
-    let onBack: () -> Void
-    let onHistory: () -> Void
+    let showSettings: () -> Void
+    let showTrash: () -> Void
+    let showHistory: () -> Void
+    let showSearch: () -> Void
     let reportError: (Error) -> Void
     let onEditingChange: (Bool) -> Void
     let onOverlayChange: (Bool) -> Void
@@ -211,10 +213,7 @@ struct V02CardPreviewView: View {
         .toolbarBackground(NoteTheme.background, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button(action: onBack) {
-                    V02GlassIconLabel(systemName: "chevron.left")
-                }
-                .accessibilityLabel("返回灵感")
+                V02GlobalMenuButton(showTrash: showTrash, showSettings: showSettings)
             }
             .noteSharedBackgroundHidden()
             ToolbarItem(placement: .principal) {
@@ -231,10 +230,18 @@ struct V02CardPreviewView: View {
                     .accessibilityAddTraits(.isHeader)
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: onHistory) {
-                    V02GlassIconLabel(systemName: "clock.arrow.circlepath")
+                HStack(spacing: 4) {
+                    V02GlassIconButton(
+                        systemName: "clock.arrow.circlepath",
+                        label: "历史记录",
+                        action: showHistory
+                    )
+                    V02GlassIconButton(
+                        systemName: "magnifyingglass",
+                        label: "搜索",
+                        action: showSearch
+                    )
                 }
-                .accessibilityLabel("历史记录")
             }
             .noteSharedBackgroundHidden()
         }

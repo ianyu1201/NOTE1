@@ -27,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>NOTE1 需要使用麦克风，将你说的话实时转换为文字；不会保存原始音频。</string>
+	<string>NOTE1 需要使用麦克风录制语音灵感；原录音会以 M4A 保存在本机 App 沙盒中，可随时播放或删除。</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>NOTE1 需要使用系统语音识别，将语音实时转换为文字，并仅使用设备支持的本机识别。</string>
 	<key>UTExportedTypeDeclarations</key>
