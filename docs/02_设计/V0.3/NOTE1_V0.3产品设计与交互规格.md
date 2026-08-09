@@ -259,7 +259,7 @@ Mononote 只作为上述极简设计方法参考；NOTE1 维持四页结构和�
 - 根页和详情都不在小票底部常驻工具栏；
 - 小票册不显示右下新增按钮。
 
-外部 [claude-receipts](https://github.com/chrishutchinson/claude-receipts) 只作为真实热敏打印排版的辅助参考：可吸收固定宽度、居中票头、粗体分区、双线/虚线和左右栏节奏；不得照搬 Claude 品牌、模型名、Token、费用、二维码、设备连接、打印 Hook 或联网流程。NOTE1 的票面字段始终以 PRD 定义的构思轮次、成员、正文、附件与冻结统计为准。
+外部 [`claude-receipts@ad92d3d`](https://github.com/chrishutchinson/claude-receipts/tree/ad92d3d55087150adfad1c18f95479ef3cdc15f2) 只作为真实 80 mm 热敏打印排版的辅助参考：可吸收 40 字符行宽所表达的固定宽度节奏、居中票头、有限粗体、双线/虚线、分区留白和左右栏对齐；手机端仍须按可用宽度与动态字体重排，不把 40 字符转写为固定像素。不得照搬 Claude 品牌、模型名、Token、费用、二维码、设备连接、打印 Hook 或联网流程。NOTE1 的票面字段始终以 PRD 定义的构思轮次、成员、正文、附件与冻结统计为准；外部仓库后续变化不自动改变本规格。
 
 ### 4.7 搜索、回收站、设置与系统面板
 

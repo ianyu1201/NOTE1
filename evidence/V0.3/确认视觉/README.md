@@ -30,6 +30,7 @@
 - 确认来源：用户在正式 V0.3 产品与设计任务中重新上传参考图，并明确要求以该附件为准、删除老旧视觉参考。
 - 唯一现役目标图：[NOTE1_V0.3_小票黑白热敏票据参考.png](NOTE1_V0.3_小票黑白热敏票据参考.png)
 - SHA-256：`e38c11d06f15b05d984a7a712fd9cf64394cf17250ee26e9860775f0f131b6b3`
+- 外部辅助参考固定到 `claude-receipts@ad92d3d55087150adfad1c18f95479ef3cdc15f2`；参考照片对应其 [`thermal-receipt.jpeg`](https://github.com/chrishutchinson/claude-receipts/blob/ad92d3d55087150adfad1c18f95479ef3cdc15f2/thermal-receipt.jpeg) 的同一画面。即使外部仓库后续变化，NOTE1 仍以上述本地附件和 SHA-256 为裁决依据。
 
 确认吸收：
 
@@ -40,6 +41,7 @@
 
 外部参考边界：
 
-- [claude-receipts](https://github.com/chrishutchinson/claude-receipts) 只辅助理解固定宽度、居中票头、粗体分区、分隔线和左右栏排版；
+- [`claude-receipts`](https://github.com/chrishutchinson/claude-receipts/tree/ad92d3d55087150adfad1c18f95479ef3cdc15f2) 只辅助理解真实 80 mm 热敏票的固定宽度、居中票头、有限粗体、双线/虚线分区和左右栏排版；其代码以 MIT License 发布，本项目只吸收通用排版原则，不复制 Claude 专属票面；
+- 可借鉴其 40 字符行宽、`左标签—右数值` 对齐、分区前后留白和主次分隔规则；手机端必须按可用宽度和动态字体重排，不能把 40 字符当成强制像素尺寸；
 - Claude 品牌、模型名、Token、费用、二维码、打印机连接、Hook 与联网流程全部隔离，不进入 NOTE1 产品或实现范围；
-- 此图和上述边界取代此前全部小票候选图、暖黄实现和 `evidence/references/V0.2小票册/` 开发参考。
+- 此图和上述边界取代此前全部小票候选图、暖黄实现和 `evidence/references/V0.2小票册/` 开发参考；旧开发参考已从当前 Git 树删除。旧运行截图仅作为当时实现事实保留，已明确标注失效，不再参与视觉裁决。
