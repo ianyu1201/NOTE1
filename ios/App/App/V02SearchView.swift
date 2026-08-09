@@ -109,27 +109,8 @@ struct V02SearchView: View {
             }
             .scrollIndicators(.hidden)
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("搜索")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
-                }
-                if scope == .inspirations || scope == .receipts {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(isSelecting ? "取消选择" : "选择") {
-                            isSelecting.toggle()
-                            if !isSelecting { selectedIDs.removeAll() }
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { searchHeader }
         }
         .onChange(of: scope) { _, _ in
             isSelecting = false
@@ -186,6 +167,21 @@ struct V02SearchView: View {
         }
     }
 
+    private var searchHeader: some View {
+        V02SecondaryPageHeader("搜索") {
+            V02GlassTextButton(title: "取消") { dismiss() }
+        } trailing: {
+            if scope == .inspirations || scope == .receipts {
+                V02GlassTextButton(title: isSelecting ? "取消选择" : "选择") {
+                    isSelecting.toggle()
+                    if !isSelecting { selectedIDs.removeAll() }
+                }
+            } else {
+                V02SecondaryHeaderPlaceholder()
+            }
+        }
+    }
+
     private func title(for result: V02SearchResult) -> String {
         switch result {
         case .inspiration(let inspiration): inspiration.text.isEmpty ? "未命名灵感" : inspiration.text
@@ -196,12 +192,7 @@ struct V02SearchView: View {
 
     private var scopePicker: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if lockedScope != nil {
-                Text("当前范围")
-                    .noteFont(size: 11, weight: .semibold, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                    .accessibilityHidden(true)
-            }
+            V02ScopeSectionLabel()
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(lockedScope.map { [$0] } ?? V02SearchScope.allCases, id: \.self) { item in
@@ -229,6 +220,12 @@ struct V02SearchView: View {
                 .fixedSize(horizontal: true, vertical: false)
             selectionActions(axis: .vertical)
         }
+        .noteFontCapped(
+            size: V02PrimaryTypographyPolicy.contextLabelSize,
+            maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+            weight: .medium,
+            relativeTo: .subheadline
+        )
         .padding(13)
         .frame(maxWidth: .infinity, alignment: .leading)
         .noteGlass(cornerRadius: 18, castsShadow: false)
@@ -241,13 +238,23 @@ struct V02SearchView: View {
         if axis == .horizontal {
             HStack(spacing: 14) {
                 Text("已选 \(selectedIDs.count)")
-                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
+                    .noteFontCapped(
+                        size: V02PrimaryTypographyPolicy.contextLabelSize,
+                        maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+                        weight: .semibold,
+                        relativeTo: .subheadline
+                    )
                 selectionActionButtons
             }
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 Text("已选 \(selectedIDs.count)")
-                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
+                    .noteFontCapped(
+                        size: V02PrimaryTypographyPolicy.contextLabelSize,
+                        maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+                        weight: .semibold,
+                        relativeTo: .subheadline
+                    )
                 selectionActionButtons
             }
             .frame(maxWidth: .infinity, alignment: .leading)

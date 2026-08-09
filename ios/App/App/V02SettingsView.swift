@@ -53,21 +53,8 @@ struct V02SettingsView: View {
                 .listSectionSpacing(18)
                 .listRowBackground(NoteTheme.paper.opacity(0.72))
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("设置")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "xmark") }
-                    .accessibilityLabel("关闭设置")
-                }
-                .noteSharedBackgroundHidden()
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { settingsHeader }
         }
         .fileExporter(
             isPresented: $isExportingBackup,
@@ -90,6 +77,18 @@ struct V02SettingsView: View {
             Text("当前 V0.2 本机数据会被备份内容替换，此操作不能撤销。")
         }
         .noteErrorAlert($error)
+    }
+
+    private var settingsHeader: some View {
+        V02SecondaryPageHeader("设置") {
+            V02GlassIconButton(
+                systemName: "xmark",
+                label: "关闭设置",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
+        }
     }
 
     private func settingsButton(
@@ -178,6 +177,7 @@ private struct V02PrivacyView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {

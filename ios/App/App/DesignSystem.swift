@@ -75,9 +75,9 @@ enum NoteMotion {
 enum V02NavigationLayoutPolicy {
     static let cellMinHeight: CGFloat = 72
     static let barHeight: CGFloat = 76
-    /// Compact page-level header height used when a root page needs a
-    /// full-width centered title with asymmetric actions on iOS 26.
-    static let primaryHeaderHeight: CGFloat = NoteTheme.controlSize + 8
+    /// Compact page-level header height shared by primary roots and global
+    /// secondary pages with full-width centered titles.
+    static let pageHeaderHeight: CGFloat = NoteTheme.controlSize + 8
     static let barHorizontalInset: CGFloat = 18
     static let composerBottomGap: CGFloat = 16
     /// All primary scroll containers use the same bottom inset policy so the
@@ -396,8 +396,115 @@ struct V02PrimaryPageHeader<Center: View>: View {
             center
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
-        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
+        .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
         .background(NoteTheme.background)
+    }
+}
+
+/// Shared geometry for global modal pages such as search, history, trash and
+/// settings. Their leading semantics may differ (cancel, back or close), but
+/// the title anchor, hit targets and safe-area rhythm stay identical.
+struct V02SecondaryPageHeader<Leading: View, Trailing: View>: View {
+    let title: String
+    let leading: Leading
+    let trailing: Trailing
+
+    init(
+        _ title: String,
+        @ViewBuilder leading: () -> Leading,
+        @ViewBuilder trailing: () -> Trailing
+    ) {
+        self.title = title
+        self.leading = leading()
+        self.trailing = trailing()
+    }
+
+    var body: some View {
+        ZStack {
+            Text(title)
+                .noteFontCapped(
+                    size: 20,
+                    maximumScale: 1.2,
+                    weight: .semibold,
+                    design: .rounded,
+                    relativeTo: .headline
+                )
+                .foregroundStyle(NoteTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 0) {
+                leading
+                    .frame(minWidth: NoteTheme.controlSize, alignment: .leading)
+                Spacer(minLength: 0)
+                trailing
+                    .frame(minWidth: NoteTheme.controlSize, alignment: .trailing)
+            }
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
+        .background(NoteTheme.background)
+    }
+}
+
+struct V02ScopeSectionLabel: View {
+    var body: some View {
+        Text("当前范围")
+            .noteFontCapped(
+                size: V02PrimaryTypographyPolicy.contextLabelSize,
+                maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+                weight: .semibold,
+                relativeTo: .subheadline
+            )
+            .foregroundStyle(NoteTheme.secondaryInk)
+    }
+}
+
+struct V02SecondaryHeaderPlaceholder: View {
+    var body: some View {
+        Color.clear
+            .frame(width: NoteTheme.controlSize, height: NoteTheme.controlSize)
+            .accessibilityHidden(true)
+    }
+}
+
+struct V02GlassTextButton: View {
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            textLabel
+        }
+        .buttonStyle(RoundGlassPressButtonStyle())
+        .accessibilityLabel(title)
+    }
+
+    @ViewBuilder
+    private var textLabel: some View {
+        if #available(iOS 26.0, *) {
+            labelContent
+                .glassEffect(.regular.interactive(), in: .capsule)
+        } else {
+            labelContent
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay { Capsule().stroke(Color.white.opacity(0.78), lineWidth: 1) }
+        }
+    }
+
+    private var labelContent: some View {
+        Text(title)
+            .noteFontCapped(
+                size: 16,
+                maximumScale: 1.2,
+                weight: .medium,
+                relativeTo: .body
+            )
+            .foregroundStyle(NoteTheme.ink)
+            .padding(.horizontal, 14)
+            .frame(minWidth: NoteTheme.controlSize, minHeight: NoteTheme.controlVisualSize)
+            .contentShape(Capsule())
+            .shadow(color: NoteTheme.ink.opacity(0.055), radius: 8, y: 3)
+            .frame(minHeight: NoteTheme.controlSize)
     }
 }
 

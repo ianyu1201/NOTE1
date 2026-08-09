@@ -1350,12 +1350,12 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .collections), "新建构思集")
     }
 
-    func testV03PrimaryHeadersShareOneGeometryAndBrandTitle() {
+    func testV03PageHeadersShareOneGeometryAndPrimaryBrandTitle() {
         XCTAssertEqual(V02PrimaryHeaderPolicy.title, "NOTE1")
         XCTAssertEqual(V02PrimaryHeaderPolicy.titleWidth, 120)
         XCTAssertEqual(V02PrimaryHeaderPolicy.titleTracking, 5)
         XCTAssertEqual(V02PrimaryHeaderPolicy.actionSpacing, 4)
-        XCTAssertEqual(V02NavigationLayoutPolicy.primaryHeaderHeight, NoteTheme.controlSize + 8)
+        XCTAssertEqual(V02NavigationLayoutPolicy.pageHeaderHeight, NoteTheme.controlSize + 8)
         XCTAssertEqual(NoteTheme.controlSize, 48)
         XCTAssertEqual(NoteTheme.controlVisualSize, 46)
     }

@@ -38,35 +38,8 @@ struct V02TrashView: View {
                     }
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("回收站")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "xmark") }
-                    .accessibilityLabel("关闭回收站")
-                }
-                .noteSharedBackgroundHidden()
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button(isSelecting ? "取消选择" : "选择") {
-                            isSelecting.toggle()
-                            if !isSelecting { selectedIDs.removeAll() }
-                        }
-                        Button("清空回收站", role: .destructive) {
-                            isConfirmingEmpty = true
-                        }
-                        .disabled(store.state.trash.isEmpty)
-                    } label: { V02GlassIconLabel(systemName: "ellipsis") }
-                    .accessibilityLabel("回收站更多操作")
-                }
-                .noteSharedBackgroundHidden()
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { trashHeader }
             .task {
                 do { try store.purgeExpiredTrash() }
                 catch { self.error = UserFacingAlert(error: error) }
@@ -106,6 +79,30 @@ struct V02TrashView: View {
             Text("此操作不能撤销，相关附件在没有其他引用时也会被永久清理。")
         }
         .noteErrorAlert($error)
+    }
+
+    private var trashHeader: some View {
+        V02SecondaryPageHeader("回收站") {
+            V02GlassIconButton(
+                systemName: "xmark",
+                label: "关闭回收站",
+                action: { dismiss() }
+            )
+        } trailing: {
+            Menu {
+                Button(isSelecting ? "取消选择" : "选择") {
+                    isSelecting.toggle()
+                    if !isSelecting { selectedIDs.removeAll() }
+                }
+                Button("清空回收站", role: .destructive) {
+                    isConfirmingEmpty = true
+                }
+                .disabled(store.state.trash.isEmpty)
+            } label: {
+                V02GlassIconLabel(systemName: "ellipsis")
+            }
+            .accessibilityLabel("回收站更多操作")
+        }
     }
 
     private var trashList: some View {

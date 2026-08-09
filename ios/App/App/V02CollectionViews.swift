@@ -930,32 +930,20 @@ struct V02CollectionHistoryView: View {
     }
 
     private var historyHeader: some View {
-        ZStack {
-            Text("历史")
-                .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                .foregroundStyle(NoteTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack {
-                Button {
-                    dismiss()
-                } label: {
-                    V02GlassIconLabel(systemName: "chevron.left")
-                }
-                .accessibilityLabel("返回")
-                Spacer(minLength: 0)
-            }
+        V02SecondaryPageHeader("历史") {
+            V02GlassIconButton(
+                systemName: "chevron.left",
+                label: "返回",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
         }
-        .padding(.horizontal, NoteTheme.horizontalPadding)
-        .frame(height: V02NavigationLayoutPolicy.primaryHeaderHeight)
-        .background(NoteTheme.background)
     }
 
     private var scopePicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("当前范围")
-                .noteFont(size: 15, weight: .semibold, relativeTo: .subheadline)
-                .foregroundStyle(NoteTheme.secondaryInk)
+            V02ScopeSectionLabel()
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
