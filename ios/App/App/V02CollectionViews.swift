@@ -95,7 +95,7 @@ struct V02CollectionListView: View {
                 .zIndex(2)
             }
           }
-          .toolbar(workingCollection == nil ? .hidden : .visible, for: .navigationBar)
+          .toolbar(.hidden, for: .navigationBar)
           .notePrimaryHeader {
               if workingCollection == nil && !isGenerationPresented {
                   collectionHeader
@@ -444,78 +444,30 @@ private struct V02CollectionWorkbenchView: View {
         NavigationStack {
             workbenchContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.top, 8)
-            .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        persistEditingMember()
-                        onClose()
-                    } label: {
-                        V02GlassIconLabel(systemName: "chevron.left")
+                .padding(.top, 8)
+                .background(NoteTheme.background.ignoresSafeArea())
+                .toolbar(.hidden, for: .navigationBar)
+                .notePrimaryHeader { workbenchHeader }
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Button("上一张卡片") { moveCard(by: -1) }
+                            .disabled(index <= 0)
+                        Button("下一张卡片") { moveCard(by: 1) }
+                            .disabled(index + 1 >= members.count)
+                        Spacer()
+                        Button("收起键盘") { editorFocused = false }
                     }
-                    .accessibilityLabel("返回构思集")
                 }
-                .noteSharedBackgroundHidden()
-                ToolbarItem(placement: .principal) {
-                    VStack(spacing: 2) {
-                        Text(collection?.name ?? "构思集")
-                            .noteFontCapped(size: 17, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                            .foregroundStyle(NoteTheme.ink)
-                            .lineLimit(1)
-                        Text("\(members.count)/\(V02DomainEngine.maximumMembersPerCollection) 条灵感")
-                            .noteFontCapped(size: 11, maximumScale: 1.2, relativeTo: .caption)
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(collection?.name ?? "构思集")，\(members.count) 条灵感")
+                .onAppear { syncMemberText() }
+                .onChange(of: index) { _, _ in
+                    persistEditingMember()
+                    syncMemberText()
                 }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button {
-                        isEnding = true
-                    } label: {
-                        Label("结束本轮构思", systemImage: "flag")
-                            .fontWeight(.semibold)
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("结束本轮构思")
-                    Menu {
-                        Button("概览与排序", systemImage: "list.bullet") { isShowingOutline = true }
-                        Button("改名", systemImage: "pencil") { renamingText = collection?.name ?? ""; isRenaming = true }
-                        Button("删除构思集", systemImage: "trash", role: .destructive) {
-                            do { try store.deleteCollection(collectionID); onClose() }
-                            catch { reportError(error) }
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 44, minHeight: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("更多构思集操作")
+                .onChange(of: members.map(\.id)) { _, ids in
+                    index = min(index, max(ids.count - 1, 0))
+                    syncMemberText()
                 }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Button("上一张卡片") { moveCard(by: -1) }
-                        .disabled(index <= 0)
-                    Button("下一张卡片") { moveCard(by: 1) }
-                        .disabled(index + 1 >= members.count)
-                    Spacer()
-                    Button("收起键盘") { editorFocused = false }
-                }
-            }
-            .onAppear { syncMemberText() }
-            .onChange(of: index) { _, _ in
-                persistEditingMember()
-                syncMemberText()
-            }
-            .onChange(of: members.map(\.id)) { _, ids in
-                index = min(index, max(ids.count - 1, 0))
-                syncMemberText()
-            }
-            .onDisappear { persistEditingMember() }
+                .onDisappear { persistEditingMember() }
         }
         .overlay(alignment: .bottomTrailing) {
             if !editorFocused {
@@ -614,6 +566,80 @@ private struct V02CollectionWorkbenchView: View {
         }
     }
 
+    private var workbenchHeader: some View {
+        GeometryReader { proxy in
+            let trailingWidth = NoteTheme.controlSize * 2 + 8
+            let centeredTitleWidth = max(
+                56,
+                min(
+                    104,
+                    proxy.size.width - 2 * (NoteTheme.horizontalPadding + trailingWidth + 6)
+                )
+            )
+
+            ZStack {
+                VStack(spacing: 2) {
+                    Text(collection?.name ?? "构思集")
+                        .noteFontCapped(
+                            size: 17,
+                            maximumScale: 1.2,
+                            weight: .semibold,
+                            design: .rounded,
+                            relativeTo: .headline
+                        )
+                        .foregroundStyle(NoteTheme.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                    Text("\(members.count)/\(V02DomainEngine.maximumMembersPerCollection) 条灵感")
+                        .noteFontCapped(size: 11, maximumScale: 1.2, relativeTo: .caption)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                }
+                .frame(width: centeredTitleWidth)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(collection?.name ?? "构思集")，\(members.count) 条灵感")
+
+                HStack(spacing: 0) {
+                    V02GlassIconButton(
+                        systemName: "chevron.left",
+                        label: "返回构思集"
+                    ) {
+                        persistEditingMember()
+                        onClose()
+                    }
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: 8) {
+                        V02GlassIconButton(
+                            systemName: "flag",
+                            label: "结束本轮构思",
+                            action: { isEnding = true }
+                        )
+                        Menu {
+                            Button("概览与排序", systemImage: "list.bullet") { isShowingOutline = true }
+                            Button("改名", systemImage: "pencil") {
+                                renamingText = collection?.name ?? ""
+                                isRenaming = true
+                            }
+                            Button("删除构思集", systemImage: "trash", role: .destructive) {
+                                do { try store.deleteCollection(collectionID); onClose() }
+                                catch { reportError(error) }
+                            }
+                        } label: {
+                            V02GlassIconLabel(systemName: "ellipsis")
+                        }
+                        .accessibilityLabel("更多构思集操作")
+                    }
+                }
+            }
+            .padding(.horizontal, NoteTheme.horizontalPadding)
+        }
+        .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
+        .background(NoteTheme.background)
+    }
+
     @ViewBuilder
     private var workbenchContent: some View {
         if collection == nil || round == nil {
@@ -678,7 +704,12 @@ private struct V02CollectionWorkbenchView: View {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 17, weight: .semibold))
                         Text("更多")
-                            .noteFont(size: 12, weight: .medium, relativeTo: .caption)
+                            .noteFontCapped(
+                                size: 12,
+                                maximumScale: 1.25,
+                                weight: .medium,
+                                relativeTo: .caption
+                            )
                     }
                     .foregroundStyle(NoteTheme.secondaryInk)
                     .frame(maxWidth: .infinity, minHeight: 58)
@@ -698,7 +729,12 @@ private struct V02CollectionWorkbenchView: View {
                 Image(systemName: systemName)
                     .font(.system(size: 17, weight: .semibold))
                 Text(title)
-                    .noteFont(size: 12, weight: .medium, relativeTo: .caption)
+                    .noteFontCapped(
+                        size: 12,
+                        maximumScale: 1.25,
+                        weight: .medium,
+                        relativeTo: .caption
+                    )
             }
             .foregroundStyle(NoteTheme.secondaryInk)
             .frame(maxWidth: .infinity, minHeight: 58)

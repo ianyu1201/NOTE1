@@ -242,33 +242,16 @@ struct V02ComposerView: View {
                 .padding(.bottom, 24)
             }
             .scrollDismissesKeyboard(.interactively)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("记录灵感")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
-                        if hasUnsavedContent {
-                            isConfirmingDiscard = true
-                        } else {
-                            discardDraft()
-                            dismiss()
-                        }
-                    }
-                }
-            }
+            .background(NoteTheme.background.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { composerHeader }
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 8) {
                     Button {
                         isPresentingAttachmentSource = true
                     } label: {
-                        Label("添加附件", systemImage: "paperclip")
-                            .labelStyle(.iconOnly)
+                        Image(systemName: "paperclip")
+                            .font(.system(size: 19, weight: .semibold))
                             .frame(width: 48, height: 48)
                     }
                     .buttonStyle(.plain)
@@ -283,6 +266,7 @@ struct V02ComposerView: View {
                         }
                     } label: {
                         Image(systemName: recorder.isRecording ? "stop.fill" : "mic")
+                            .font(.system(size: 19, weight: .semibold))
                             .frame(width: 48, height: 48)
                     }
                     .buttonStyle(.plain)
@@ -290,12 +274,20 @@ struct V02ComposerView: View {
                     .accessibilityLabel(recorder.isRecording ? "停止录音" : "录制语音灵感")
                     .accessibilityHint("原录音会以 M4A 保存在本机，可随时播放或删除")
                     Spacer(minLength: 0)
-                    Button("保存") { saveDraft() }
-                        .frame(minWidth: 96, minHeight: 48)
-                        .buttonStyle(PressScaleButtonStyle())
-                        .noteGlass(cornerRadius: 24, castsShadow: false)
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && voiceResourceID == nil && attachmentResourceIDs.isEmpty)
-                        .accessibilityIdentifier("v02.composer.save")
+                    Button(action: saveDraft) {
+                        Text("保存")
+                            .noteFontCapped(
+                                size: 16,
+                                maximumScale: 1.25,
+                                weight: .medium,
+                                relativeTo: .body
+                            )
+                            .frame(minWidth: 96, minHeight: 48)
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
+                    .noteGlass(cornerRadius: 24, castsShadow: false)
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && voiceResourceID == nil && attachmentResourceIDs.isEmpty)
+                    .accessibilityIdentifier("v02.composer.save")
                 }
                 .padding(.horizontal, 18)
                 .padding(.vertical, 10)
@@ -367,12 +359,29 @@ struct V02ComposerView: View {
         .presentationDetents([.medium])
     }
 
+    private var composerHeader: some View {
+        V02SecondaryPageHeader("记录灵感") {
+            V02GlassTextButton(title: "取消", action: requestCancellation)
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
+        }
+    }
+
     private var hasUnsavedContent: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
         recorder.isRecording ||
         recorder.temporaryURL != nil ||
         voiceResourceID != nil ||
         !attachmentResourceIDs.isEmpty
+    }
+
+    private func requestCancellation() {
+        if hasUnsavedContent {
+            isConfirmingDiscard = true
+        } else {
+            discardDraft()
+            dismiss()
+        }
     }
 
     private func importAttachment(from url: URL) {
