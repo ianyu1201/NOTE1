@@ -68,7 +68,7 @@ struct V02CardPreviewView: View {
                             }
                         }
                         .frame(maxHeight: .infinity, alignment: .top)
-                        .padding(.top, 8)
+                        .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
                         .accessibilityHidden(editingInspiration != nil)
                         .overlay(alignment: .bottom) {
                             VStack(spacing: 5) {

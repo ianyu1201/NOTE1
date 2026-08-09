@@ -125,6 +125,16 @@ enum V02PrimaryHeaderPolicy {
     static let actionSpacing: CGFloat = 4
 }
 
+/// Shared first-screen rhythm for the four primary destinations. The content
+/// type may change from a timeline to a paper deck, but its visible start and
+/// outer edge stay anchored to the same canvas grid.
+enum V02PrimaryContentLayoutPolicy {
+    static let horizontalInset = NoteTheme.horizontalPadding
+    static let topSpacing: CGFloat = 8
+    static let stackedPaperBackOffset: CGFloat = 9
+    static let stackedPaperMiddleOffset: CGFloat = 5
+}
+
 struct GlassSurface: ViewModifier {
     var cornerRadius: CGFloat = NoteTheme.cornerRadius
     var strokeOpacity: Double = 0.76

@@ -1220,6 +1220,13 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(NoteTheme.controlVisualSize, 46)
     }
 
+    func testV03PrimaryContentSharesOneCanvasGrid() {
+        XCTAssertEqual(V02PrimaryContentLayoutPolicy.horizontalInset, 22)
+        XCTAssertEqual(V02PrimaryContentLayoutPolicy.topSpacing, 8)
+        XCTAssertEqual(V02PrimaryContentLayoutPolicy.stackedPaperBackOffset, 9)
+        XCTAssertEqual(V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset, 5)
+    }
+
     func testV02AppSheetUsesStableMutuallyExclusiveIdentities() {
         func makeReceipt(collectionName: String) -> V02Receipt {
             V02Receipt(

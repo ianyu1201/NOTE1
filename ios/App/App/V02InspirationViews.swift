@@ -71,7 +71,7 @@ struct V02InspirationListView: View {
                                 .noteFontCapped(size: 13, maximumScale: 1.2, weight: .medium, relativeTo: .subheadline)
                                 .foregroundStyle(NoteTheme.secondaryInk)
                         }
-                        .padding(.top, 12)
+                        .padding(.top, group.id == dateGroups.first?.id ? 0 : 12)
                         .padding(.bottom, 4)
                         ForEach(group.items) { item in
                             V02InspirationTimelineRow(
@@ -96,8 +96,8 @@ struct V02InspirationListView: View {
                     }
                 }
                 }
-                .padding(.horizontal, NoteTheme.horizontalPadding)
-                .padding(.top, 6)
+                .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
+                .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
             }
             .scrollIndicators(.hidden)
             // `fullScreenCover` is hosted by this page's NavigationStack.

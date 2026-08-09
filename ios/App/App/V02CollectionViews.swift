@@ -37,7 +37,6 @@ struct V02CollectionListView: View {
                     .noteFont(size: 13, relativeTo: .caption)
                     .foregroundStyle(NoteTheme.secondaryInk)
                     .frame(maxWidth: .infinity)
-                    .padding(.top, -10)
                 if V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: store.activeCollections.count) {
                     V02CollectionEmptyState()
                         .frame(maxWidth: .infinity, minHeight: 300)
@@ -60,8 +59,8 @@ struct V02CollectionListView: View {
                     }
                 }
                 }
-                .padding(.horizontal, NoteTheme.horizontalPadding)
-                .padding(.top, 10)
+                .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
+                .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
             }
             .scrollIndicators(.hidden)
             // The workbench is presented as a focused page-level layer. Do
@@ -278,11 +277,17 @@ private struct V02CollectionPaperCard: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(NoteTheme.paper.opacity(0.34))
                 .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.7), lineWidth: 1) }
-                .offset(x: 9, y: 9)
+                .offset(
+                    x: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset,
+                    y: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset
+                )
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(NoteTheme.paper.opacity(0.62))
                 .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.8), lineWidth: 1) }
-                .offset(x: 5, y: 5)
+                .offset(
+                    x: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset,
+                    y: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset
+                )
             HStack(spacing: 15) {
                 V02CollectionThumbnail(image: previewImage)
                 VStack(alignment: .leading, spacing: 7) {
@@ -314,8 +319,9 @@ private struct V02CollectionPaperCard: View {
             .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder, lineWidth: 1) }
             .shadow(color: NoteTheme.ink.opacity(0.075), radius: 16, y: 9)
         }
-        .padding(.trailing, 9)
-        .padding(.bottom, 9)
+        // Reserve only vertical room for the revealed sheets. Horizontal
+        // padding would shrink the front paper and break the shared 22pt edge.
+        .padding(.bottom, V02PrimaryContentLayoutPolicy.stackedPaperBackOffset)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(collection.name)，\(memberCount) / 10 条灵感")
     }

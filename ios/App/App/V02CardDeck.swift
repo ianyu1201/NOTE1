@@ -116,7 +116,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         index: Binding<Int>,
         height: CGFloat = 408,
         cornerRadius: CGFloat = 30,
-        horizontalPadding: CGFloat = 32,
+        horizontalPadding: CGFloat = V02PrimaryContentLayoutPolicy.horizontalInset,
         showsLayeredPaper: Bool = false,
         isGestureEnabled: Bool = true,
         tuckPrompt: @escaping (Card) -> String = { _ in "收起" },
@@ -183,10 +183,16 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 if !cards.isEmpty {
                     if showsLayeredPaper {
                         paperLayer
-                            .offset(x: 13, y: 8)
+                            .offset(
+                                x: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset,
+                                y: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset
+                            )
                             .opacity(0.34)
                         paperLayer
-                            .offset(x: 7, y: 4)
+                            .offset(
+                                x: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset,
+                                y: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset
+                            )
                             .opacity(0.54)
                     }
                     if onTuck != nil {

@@ -67,8 +67,8 @@ struct V02ReceiptBookView: View {
                         .padding(.top, 18)
                 }
             }
-            .padding(.horizontal, NoteTheme.horizontalPadding)
-            .padding(.top, 6)
+            .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
+            .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
         }
             .scrollIndicators(.hidden)
           .accessibilityHidden(localOverlayPresented)
