@@ -83,6 +83,13 @@ enum ReviewGroupDropTarget: Equatable {
 }
 
 enum V02GroupTargetPolicy {
+    static let revealThreshold: CGFloat = -18
+    static let commitThreshold: CGFloat = -50
+
+    static func shouldReveal(for translation: CGSize) -> Bool {
+        translation.height < revealThreshold
+    }
+
     static func activeTarget(at point: CGPoint, frames: [String: CGRect]) -> String? {
         // When the transparent halos overlap at the center line, prefer the
         // existing-collection target. The visible targets remain distinct;
@@ -95,6 +102,11 @@ enum V02GroupTargetPolicy {
 
     static func commitTarget(finalActiveTarget: String?) -> String? {
         finalActiveTarget
+    }
+
+    static func committedTarget(translation: CGSize, finalActiveTarget: String?) -> String? {
+        guard translation.height < commitThreshold else { return nil }
+        return commitTarget(finalActiveTarget: finalActiveTarget)
     }
 }
 

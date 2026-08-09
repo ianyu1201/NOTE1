@@ -196,6 +196,38 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertNil(V02GroupTargetPolicy.commitTarget(finalActiveTarget: nil))
     }
 
+    func testV03CardAndGroupGestureBoundariesResistOrCancelWithoutMutation() {
+        XCTAssertEqual(
+            V02CardDeckPolicy.displayedVerticalTranslation(index: 0, count: 2, translation: 100),
+            24,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            V02CardDeckPolicy.displayedVerticalTranslation(index: 1, count: 2, translation: -100),
+            -24,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            V02CardDeckPolicy.displayedVerticalTranslation(index: 0, count: 2, translation: -100),
+            -100,
+            accuracy: 0.001
+        )
+        XCTAssertFalse(V02GroupTargetPolicy.shouldReveal(for: .init(width: 0, height: -18)))
+        XCTAssertTrue(V02GroupTargetPolicy.shouldReveal(for: .init(width: 0, height: -18.1)))
+        XCTAssertNil(V02GroupTargetPolicy.committedTarget(
+            translation: .init(width: 0, height: -50),
+            finalActiveTarget: "existing"
+        ))
+        XCTAssertEqual(V02GroupTargetPolicy.committedTarget(
+            translation: .init(width: 0, height: -50.1),
+            finalActiveTarget: "existing"
+        ), "existing")
+        XCTAssertNil(V02GroupTargetPolicy.committedTarget(
+            translation: .init(width: 0, height: -80),
+            finalActiveTarget: nil
+        ))
+    }
+
     func testV02GroupOperationTargetsAlwaysExposeBothOperationTypes() {
         XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new", "existing"])
         XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 3), ["new", "existing"])

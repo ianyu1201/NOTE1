@@ -76,7 +76,7 @@ struct V02CardPreviewView: View {
                                     V02GroupEntryButton(action: {
                                         beginGroupPicker(for: cards)
                                     }, onDrag: { location, translation, ended in
-                                        if translation.height < -18 {
+                                        if V02GroupTargetPolicy.shouldReveal(for: translation) {
                                             isShowingGroupTray = true
                                             isDraggingGroup = true
                                         }
@@ -89,9 +89,11 @@ struct V02CardPreviewView: View {
                                         if ended {
                                             let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
                                             defer { activeTargetReset() }
-                                            guard translation.height < -50,
-                                                  case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                                  let target = V02GroupTargetPolicy.commitTarget(finalActiveTarget: finalTarget) else { return }
+                                            guard case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
+                                                  let target = V02GroupTargetPolicy.committedTarget(
+                                                    translation: translation,
+                                                    finalActiveTarget: finalTarget
+                                                  ) else { return }
                                             pendingInspirationID = inspiration.id
                                             handleGroupOperation(target)
                                         }

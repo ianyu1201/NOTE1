@@ -2,6 +2,13 @@ import SwiftUI
 
 enum V02CardDeckPolicy {
     static let pageThreshold: CGFloat = 92
+    static let boundaryResistance: CGFloat = 0.24
+
+    static func displayedVerticalTranslation(index: Int, count: Int, translation: CGFloat) -> CGFloat {
+        guard count > 0 else { return 0 }
+        let hasTarget = translation > 0 ? index > 0 : index + 1 < count
+        return hasTarget ? translation : translation * boundaryResistance
+    }
 
     static func tuckPromptOpacity(for horizontalOffset: CGFloat) -> Double {
         guard horizontalOffset < -36 else { return 0 }
@@ -138,7 +145,12 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     var body: some View {
         GeometryReader { proxy in
             let resolvedIndex = min(max(index, 0), max(cards.count - 1, 0))
-            let verticalProgress = min(abs(verticalOffset) / max(proxy.size.height, 1), 1)
+            let displayedVerticalOffset = V02CardDeckPolicy.displayedVerticalTranslation(
+                index: resolvedIndex,
+                count: cards.count,
+                translation: verticalOffset
+            )
+            let verticalProgress = min(abs(displayedVerticalOffset) / max(proxy.size.height, 1), 1)
             ZStack {
                 if horizontalOffset < -36, onTuck != nil, !cards.isEmpty {
                     RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
@@ -157,25 +169,25 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 if resolvedIndex > 0 {
                     paperEdge
                         .scaleEffect(0.974)
-                        .offset(y: -20 + max(verticalOffset, 0) * 0.16)
+                        .offset(y: -20 + max(displayedVerticalOffset, 0) * 0.16)
                         .opacity((verticalOffset > 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
                 }
                 if resolvedIndex + 1 < cards.count {
                     paperEdge
                         .scaleEffect(0.974)
-                        .offset(y: 28 + min(verticalOffset, 0) * 0.16)
+                        .offset(y: 28 + min(displayedVerticalOffset, 0) * 0.16)
                         .opacity((verticalOffset < 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
                 }
                 if verticalOffset > 0, resolvedIndex > 0 {
                     paper(cards[resolvedIndex - 1])
-                        .offset(y: -proxy.size.height + verticalOffset)
+                        .offset(y: -proxy.size.height + displayedVerticalOffset)
                         .scaleEffect(0.985 + verticalProgress * 0.015)
                         .opacity(0.72 + verticalProgress * 0.28)
                         .accessibilityHidden(true)
                 }
                 if verticalOffset < 0, resolvedIndex + 1 < cards.count {
                     paper(cards[resolvedIndex + 1])
-                        .offset(y: proxy.size.height + verticalOffset)
+                        .offset(y: proxy.size.height + displayedVerticalOffset)
                         .scaleEffect(0.985 + verticalProgress * 0.015)
                         .opacity(0.72 + verticalProgress * 0.28)
                         .accessibilityHidden(true)
@@ -196,12 +208,22 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                             .opacity(0.54)
                     }
                     if onTuck != nil {
-                        deckPaper(cards[resolvedIndex], resolvedIndex: resolvedIndex, height: proxy.size.height)
+                        deckPaper(
+                            cards[resolvedIndex],
+                            resolvedIndex: resolvedIndex,
+                            height: proxy.size.height,
+                            displayedVerticalOffset: displayedVerticalOffset
+                        )
                             .accessibilityAction(named: tuckPrompt(cards[resolvedIndex])) {
                                 if let onTuck { onTuck(cards[resolvedIndex]) }
                             }
                     } else {
-                        deckPaper(cards[resolvedIndex], resolvedIndex: resolvedIndex, height: proxy.size.height)
+                        deckPaper(
+                            cards[resolvedIndex],
+                            resolvedIndex: resolvedIndex,
+                            height: proxy.size.height,
+                            displayedVerticalOffset: displayedVerticalOffset
+                        )
                             .accessibilityHint("向上下拖动切换卡片")
                     }
                 }
@@ -239,18 +261,27 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     }
 
     @ViewBuilder
-    private func deckPaper(_ card: Card, resolvedIndex: Int, height: CGFloat) -> some View {
+    private func deckPaper(
+        _ card: Card,
+        resolvedIndex: Int,
+        height: CGFloat,
+        displayedVerticalOffset: CGFloat
+    ) -> some View {
         if isGestureEnabled {
-            deckPaperBase(card, resolvedIndex: resolvedIndex, height: height)
+            deckPaperBase(card, resolvedIndex: resolvedIndex, displayedVerticalOffset: displayedVerticalOffset)
                 .highPriorityGesture(deckGesture(height: height))
         } else {
-            deckPaperBase(card, resolvedIndex: resolvedIndex, height: height)
+            deckPaperBase(card, resolvedIndex: resolvedIndex, displayedVerticalOffset: displayedVerticalOffset)
         }
     }
 
-    private func deckPaperBase(_ card: Card, resolvedIndex: Int, height: CGFloat) -> some View {
+    private func deckPaperBase(
+        _ card: Card,
+        resolvedIndex: Int,
+        displayedVerticalOffset: CGFloat
+    ) -> some View {
         paper(card)
-            .offset(x: horizontalOffset, y: verticalOffset)
+            .offset(x: horizontalOffset, y: displayedVerticalOffset)
             .rotationEffect(.degrees(Double(horizontalOffset / 26)))
             .accessibilityElement(children: .contain)
             .accessibilityValue("第 \(resolvedIndex + 1) 张，共 \(cards.count) 张")
