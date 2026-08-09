@@ -4,7 +4,7 @@
 
 | 任务 ID | 角色与阶段 | 工作目录 | 分支 | 固定起点 | 状态 | 下一步 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `019fe09c-5903-7293-bd06-37e5f915fca0` | V0.3 产品与设计，S2→S3 | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` | `codex/note1-v03-product-design` | `b403277d61335eaf1ea0c930faca338686624d8c`；功能实施起点 `9fdc4a1d2abc6a08dce7786de10c089967aaa137`；UI 优化起点 `46d3deb1c939505cef0e4ac8ba9dee1002381380` | active；功能闭环已收口，首轮 UI 候选与模拟器证据已形成；S3 未冻结 | 用户评审首轮 UI 候选；方向保留后补完整手势、VoiceOver、真机及 iOS 17–25 运行证据 |
+| `019fe09c-5903-7293-bd06-37e5f915fca0` | V0.3 产品与设计，S2→S3 | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` | `codex/note1-v03-product-design` | `b403277d61335eaf1ea0c930faca338686624d8c`；功能实施起点 `9fdc4a1d2abc6a08dce7786de10c089967aaa137`；UI 优化起点 `46d3deb1c939505cef0e4ac8ba9dee1002381380` | active；功能闭环已收口；小票唯一黑白热敏视觉参考、实现抽样和旧参考清理已形成；S3 未冻结 | 补小票长/短/附件、最大字号、换票边界、VoiceOver、真机及 iOS 17–25 证据；继续评审卡片堆与归入按钮 |
 
 ## 当前边界
 

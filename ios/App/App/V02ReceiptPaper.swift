@@ -63,26 +63,28 @@ struct V02ReceiptPaper: View {
     var body: some View {
         VStack(alignment: .leading, spacing: isPreview ? 10 : 16) {
             header
-            V02ReceiptPerforationLine()
+            V02ThermalReceiptRule(style: .double)
             if resolvedTemplate == .film {
                 filmContent
             } else {
                 classicContent
             }
-            V02ReceiptPerforationLine()
-            HStack {
-                Text("本轮构思已结束")
-                Spacer()
-                Text("\(receipt.snapshot.members.count) 条灵感")
+            V02ThermalReceiptRule(style: .double)
+            VStack(spacing: 3) {
+                Text("构思小票 · 本机快照")
+                Text("本轮构思已结束 · \(receipt.snapshot.members.count) 条灵感")
             }
-            .noteFont(size: 12, weight: .medium, relativeTo: .caption)
-            .foregroundStyle(NoteTheme.secondaryInk)
+            .noteFont(size: 11, weight: .medium, design: .monospaced, relativeTo: .caption)
+            .foregroundStyle(NoteTheme.receiptSecondaryInk)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .multilineTextAlignment(.center)
         }
         .padding(.horizontal, isPreview ? 20 : 24)
         .padding(.bottom, isPreview ? 18 : 24)
         .padding(.top, isPreview ? 48 : 24)
         .frame(minHeight: minimumHeight ?? (isPreview ? 258 : nil), alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(NoteTheme.receiptInk)
         .background(paperSurface)
         .overlay { ticketNotches.clipShape(V02ReceiptPaperShape()) }
         .accessibilityElement(children: .combine)
@@ -90,31 +92,34 @@ struct V02ReceiptPaper: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("NOTE1 · \(receipt.id.uuidString.prefix(6))")
-                    .noteFont(size: 11, weight: .semibold, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                    .monospacedDigit()
-                Text(receipt.snapshot.collectionName)
-                    .noteFont(size: isPreview ? 22 : 28, weight: .semibold, design: .rounded, relativeTo: .title2)
-                    .lineLimit(isPreview ? 1 : nil)
-            }
-            Spacer(minLength: 8)
-            Text(resolvedTemplate.rawValue)
-                .noteFont(size: 11, weight: .semibold, relativeTo: .caption)
-                .foregroundStyle(NoteTheme.ink)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(NoteTheme.background.opacity(0.88), in: Capsule())
+        VStack(spacing: isPreview ? 3 : 5) {
+            Text("NOTE1")
+                .noteFont(size: isPreview ? 23 : 30, weight: .black, design: .monospaced, relativeTo: .title2)
+                .tracking(isPreview ? 2.4 : 3.2)
+            Text("构 思 小 票")
+                .noteFont(size: 11, weight: .bold, design: .monospaced, relativeTo: .caption)
+            Text(receipt.snapshot.collectionName)
+                .noteFont(size: isPreview ? 17 : 22, weight: .bold, design: .monospaced, relativeTo: .headline)
+                .lineLimit(isPreview ? 1 : nil)
+            Text("\(receipt.statistics.roundTitle) · \(resolvedTemplate.rawValue)")
+                .noteFont(size: 11, weight: .medium, design: .monospaced, relativeTo: .caption)
+                .foregroundStyle(NoteTheme.receiptSecondaryInk)
+            Text(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))
+                .noteFont(size: 11, design: .monospaced, relativeTo: .caption)
+                .foregroundStyle(NoteTheme.receiptSecondaryInk)
+                .monospacedDigit()
         }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
     }
 
     private var classicContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             receiptSummary
+            V02ThermalReceiptRule()
             memberTimeline
             attachmentSummary
+            V02ThermalReceiptRule()
             receiptMetrics
         }
     }
@@ -123,50 +128,57 @@ struct V02ReceiptPaper: View {
         VStack(alignment: .leading, spacing: 10) {
             V02ReceiptPhotoStrip(resources: photoResources, store: store, compact: isPreview)
             receiptSummary
+            V02ThermalReceiptRule()
             memberTimeline
             attachmentSummary
+            V02ThermalReceiptRule()
             receiptMetrics
         }
     }
 
     private var receiptSummary: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("回顾 · \(receipt.statistics.roundTitle)")
-            Text("\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .omitted)) – \(receipt.snapshot.endedAt.formatted(date: .numeric, time: .omitted))")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("本轮构思")
+                    .fontWeight(.bold)
+                Spacer(minLength: 8)
+                Text(receipt.statistics.duration.formattedDuration)
+                    .fontWeight(.bold)
+            }
+            Text("\(receipt.snapshot.startedAt.formatted(date: .numeric, time: .shortened)) – \(receipt.snapshot.endedAt.formatted(date: .numeric, time: .shortened))")
                 .monospacedDigit()
         }
-        .noteFont(size: 11, relativeTo: .caption)
-        .foregroundStyle(NoteTheme.secondaryInk)
+        .noteFont(size: 11, design: .monospaced, relativeTo: .caption)
     }
 
     private var memberTimeline: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("灵感时间线")
-                    .noteFont(size: 13, weight: .semibold, relativeTo: .subheadline)
+                    .noteFont(size: 13, weight: .bold, design: .monospaced, relativeTo: .subheadline)
                 Spacer()
                 Text("共 \(receipt.snapshot.members.count) 条")
-                    .noteFont(size: 11, relativeTo: .caption)
-                    .foregroundStyle(NoteTheme.secondaryInk)
+                    .noteFont(size: 11, design: .monospaced, relativeTo: .caption)
+                    .foregroundStyle(NoteTheme.receiptSecondaryInk)
             }
             if receipt.snapshot.members.isEmpty {
                 Text("这一轮构思留下了一张可以带走的存根。")
-                    .noteFont(size: isPreview ? 14 : 16, relativeTo: .body)
+                    .noteFont(size: isPreview ? 14 : 16, design: .monospaced, relativeTo: .body)
             } else {
                 ForEach(Array(receipt.snapshot.members.enumerated()), id: \.element.inspirationID) { offset, member in
                     HStack(alignment: .top, spacing: 8) {
                         Text(String(format: "%02d", offset + 1))
-                            .noteFont(size: 10, weight: .semibold, relativeTo: .caption)
-                            .foregroundStyle(NoteTheme.secondaryInk)
+                            .noteFont(size: 10, weight: .bold, design: .monospaced, relativeTo: .caption)
+                            .foregroundStyle(NoteTheme.receiptSecondaryInk)
                             .frame(width: 20, alignment: .leading)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(member.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "未命名灵感" : member.text)
-                                .noteFont(size: isPreview ? 13 : 16, relativeTo: .body)
+                                .noteFont(size: isPreview ? 13 : 16, design: .monospaced, relativeTo: .body)
                                 .lineSpacing(isPreview ? 2 : 4)
                             if !member.attachments.isEmpty {
                                 Text("\(member.attachments.count) 个附件")
-                                    .noteFont(size: 10, relativeTo: .caption)
-                                    .foregroundStyle(NoteTheme.secondaryInk)
+                                    .noteFont(size: 10, design: .monospaced, relativeTo: .caption)
+                                    .foregroundStyle(NoteTheme.receiptSecondaryInk)
                             }
                         }
                     }
@@ -182,19 +194,19 @@ struct V02ReceiptPaper: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text("附件")
-                        .noteFont(size: 13, weight: .semibold, relativeTo: .subheadline)
+                        .noteFont(size: 13, weight: .bold, design: .monospaced, relativeTo: .subheadline)
                     Spacer()
                     Text("共 \(attachments.count) 个")
-                        .noteFont(size: 11, relativeTo: .caption)
-                        .foregroundStyle(NoteTheme.secondaryInk)
+                        .noteFont(size: 11, design: .monospaced, relativeTo: .caption)
+                        .foregroundStyle(NoteTheme.receiptSecondaryInk)
                 }
                 HStack(spacing: 7) {
                     ForEach(Array(attachments.prefix(4).enumerated()), id: \.offset) { _, attachment in
                         Image(systemName: attachmentSymbol(for: attachment))
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(NoteTheme.secondaryInk)
+                            .foregroundStyle(NoteTheme.receiptSecondaryInk)
                             .frame(width: 34, height: 34)
-                            .background(NoteTheme.background.opacity(0.62), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .background(NoteTheme.receiptInk.opacity(0.045), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     }
                 }
             }
@@ -202,13 +214,23 @@ struct V02ReceiptPaper: View {
     }
 
     private var receiptMetrics: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("\(receipt.statistics.inspirationCount) 条灵感 · 附件 \(receipt.statistics.attachmentCount) 个 · 文字 \(receipt.statistics.finalTextCount) 字")
-            Text("开始 \(receipt.snapshot.startedAt.formatted(date: .omitted, time: .shortened)) · 持续 \(receipt.statistics.duration.formattedDuration) · 有效编辑 \(receipt.statistics.effectiveEditCount) 次")
+        VStack(alignment: .leading, spacing: 5) {
+            metricRow(label: "灵感", value: "\(receipt.statistics.inspirationCount) 条")
+            metricRow(label: "附件", value: "\(receipt.statistics.attachmentCount) 个")
+            metricRow(label: "最终文字", value: "\(receipt.statistics.finalTextCount) 字")
+            metricRow(label: "有效编辑", value: "\(receipt.statistics.effectiveEditCount) 次")
         }
-        .noteFont(size: 13, relativeTo: .caption)
-        .foregroundStyle(NoteTheme.secondaryInk)
+        .noteFont(size: 12, design: .monospaced, relativeTo: .caption)
         .monospacedDigit()
+    }
+
+    private func metricRow(label: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+            Spacer(minLength: 12)
+            Text(value)
+                .fontWeight(.semibold)
+        }
     }
 
     private func attachmentSymbol(for attachment: V02ReceiptSnapshot.Attachment) -> String {
@@ -226,11 +248,11 @@ struct V02ReceiptPaper: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                NoteTheme.ink.opacity(0.018),
+                                NoteTheme.receiptInk.opacity(0.014),
                                 .clear,
-                                Color.white.opacity(0.16),
+                                Color.white.opacity(0.22),
                                 .clear,
-                                NoteTheme.ink.opacity(0.014)
+                                NoteTheme.receiptInk.opacity(0.012)
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -239,10 +261,10 @@ struct V02ReceiptPaper: View {
             }
             .overlay {
                 V02ReceiptPaperShape()
-                    .stroke(NoteTheme.secondaryInk.opacity(isPreview ? 0.18 : 0.22), lineWidth: 1)
+                    .stroke(NoteTheme.receiptDivider.opacity(isPreview ? 0.9 : 1), lineWidth: 1)
             }
-            .shadow(color: NoteTheme.ink.opacity(0.045), radius: 3, y: 1)
-            .shadow(color: NoteTheme.ink.opacity(0.15), radius: 20, y: 12)
+            .shadow(color: NoteTheme.receiptInk.opacity(0.04), radius: 3, y: 1)
+            .shadow(color: NoteTheme.receiptInk.opacity(0.14), radius: 20, y: 12)
     }
 
     private var ticketNotches: some View {
@@ -289,19 +311,34 @@ struct V02ReceiptPaperShape: Shape {
     }
 }
 
-private struct V02ReceiptPerforationLine: View {
+enum V02ThermalReceiptRuleStyle: Equatable { case double, dashed }
+
+struct V02ThermalReceiptRule: View {
+    var style: V02ThermalReceiptRuleStyle = .dashed
+
     var body: some View {
-        GeometryReader { proxy in
-            Path { path in
-                path.move(to: CGPoint(x: 0, y: 0.5))
-                path.addLine(to: CGPoint(x: proxy.size.width, y: 0.5))
+        Group {
+            if style == .double {
+                VStack(spacing: 3) {
+                    Rectangle().frame(height: 1.5)
+                    Rectangle().frame(height: 0.75)
+                }
+                .foregroundStyle(NoteTheme.receiptInk.opacity(0.86))
+            } else {
+                GeometryReader { proxy in
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: 0.5))
+                        path.addLine(to: CGPoint(x: proxy.size.width, y: 0.5))
+                    }
+                    .stroke(
+                        NoteTheme.receiptSecondaryInk.opacity(0.58),
+                        style: StrokeStyle(lineWidth: 1, lineCap: .butt, dash: [5, 4])
+                    )
+                }
             }
-            .stroke(
-                NoteTheme.secondaryInk.opacity(0.34),
-                style: StrokeStyle(lineWidth: 1, lineCap: .round, dash: [4, 5])
-            )
         }
-        .frame(height: 1)
+        .frame(height: style == .double ? 5.25 : 1)
+        .accessibilityHidden(true)
     }
 }
 
@@ -324,7 +361,7 @@ private struct V02ReceiptPhotoStrip: View {
                 }
             }
             .padding(6)
-            .background(NoteTheme.ink.opacity(0.92), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .background(NoteTheme.receiptInk.opacity(0.94), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(Color.white.opacity(0.22), lineWidth: 1)

@@ -118,7 +118,7 @@ struct V02ReceiptDeck: View {
                             } label: {
                                 Image(systemName: selectedIDs.contains(receipt.id) ? "checkmark.square.fill" : "square")
                                     .font(.system(size: 20, weight: .semibold))
-                                    .foregroundStyle(selectedIDs.contains(receipt.id) ? NoteTheme.ink : NoteTheme.secondaryInk)
+                                    .foregroundStyle(selectedIDs.contains(receipt.id) ? NoteTheme.receiptInk : NoteTheme.receiptSecondaryInk)
                                     .padding(12)
                                     .background(Color.white.opacity(0.76), in: Circle())
                             }
@@ -243,7 +243,7 @@ private struct V02ReceiptPaperEdge: View {
 
     var body: some View {
         V02ReceiptPaperShape()
-            .fill(template == .film ? NoteTheme.ink.opacity(0.16) : NoteTheme.receiptPaper.opacity(0.68))
+            .fill(template == .film ? NoteTheme.receiptInk.opacity(0.13) : NoteTheme.receiptPaper.opacity(0.82))
             .overlay(alignment: .top) {
                 HStack(spacing: 4) {
                     ForEach(0..<26, id: \.self) { _ in Circle().fill(NoteTheme.background.opacity(0.9)).frame(width: 4, height: 4) }
@@ -252,10 +252,10 @@ private struct V02ReceiptPaperEdge: View {
             }
             .overlay {
                 V02ReceiptPaperShape()
-                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
+                    .stroke(NoteTheme.receiptDivider, lineWidth: 1)
             }
             .frame(maxHeight: .infinity)
-            .shadow(color: NoteTheme.ink.opacity(0.06), radius: 12, y: 7)
+            .shadow(color: NoteTheme.receiptInk.opacity(0.07), radius: 12, y: 7)
     }
 }
 

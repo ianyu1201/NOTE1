@@ -8,7 +8,10 @@ enum NoteTheme {
     static let danger = Color(red: 0.91, green: 0.24, blue: 0.27)
     static let canvas = Color(red: 0.953, green: 0.956, blue: 0.995)
     static let paper = Color(red: 0.988, green: 0.986, blue: 0.996)
-    static let receiptPaper = Color(red: 0.984, green: 0.975, blue: 0.944)
+    static let receiptPaper = Color(red: 0.986, green: 0.986, blue: 0.982)
+    static let receiptInk = Color(red: 0.075, green: 0.078, blue: 0.085)
+    static let receiptSecondaryInk = Color(red: 0.37, green: 0.38, blue: 0.41)
+    static let receiptDivider = receiptInk.opacity(0.16)
     static let paperBorder = secondaryInk.opacity(0.15)
     static let divider = secondaryInk.opacity(0.13)
 
@@ -43,9 +46,9 @@ enum NoteTheme {
 
     static let receiptPaperSurface = LinearGradient(
         colors: [
-            Color(red: 1.0, green: 0.996, blue: 0.976),
+            Color(red: 0.998, green: 0.998, blue: 0.996),
             receiptPaper,
-            Color(red: 0.955, green: 0.944, blue: 0.908)
+            Color(red: 0.958, green: 0.958, blue: 0.954)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
