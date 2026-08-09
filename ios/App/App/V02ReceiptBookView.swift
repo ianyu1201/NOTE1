@@ -66,9 +66,14 @@ struct V02ReceiptBookView: View {
                         )
                         .zIndex(1)
                         Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
-                            .noteFont(size: 13, relativeTo: .caption)
+                            .noteFontCapped(
+                                size: 13,
+                                maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
+                                relativeTo: .caption
+                            )
                             .foregroundStyle(NoteTheme.secondaryInk)
                             .monospacedDigit()
+                            .lineLimit(1)
                             .padding(.horizontal, 11)
                             .padding(.vertical, 6)
                             .background(NoteTheme.ink.opacity(0.045), in: Capsule())
