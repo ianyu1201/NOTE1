@@ -7,6 +7,7 @@ enum V02ReceiptGesturePolicy {
     static let horizontalThreshold: CGFloat = 88
     static let downwardThreshold: CGFloat = 104
     static let extractionHandleHeight: CGFloat = 96
+    static let boundaryResistance: CGFloat = 0.24
 
     static func axis(for translation: CGSize) -> V02ReceiptGestureAxis {
         let x = abs(translation.width), y = abs(translation.height)
@@ -28,6 +29,12 @@ enum V02ReceiptGesturePolicy {
         return (0..<count).contains(candidate) ? candidate : nil
     }
 
+    static func displayedHorizontalTranslation(index: Int, count: Int, translation: CGFloat) -> CGFloat {
+        candidateIndex(index: index, count: count, translation: translation) == nil
+            ? translation * boundaryResistance
+            : translation
+    }
+
     static func normalizedProgress(translation: CGFloat, extent: CGFloat) -> CGFloat {
         min(abs(translation) / max(extent, 1), 1)
     }
@@ -40,7 +47,9 @@ enum V02ReceiptGesturePolicy {
 }
 
 enum V02ReceiptLayoutPolicy {
-    static let minimumPaperHeight: CGFloat = 560
+    /// The smallest useful receipt still reads as a paper strip beneath the
+    /// clip, but no longer carries a card-like blank tail after its footer.
+    static let minimumPaperHeight: CGFloat = 460
     static let baseTextHeight: CGFloat = 420
     static let memberRowHeight: CGFloat = 28
     static let textLineHeight: CGFloat = 20
@@ -90,12 +99,17 @@ struct V02ReceiptDeck: View {
         GeometryReader { proxy in
             let width = max(proxy.size.width, 1)
             let extractionDistance = max(proxy.size.height * 1.25, 1)
-            let horizontalProgress = V02ReceiptGesturePolicy.normalizedProgress(translation: translation.width, extent: width)
+            let horizontalTranslation = V02ReceiptGesturePolicy.displayedHorizontalTranslation(
+                index: index,
+                count: receipts.count,
+                translation: translation.width
+            )
+            let horizontalProgress = V02ReceiptGesturePolicy.normalizedProgress(translation: horizontalTranslation, extent: width)
             let downwardProgress = V02ReceiptGesturePolicy.normalizedProgress(translation: max(translation.height, 0), extent: extractionDistance)
             ZStack(alignment: .top) {
             if let next = receipts[safe: index + 2] {
                 V02ReceiptPaperEdge(template: templateFor(next))
-                    .offset(x: translation.width * 0.025)
+                    .offset(x: horizontalTranslation * 0.025)
                     .offset(y: 12 - horizontalProgress * 5 - downwardProgress * 10)
                     .scaleEffect(0.98 + horizontalProgress * 0.02 + downwardProgress * 0.02)
                     .opacity(0.72 + horizontalProgress * 0.28)
@@ -104,7 +118,7 @@ struct V02ReceiptDeck: View {
             }
             if let next = receipts[safe: index + 1] {
                 V02ReceiptPaperEdge(template: templateFor(next))
-                    .offset(x: translation.width * 0.045)
+                    .offset(x: horizontalTranslation * 0.045)
                     .offset(y: 6 - horizontalProgress * 3 - downwardProgress * 6)
                     .scaleEffect(0.99 + horizontalProgress * 0.01 + downwardProgress * 0.01)
                     .opacity(0.82 + horizontalProgress * 0.18)
@@ -120,8 +134,8 @@ struct V02ReceiptDeck: View {
                     template: templateFor(receipts[targetIndex]),
                     minimumHeight: max(proxy.size.height - 20, minimumPaperHeight)
                 )
-                .offset(x: (translation.width < 0 ? width * 0.92 : -width * 0.92) + translation.width * 0.92, y: 26 - horizontalProgress * 6)
-                .rotationEffect(.degrees((translation.width < 0 ? 1.8 : -1.8) * Double(1 - horizontalProgress)))
+                .offset(x: (horizontalTranslation < 0 ? width * 0.92 : -width * 0.92) + horizontalTranslation * 0.92, y: 26 - horizontalProgress * 6)
+                .rotationEffect(.degrees((horizontalTranslation < 0 ? 1.8 : -1.8) * Double(1 - horizontalProgress)))
                 .scaleEffect(0.97 + horizontalProgress * 0.03)
                 .opacity(0.72 + horizontalProgress * 0.28)
                 .zIndex(2)
@@ -172,8 +186,8 @@ struct V02ReceiptDeck: View {
                     }
                 }
                 .accessibilityAction(named: "抽取查看") { openReceipt(receipt) }
-                .offset(x: axis == .horizontal ? translation.width * (reduceMotion ? 0.18 : 0.86) : 0, y: 20 + (axis == .downward ? translation.height * (reduceMotion ? 0.28 : 0.7) : 0))
-                .rotationEffect(.degrees(axis == .horizontal && !reduceMotion ? Double(translation.width / width) * 3.2 : 0))
+                .offset(x: axis == .horizontal ? horizontalTranslation * (reduceMotion ? 0.18 : 0.86) : 0, y: 20 + (axis == .downward ? translation.height * (reduceMotion ? 0.28 : 0.7) : 0))
+                .rotationEffect(.degrees(axis == .horizontal && !reduceMotion ? Double(horizontalTranslation / width) * 3.2 : 0))
                 .scaleEffect(1 - horizontalProgress * 0.025 - downwardProgress * 0.08)
                 .opacity(1 - horizontalProgress * 0.035 - downwardProgress * 0.12)
                 .zIndex(3)

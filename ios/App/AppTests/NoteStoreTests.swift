@@ -648,6 +648,31 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 420)))
     }
 
+    func testV03ReceiptGestureBoundariesResistAndNeverLoop() {
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 87.9))
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -87.9))
+        XCTAssertEqual(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -88), 2)
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 180))
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 2, count: 3, translation: -180))
+        XCTAssertEqual(
+            V02ReceiptGesturePolicy.displayedHorizontalTranslation(index: 0, count: 3, translation: 100),
+            24,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            V02ReceiptGesturePolicy.displayedHorizontalTranslation(index: 2, count: 3, translation: -100),
+            -24,
+            accuracy: 0.001
+        )
+        XCTAssertEqual(
+            V02ReceiptGesturePolicy.displayedHorizontalTranslation(index: 1, count: 3, translation: -100),
+            -100,
+            accuracy: 0.001
+        )
+        XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(103.9))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(104))
+    }
+
     func testV03ReceiptLayoutExpandsForContentAndDynamicType() {
         let short = V02ReceiptLayoutPolicy.estimatedPaperHeight(
             memberCount: 1,
@@ -656,7 +681,9 @@ final class NoteStoreTests: XCTestCase {
             hasPhotoStrip: false,
             textScale: 1
         )
-        XCTAssertEqual(short, V02ReceiptLayoutPolicy.minimumPaperHeight)
+        XCTAssertGreaterThanOrEqual(short, V02ReceiptLayoutPolicy.minimumPaperHeight)
+        XCTAssertEqual(short, 468)
+        XCTAssertLessThanOrEqual(short, 480)
 
         let longDefault = V02ReceiptLayoutPolicy.estimatedPaperHeight(
             memberCount: 4,
