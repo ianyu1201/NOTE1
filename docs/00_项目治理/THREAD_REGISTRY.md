@@ -4,7 +4,7 @@
 
 | 标题 | 任务 ID | 职责 | 状态 | 工作目录 / 分支 | 来源与候选 | 必读入口 | 日期 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| NOTE1｜V0.3｜01 产品与设计 | `019fe09c-5903-7293-bd06-37e5f915fca0` | S2→S3：冻结产品差量、确认设计、实现约束和运行验收合同；当前同时维护已授权实现候选 | `active`；S3 未冻结；阶段交付提交 `pending` | `/Users/yusiyuan/Documents/NOTE1`；`codex/note1-v03-product-design` | 来源 `b403277d61335eaf1ea0c930faca338686624d8c`；候选代码 `137005de23aa8a258bdaae237e9946f50dd0f38a` | `AGENTS.md`、`docs/00_项目治理/PROJECT_BRIEF.md`、三份 V0.3 现役基线、`evidence/V0.3/运行验收/MANIFEST.md` | 创建 2026-08-08；关闭 `pending` |
+| NOTE1｜V0.3｜01 产品与设计 | `019fe09c-5903-7293-bd06-37e5f915fca0` | S2→S3：冻结产品差量、确认设计、实现约束和运行验收合同；当前同时维护已授权实现候选 | `active`；S3 未冻结；阶段交付提交 `pending` | `/Users/yusiyuan/Documents/NOTE1`；`codex/note1-v03-product-design` | 来源 `b403277d61335eaf1ea0c930faca338686624d8c`；候选代码 `137005de23aa8a258bdaae237e9946f50dd0f38a` | `AGENTS.md`、`docs/00_项目治理/PROJECT_BRIEF.md`、三份 V0.3 现役基线、`evidence/V0.3/MANIFEST.md` | 创建 2026-08-08；关闭 `pending` |
 
 ## 创建门禁
 

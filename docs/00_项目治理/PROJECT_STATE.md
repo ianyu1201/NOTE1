@@ -13,7 +13,7 @@
 | `active_version_root` | `/Users/yusiyuan/Documents/NOTE1` |
 | `repo_root` | `/Users/yusiyuan/Documents/NOTE1` |
 | `staging_root` | 未单独物化；用户于 2026-08-11 明确要求只保留一个项目文件夹，V0.3 活动候选在唯一主工作树中维护 |
-| `archive_root` | 未物化独立归档目录；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材保存在 `media/` 与 `evidence/` |
+| `archive_root` | 未物化独立归档目录；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材统一保存在 `evidence/` |
 | `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git` |
 | 唯一工作树 | `/Users/yusiyuan/Documents/NOTE1`；隔离 worktree 已在完成接管和验证后注销 |
 | 正式任务 ID | `019fe09c-5903-7293-bd06-37e5f915fca0` |
@@ -34,16 +34,16 @@
 | `acceptance_status` | `not_started`；没有基于最终固定候选的独立验收 |
 | `version_approval_status` | `pending` |
 | `archive_status` | `not_applicable`；正式版本批准前不归档或清理前序对象 |
-| `anti_drift_status` | 三份现役基线已唯一化；入口文档和证据提交映射由本治理周期收口 |
+| `anti_drift_status` | 三份现役基线采用稳定路径且已唯一化；开发证据与最终验收身份已分离 |
 
 ## 3. 权威来源
 
 1. 稳定项目定位：`docs/00_项目治理/PROJECT_BRIEF.md`；
-2. 产品、对象、范围和业务规则：`docs/01_产品/V0.3/NOTE1_PRD_V0.3.md`；
-3. 页面、视觉、状态、手势和无障碍：`docs/02_设计/V0.3/NOTE1_V0.3产品设计与交互规格.md`；
-4. 工程约束、非回归和运行验收：`docs/03_工程/V0.3/NOTE1_V0.3开发与运行验收基线.md`；
+2. 产品、对象、范围和业务规则：`docs/01_产品/NOTE1_PRD.md`；
+3. 页面、视觉、状态、手势和无障碍：`docs/02_设计/NOTE1_产品设计与交互规格.md`；
+4. 工程约束、非回归和运行验收：`docs/03_工程/NOTE1_开发与运行验收基线.md`；
 5. 长期技术决定：`docs/04_技术决策/`；
-6. 证据批次和提交映射：`evidence/V0.3/运行验收/MANIFEST.md`。
+6. 证据批次和提交映射：`evidence/V0.3/MANIFEST.md`。
 
 现役产品决定以 PRD 第 8 节实际列项为准，不从编号连续性反推缺失决定；UI 实现合同由工程基线维护；实施过程由 Git 和各证据批次 README 保存。此前在本文件中的完整实施流水账及历史批次编号可从治理前固定点 `137005de23aa8a258bdaae237e9946f50dd0f38a` 追溯，不再与当前状态并列。
 
@@ -73,7 +73,7 @@
 | --- | --- | --- |
 | 代码 | `verified-current` | 活动实现候选固定为 `137005de23aa8a258bdaae237e9946f50dd0f38a`，本轮不修改业务代码 |
 | 运行态 | `pending` | 85/85 XCTest 与 iOS 26.5 模拟器通过；最终候选真机和系统版本门禁未完成 |
-| 文档 | `changed-and-verified` | 入口、状态、目录规则和证据 manifest 已收敛；本轮执行链接与引用检查 |
+| 文档 | `changed-and-verified` | 现役基线已扁平化，重复目录说明已合并到 `docs/README.md`；本轮执行链接与引用检查 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
 | 记忆 | `out-of-scope` | Codex 宿主生成记忆未获授权写入，本轮只维护仓库内权威文件 |
 | 工作区 | `verified-current` | `/Users/yusiyuan/Documents/NOTE1` 是唯一注册工作树；被取代布局只保留在安全 Git 分支中 |
