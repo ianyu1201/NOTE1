@@ -140,6 +140,14 @@ enum V02PrimaryTypographyPolicy {
     static let contextLabelMaximumScale: CGFloat = 1.25
 }
 
+/// Shared visible nouns for batch actions that operate on inspirations. The
+/// full object/action names stay stable even when a compact toolbar falls back
+/// to a vertical layout on narrow screens.
+enum V02InspirationSelectionCopy {
+    static let returnToCardFlow = "放回卡片流"
+    static let assignToCollection = "归入构思集"
+}
+
 /// One accessibility fallback for every NOTE1-owned glass surface. The
 /// geometry stays unchanged when Reduce Transparency is enabled; only the
 /// material becomes opaque and its edge gains enough contrast to remain

@@ -277,13 +277,13 @@ struct V02SearchView: View {
                 selectedIDs = Set(results.compactMap { if case .inspiration(let item) = $0 { item.id } else { nil } })
             }
             .frame(minHeight: 44)
-            Button("放回") {
+            Button(V02InspirationSelectionCopy.returnToCardFlow) {
                 do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
                 catch let caughtError { error = UserFacingAlert(error: caughtError) }
             }
             .frame(minHeight: 44)
             .disabled(selectedInspirations.isEmpty || !selectedInspirations.allSatisfy { $0.cardFlowState == .tuckedAway })
-            Menu("归入") {
+            Menu(V02InspirationSelectionCopy.assignToCollection) {
                 ForEach(store.activeCollections) { collection in
                     Button(collection.name) {
                         do { try store.batchAssign(selectedIDs, to: collection.id); selectedIDs.removeAll() }

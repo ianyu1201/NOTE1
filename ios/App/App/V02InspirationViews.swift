@@ -202,7 +202,7 @@ struct V02InspirationListView: View {
         Button("删除", role: .destructive) { isConfirmingDelete = true }
             .frame(minHeight: 44)
             .disabled(selectedIDs.isEmpty)
-        Button("放回卡片流") {
+        Button(V02InspirationSelectionCopy.returnToCardFlow) {
             do { try store.batchReturnToCardFlow(selectedIDs); selectedIDs.removeAll() }
             catch { reportError(error) }
         }
@@ -217,7 +217,7 @@ struct V02InspirationListView: View {
                 .disabled(!canAssignSelected(to: collection))
             }
         } label: {
-            Label("归入构思集", systemImage: "folder.badge.plus")
+            Label(V02InspirationSelectionCopy.assignToCollection, systemImage: "folder.badge.plus")
                 .frame(minHeight: 44)
         }
         .disabled(selectedIDs.isEmpty || store.activeCollections.isEmpty)

@@ -1818,4 +1818,9 @@ final class NoteStoreTests: XCTestCase {
             XCTAssertFalse(text.contains("当前版本"))
         }
     }
+
+    func testV03InspirationBatchActionsUseStandardTerminology() {
+        XCTAssertEqual(V02InspirationSelectionCopy.returnToCardFlow, "放回卡片流")
+        XCTAssertEqual(V02InspirationSelectionCopy.assignToCollection, "归入构思集")
+    }
 }
