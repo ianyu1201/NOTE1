@@ -322,9 +322,9 @@ struct V02CardPreviewView: View {
             pendingInspirationID = nil
             isShowingCollectionPicker = false
         } catch StoreError.invalidOperation(_) {
-            capacityError = "当前版本每个构思集只支持 10 条灵感"
+            capacityError = V02CapacityCopy.collectionCapacity
         } catch V02DomainError.collectionCapacity {
-            capacityError = "当前版本每个构思集只支持 10 条灵感"
+            capacityError = V02CapacityCopy.collectionCapacity
         } catch {
             reportError(error)
         }

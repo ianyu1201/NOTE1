@@ -60,7 +60,7 @@ struct V02SettingsView: View {
             isPresented: $isExportingBackup,
             document: backupDocument,
             contentType: .note1V02Backup,
-            defaultFilename: "NOTE1-V0.2-本机备份"
+            defaultFilename: V02BackupCopy.defaultFilename
         ) { result in
             if case .failure(let error) = result { self.error = UserFacingAlert(error: error) }
         }
@@ -74,7 +74,7 @@ struct V02SettingsView: View {
             Button("恢复并替换当前数据", role: .destructive) { restorePendingBackup() }
             Button("取消", role: .cancel) { pendingRestoreData = nil }
         } message: {
-            Text("当前 V0.2 本机数据会被备份内容替换，此操作不能撤销。")
+            Text(V02BackupCopy.restoreConfirmation)
         }
         .noteErrorAlert($error)
     }

@@ -28,6 +28,20 @@ struct V02BackupResource: Codable, Sendable {
     let data: Data
 }
 
+enum V02BackupCopy {
+    static let defaultFilename = "NOTE1-本机备份"
+    static let restoreConfirmation = "当前本机数据会被备份内容替换，此操作不能撤销。"
+    static let oversizedResource = "单个附件超过 NOTE1 支持的 100 MB 上限。"
+
+    static func unsupportedVersion(_ version: Int) -> String {
+        "这个备份采用不兼容的数据格式版本（\(version)）。"
+    }
+
+    static func invalidArchive(_ message: String) -> String {
+        "备份文件无效：\(message)"
+    }
+}
+
 enum V02BackupError: LocalizedError {
     case archiveTooLarge
     case unsupportedVersion(Int)
@@ -40,9 +54,9 @@ enum V02BackupError: LocalizedError {
         case .archiveTooLarge:
             "备份文件超过 NOTE1 当前支持的 512 MB。"
         case .unsupportedVersion(let version):
-            "这个 V0.2 备份来自不兼容的版本（\(version)）。"
+            V02BackupCopy.unsupportedVersion(version)
         case .invalidArchive(let message):
-            "V0.2 备份文件无效：\(message)"
+            V02BackupCopy.invalidArchive(message)
         case .missingResource(let filename):
             "附件“\(filename)”不存在，未生成不完整备份。"
         case .restoreFailed(let message):
@@ -143,7 +157,7 @@ enum V02BackupService {
                 throw V02BackupError.invalidArchive("附件大小信息不一致。")
             }
             guard resource.data.count <= V02Store.maximumResourceSize else {
-                throw V02BackupError.invalidArchive("单个附件超过 V0.2 上限。")
+                throw V02BackupError.invalidArchive(V02BackupCopy.oversizedResource)
             }
             let safePath = URL(fileURLWithPath: resource.metadata.relativePath).lastPathComponent
             guard !safePath.isEmpty, safePath == resource.metadata.relativePath,

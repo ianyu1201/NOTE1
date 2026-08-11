@@ -1794,4 +1794,28 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 20, translation: CGSize(width: -120, height: 0)))
         XCTAssertTrue(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 80, translation: CGSize(width: -120, height: 0)))
     }
+
+    func testV03UserFacingCapacityAndBackupCopyDoesNotExposeLegacyVersionLabels() {
+        let copy = [
+            V02CapacityCopy.collectionLimit,
+            V02CapacityCopy.collectionCapacity,
+            V02BackupCopy.defaultFilename,
+            V02BackupCopy.restoreConfirmation,
+            V02BackupCopy.oversizedResource,
+            V02BackupCopy.unsupportedVersion(99),
+            V02BackupCopy.invalidArchive("无法读取文件内容。"),
+            V02DomainError.collectionLimit.localizedDescription,
+            V02DomainError.collectionCapacity.localizedDescription,
+            V02BackupError.unsupportedVersion(99).localizedDescription,
+            V02BackupError.invalidArchive("无法读取文件内容。").localizedDescription
+        ]
+
+        XCTAssertEqual(V02CapacityCopy.collectionLimit, "最多支持 5 个构思集。")
+        XCTAssertEqual(V02CapacityCopy.collectionCapacity, "每个构思集最多支持 10 条灵感。")
+        XCTAssertEqual(V02BackupCopy.defaultFilename, "NOTE1-本机备份")
+        for text in copy {
+            XCTAssertFalse(text.contains("V0.2"))
+            XCTAssertFalse(text.contains("当前版本"))
+        }
+    }
 }

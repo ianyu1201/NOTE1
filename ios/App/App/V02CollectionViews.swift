@@ -127,7 +127,7 @@ struct V02CollectionListView: View {
         }
         .overlay(alignment: .bottom) {
             if capacityNotice {
-                Text("当前版本只支持 5 个构思集")
+                Text(V02CapacityCopy.collectionLimit)
                     .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
                     .foregroundStyle(NoteTheme.ink)
                     .padding(.horizontal, 18)
@@ -491,7 +491,7 @@ private struct V02CollectionWorkbenchView: View {
         }
         .overlay(alignment: .bottom) {
             if memberCapacityNotice {
-                Text("当前版本每个构思集只支持 10 条灵感")
+                Text(V02CapacityCopy.collectionCapacity)
                     .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
                     .foregroundStyle(NoteTheme.ink)
                     .padding(.horizontal, 18)

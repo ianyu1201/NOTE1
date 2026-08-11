@@ -420,6 +420,11 @@ struct V02TrashEntry: Identifiable, Codable, Sendable {
     let deletedAt: Date
 }
 
+enum V02CapacityCopy {
+    static let collectionLimit = "最多支持 5 个构思集。"
+    static let collectionCapacity = "每个构思集最多支持 10 条灵感。"
+}
+
 enum V02DomainError: LocalizedError, Equatable {
     case collectionLimit
     case collectionCapacity
@@ -435,8 +440,8 @@ enum V02DomainError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .collectionLimit: "当前版本最多支持 5 个构思集。"
-        case .collectionCapacity: "当前版本每个构思集最多支持 10 条灵感。"
+        case .collectionLimit: V02CapacityCopy.collectionLimit
+        case .collectionCapacity: V02CapacityCopy.collectionCapacity
         case .inspirationNotFound, .collectionNotFound, .roundNotFound: "没有找到对应内容。"
         case .activeRoundRequired: "当前构思集没有可结束的构思轮次。"
         case .duplicateReceipt: "本轮构思已经生成构思小票。"
