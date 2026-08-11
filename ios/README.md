@@ -1,8 +1,9 @@
 # NOTE1 iOS 工程入口
 
 > 当前产品与设计分支：`codex/note1-v03-product-design`
-> 当前现状代码基线：`b403277d61335eaf1ea0c930faca338686624d8c`
-> 最近验证：2026-08-08，69 项 XCTest 全部通过，通用 iOS 构建和静态分析成功
+> 来源固定点：`b403277d61335eaf1ea0c930faca338686624d8c`
+> 当前活动实现候选：`137005de23aa8a258bdaae237e9946f50dd0f38a`
+> 最近验证：2026-08-11，85 项 XCTest 全部通过，iOS 26.5 模拟器构建和启动成功
 
 ## 运行入口
 
@@ -43,8 +44,8 @@
 1. 当前活跃 Swift 文件均属 App 或 AppTests target。V0.1 页面、旧 `NoteStore` 和旧测试已从正式 target 移除，历史实现由 Git 标签保留。
 2. 移动 Swift 文件必须同步 `project.pbxproj`，并完成构建与全部测试。
 3. `xcuserdata`、DerivedData、`.DS_Store` 和临时截图不进入版本库。
-4. V0.3 产品基准冻结前，不做大规模业务架构重写。
-5. 当前自动化结果来自 iPhone 13 mini / iOS 26.5 模拟器，不替代真机 VoiceOver、最大辅助字号和 iOS 17–25 材质降级验收。
+4. V0.3 S3 合同冻结前，不做大规模业务架构重写，也不扩展未写入现役 PRD 的业务范围。
+5. 当前候选自动化来自 NOTE1 Evidence iPhone 15 Pro / iOS 26.5 模拟器；iPhone 13 mini 只承担既有窄屏抽样。两者均不替代真机 VoiceOver、最大辅助字号最终证据和 iOS 17–25 材质降级验收。
 
 ## 唯一开发依据
 
