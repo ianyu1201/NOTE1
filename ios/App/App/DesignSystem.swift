@@ -203,6 +203,39 @@ extension View {
     }
 }
 
+/// Hides the SwiftUI presentation host behind a nested sheet from VoiceOver.
+/// SwiftUI's `accessibilityHidden` is not sufficient when the presenting and
+/// presented surfaces live in separate UIKit hosting controllers.
+struct V02PresentedContentAccessibilityIsolation: UIViewRepresentable {
+    let isPresented: Bool
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: .zero)
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        Self.apply(isPresented, from: uiView)
+        DispatchQueue.main.async { Self.apply(isPresented, from: uiView) }
+    }
+
+    static func dismantleUIView(_ uiView: UIView, coordinator: Void) {
+        apply(false, from: uiView)
+    }
+
+    private static func apply(_ hidden: Bool, from view: UIView) {
+        var responder: UIResponder? = view
+        while let current = responder {
+            if let controller = current as? UIViewController {
+                controller.view.accessibilityElementsHidden = hidden
+                return
+            }
+            responder = current.next
+        }
+    }
+}
+
 struct RoundGlassButton: View {
     let systemName: String
     let label: String

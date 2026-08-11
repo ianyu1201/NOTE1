@@ -157,16 +157,15 @@ struct V02SettingsView: View {
 }
 
 private struct V02PrivacyView: View {
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
         ZStack {
             NoteTheme.background.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("本机隐私说明")
-                        .noteFont(size: 24, weight: .semibold, relativeTo: .title2)
-                        .accessibilityAddTraits(.isHeader)
                     Text("NOTE1 的灵感、构思集、构思轮次、构思小票、回收站内容、录音和附件默认只保存在这台设备的 App 沙盒中。")
-                    Text("V0.2 不提供登录、后端、云同步、AI 分析或静默上传。只有在你主动发起系统分享、导出 PDF、导出本机备份，或从外部选择文件时，系统才会处理你明确选择的对象。")
+                    Text("NOTE1 不提供登录、后端、云同步、AI 分析或静默上传。只有在你主动发起系统分享、导出 PDF、导出本机备份，或从外部选择文件时，系统才会处理你明确选择的对象。")
                 }
                 .noteFont(size: 17, relativeTo: .body)
                 .foregroundStyle(NoteTheme.ink)
@@ -176,16 +175,19 @@ private struct V02PrivacyView: View {
                 .padding(20)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("本机隐私说明")
-                    .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                    .foregroundStyle(NoteTheme.ink)
-                    .accessibilityAddTraits(.isHeader)
-            }
+        .toolbar(.hidden, for: .navigationBar)
+        .notePrimaryHeader { privacyHeader }
+    }
+
+    private var privacyHeader: some View {
+        V02SecondaryPageHeader("本机隐私说明") {
+            V02GlassIconButton(
+                systemName: "chevron.left",
+                label: "返回设置",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
         }
     }
 }

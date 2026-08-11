@@ -112,6 +112,11 @@ struct V02SearchView: View {
             .toolbar(.hidden, for: .navigationBar)
             .notePrimaryHeader { searchHeader }
         }
+        .accessibilityHidden(isPresentingObject)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: isPresentingObject)
+                .frame(width: 0, height: 0)
+        }
         .onChange(of: scope) { _, _ in
             isSelecting = false
             selectedIDs.removeAll()
@@ -180,6 +185,10 @@ struct V02SearchView: View {
                 V02SecondaryHeaderPlaceholder()
             }
         }
+    }
+
+    private var isPresentingObject: Bool {
+        selectedInspiration != nil || selectedCollection != nil || selectedReceipt != nil
     }
 
     private func title(for result: V02SearchResult) -> String {
@@ -346,6 +355,7 @@ struct V02SearchView: View {
 private struct V02SearchCollectionDetail: View {
     @ObservedObject var store: V02Store
     let collection: V02ThinkingCollection
+    @Environment(\.dismiss) private var dismiss
     private var members: [V02Inspiration] {
         let ids = store.state.rounds.first(where: { $0.id == collection.currentRoundID })?.memberIDs ?? []
         return ids.compactMap { id in store.state.inspirations.first(where: { $0.id == id }) }
@@ -355,6 +365,10 @@ private struct V02SearchCollectionDetail: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
+                    Text(collection.name)
+                        .noteFont(size: 24, weight: .semibold, relativeTo: .title2)
+                        .foregroundStyle(NoteTheme.ink)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Text("构思中")
                         .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
                         .foregroundStyle(NoteTheme.secondaryInk)
@@ -374,17 +388,20 @@ private struct V02SearchCollectionDetail: View {
                 .padding(.vertical, 18)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text(collection.name)
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .lineLimit(1)
-                        .accessibilityAddTraits(.isHeader)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { collectionDetailHeader }
+        }
+    }
+
+    private var collectionDetailHeader: some View {
+        V02SecondaryPageHeader("构思集详情") {
+            V02GlassIconButton(
+                systemName: "xmark",
+                label: "关闭构思集详情",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
         }
     }
 }

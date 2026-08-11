@@ -9,6 +9,7 @@ struct V02ReceiptDetailView: View {
     let onDelete: ((Set<UUID>) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var template: V02ReceiptTemplate
     @State private var error: UserFacingAlert?
     @State private var shareURLs: [URL] = []
@@ -43,78 +44,13 @@ struct V02ReceiptDetailView: View {
                 .scrollIndicators(.hidden)
                 .scrollDismissesKeyboard(.interactively)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("小票详情")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
-                        .accessibilityLabel("返回小票册")
-                }
-                .noteSharedBackgroundHidden()
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Menu("切换模板", systemImage: "rectangle.2.swap") {
-                            ForEach(V02ReceiptTemplate.allCases) { item in
-                                Button(item.rawValue) { template = item }
-                            }
-                        }
-                        Button("在小票中查找", systemImage: "magnifyingglass") {
-                            isSearching = true
-                        }
-                        Button("继续构思", systemImage: "arrow.counterclockwise") {
-                            continueThinking()
-                        }
-                        .disabled(store.state.collections.first(where: { $0.id == receipt.collectionID })?.currentRoundID != nil)
-                        Divider()
-                        ForEach(V02ReceiptExportFormat.allCases, id: \.fileExtension) { format in
-                            Button(format.title, systemImage: "arrow.down.doc") {
-                                handleExport(format)
-                            }
-                        }
-                        Button("分享当前小票", systemImage: "square.and.arrow.up") {
-                            handleShare()
-                        }
-                        Button("复制", systemImage: "doc.on.doc") {
-                            copyReceipt()
-                        }
-                        Divider()
-                        Button("删除小票", role: .destructive) {
-                            isConfirmingDelete = true
-                        }
-                    } label: { V02GlassIconLabel(systemName: "ellipsis") }
-                    .accessibilityLabel("小票更多操作")
-                }
-                .noteSharedBackgroundHidden()
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                if isSearching {
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                        TextField("在小票中查找", text: $searchQuery)
-                            .focused($searchFocused)
-                            .textInputAutocapitalization(.never)
-                            .accessibilityIdentifier("v02.receipt.detail.find")
-                        Button("关闭") {
-                            isSearching = false
-                            searchFocused = false
-                            searchQuery = ""
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 14)
-                    .frame(minHeight: 48)
-                    .background(NoteTheme.background.opacity(0.96))
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .onAppear { searchFocused = true }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { receiptPageHeader }
+        }
+        .accessibilityHidden(isPresentingChildSheet)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: isPresentingChildSheet)
+                .frame(width: 0, height: 0)
         }
         .sheet(item: $selectedPreview) { attachment in
             V02ReceiptAttachmentPreview(attachment: attachment)
@@ -147,6 +83,102 @@ struct V02ReceiptDetailView: View {
             Text("小票会进入回收站，来源构思集和灵感不会改变。")
         }
         .noteErrorAlert($error)
+    }
+
+    private var receiptPageHeader: some View {
+        VStack(spacing: 0) {
+            V02SecondaryPageHeader("小票详情") {
+                V02GlassIconButton(
+                    systemName: "chevron.left",
+                    label: "返回小票册",
+                    action: { dismiss() }
+                )
+            } trailing: {
+                receiptActionsMenu
+            }
+
+            if isSearching {
+                receiptSearchBar
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .background(NoteTheme.background)
+    }
+
+    private var isPresentingChildSheet: Bool {
+        selectedPreview != nil || selectedImage != nil || !shareURLs.isEmpty
+    }
+
+    private var receiptActionsMenu: some View {
+        Menu {
+            Menu("切换模板", systemImage: "rectangle.2.swap") {
+                ForEach(V02ReceiptTemplate.allCases) { item in
+                    Button(item.rawValue) { template = item }
+                }
+            }
+            Button("在小票中查找", systemImage: "magnifyingglass") {
+                withAnimation(NoteMotion.reveal(reduceMotion: reduceMotion)) { isSearching = true }
+            }
+            Button("继续构思", systemImage: "arrow.counterclockwise") {
+                continueThinking()
+            }
+            .disabled(store.state.collections.first(where: { $0.id == receipt.collectionID })?.currentRoundID != nil)
+            Divider()
+            ForEach(V02ReceiptExportFormat.allCases, id: \.fileExtension) { format in
+                Button(format.title, systemImage: "arrow.down.doc") {
+                    handleExport(format)
+                }
+            }
+            Button("分享当前小票", systemImage: "square.and.arrow.up") {
+                handleShare()
+            }
+            Button("复制", systemImage: "doc.on.doc") {
+                copyReceipt()
+            }
+            Divider()
+            Button("删除小票", role: .destructive) {
+                isConfirmingDelete = true
+            }
+        } label: {
+            V02GlassIconLabel(systemName: "ellipsis")
+        }
+        .accessibilityLabel("小票更多操作")
+    }
+
+    private var receiptSearchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 19, weight: .medium))
+                .foregroundStyle(NoteTheme.secondaryInk)
+            TextField("在小票中查找", text: $searchQuery)
+                .noteFontCapped(
+                    size: 16,
+                    maximumScale: 1.25,
+                    relativeTo: .body
+                )
+                .focused($searchFocused)
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("v02.receipt.detail.find")
+            Button {
+                withAnimation(NoteMotion.reveal(reduceMotion: reduceMotion)) { isSearching = false }
+                searchFocused = false
+                searchQuery = ""
+            } label: {
+                Text("关闭")
+                    .noteFontCapped(
+                        size: 16,
+                        maximumScale: 1.25,
+                        weight: .medium,
+                        relativeTo: .body
+                    )
+                    .frame(minHeight: 44)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(minHeight: 48)
+        .background(NoteTheme.background.opacity(0.96))
+        .onAppear { searchFocused = true }
     }
 
     private var longTicket: some View {

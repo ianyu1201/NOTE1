@@ -49,31 +49,17 @@ struct V02InspirationEditorView: View {
                 .padding(.bottom, 112)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbar(.visible, for: .navigationBar)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("编辑灵感")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        saveNow()
-                        focused = false
-                        dismiss()
-                    } label: {
-                        V02GlassIconLabel(systemName: "chevron.left")
-                    }
-                    .accessibilityLabel("返回")
-                    .accessibilityHint("保存后返回上一页")
-                }
-                .noteSharedBackgroundHidden()
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader {
+                editorHeader
+                    .accessibilityHidden(sourcePanel)
             }
             .safeAreaInset(edge: .bottom) { bottomBar }
+        }
+        .accessibilityHidden(sourcePanel || preview != nil)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: preview != nil)
+                .frame(width: 0, height: 0)
         }
         .scrollDismissesKeyboard(.interactively)
         .simultaneousGesture(
@@ -110,6 +96,19 @@ struct V02InspirationEditorView: View {
             Button("移除", role: .destructive) { do { try store.removeResource(resource.id, from: inspirationID) } catch { reportError(error) }; removing = nil }
             Button("取消", role: .cancel) { removing = nil }
         } message: { _ in Text("若构思小票或回收站仍引用该附件，它会继续保留在本机。") }
+    }
+
+    private var editorHeader: some View {
+        V02SecondaryPageHeader("编辑灵感") {
+            V02GlassIconButton(
+                systemName: "chevron.left",
+                label: "返回",
+                action: closeEditor
+            )
+            .accessibilityHint("保存后返回上一页")
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
+        }
     }
 
     private var bottomBar: some View { HStack(spacing: 12) {
@@ -163,6 +162,7 @@ struct V02InspirationEditorView: View {
     private func selectSource(_ source: AttachmentSource) { sourcePanel = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { if source == .photos { photoPicker = true } else { fileImporter = true } } }
     private func scheduleSave() { pendingSaveTask?.cancel(); guard text != savedText else { return }; pendingSaveTask = Task { @MainActor in try? await Task.sleep(for: .milliseconds(450)); guard !Task.isCancelled else { return }; saveNow() } }
     private func saveNow() { guard text != savedText else { return }; do { try store.updateInspiration(inspirationID, text: text); savedText = text } catch { reportError(error) } }
+    private func closeEditor() { saveNow(); focused = false; dismiss() }
     private func add(_ inputs: [AttachmentInput]) throws { guard !inputs.isEmpty else { return }; try store.addImportedResources(inputs, to: inspirationID) }
 }
 

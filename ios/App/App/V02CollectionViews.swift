@@ -419,6 +419,7 @@ private struct V02CollectionWorkbenchView: View {
     @State private var editingMemberID: UUID?
     @State private var pendingMemberSave: Task<Void, Never>?
     @State private var isShowingOutline = false
+    @State private var outlineEditMode: EditMode = .inactive
     @State private var isAdding = false
     @State private var renamingText = ""
     @State private var isRenaming = false
@@ -438,6 +439,9 @@ private struct V02CollectionWorkbenchView: View {
     private var members: [V02Inspiration] {
         guard let round else { return [] }
         return round.memberIDs.compactMap { id in store.state.inspirations.first { $0.id == id } }
+    }
+    private var isPresentingWorkbenchSheet: Bool {
+        isAdding || isShowingOutline || managingAttachments != nil
     }
 
     var body: some View {
@@ -501,8 +505,13 @@ private struct V02CollectionWorkbenchView: View {
                         try? await Task.sleep(for: .seconds(2))
                         guard !Task.isCancelled else { return }
                         memberCapacityNotice = false
-                    }
+                }
             }
+        }
+        .accessibilityHidden(isPresentingWorkbenchSheet)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: isPresentingWorkbenchSheet)
+                .frame(width: 0, height: 0)
         }
         .sheet(isPresented: $isAdding) {
             V02ComposerView(store: store, initialCollectionID: collectionID, reportError: reportError)
@@ -520,18 +529,15 @@ private struct V02CollectionWorkbenchView: View {
                         catch { reportError(error) }
                     }
                 }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(.hidden, for: .navigationBar)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text("概览与排序")
-                            .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                            .foregroundStyle(NoteTheme.ink)
-                            .accessibilityAddTraits(.isHeader)
-                    }
-                    ToolbarItem(placement: .primaryAction) { EditButton() }
-                }
+                .environment(\.editMode, $outlineEditMode)
+                .scrollContentBackground(.hidden)
+                .background(NoteTheme.background.ignoresSafeArea())
+                .toolbar(.hidden, for: .navigationBar)
+                .notePrimaryHeader { outlineHeader }
             }
+        }
+        .onChange(of: isShowingOutline) { _, isPresented in
+            if !isPresented { outlineEditMode = .inactive }
         }
         .alert("构思集名称", isPresented: $isRenaming) {
             TextField("构思集名称", text: $renamingText)
@@ -638,6 +644,22 @@ private struct V02CollectionWorkbenchView: View {
         }
         .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
         .background(NoteTheme.background)
+    }
+
+    private var outlineHeader: some View {
+        V02SecondaryPageHeader("概览与排序") {
+            V02GlassIconButton(
+                systemName: "xmark",
+                label: "关闭概览与排序"
+            ) {
+                outlineEditMode = .inactive
+                isShowingOutline = false
+            }
+        } trailing: {
+            V02GlassTextButton(title: outlineEditMode.isEditing ? "完成" : "编辑") {
+                outlineEditMode = outlineEditMode.isEditing ? .inactive : .active
+            }
+        }
     }
 
     @ViewBuilder
@@ -939,10 +961,14 @@ struct V02CollectionHistoryView: View {
                 .padding(.bottom, V02NavigationLayoutPolicy.primaryContentBottomPadding)
             }
             .scrollIndicators(.hidden)
-            .accessibilityHidden(selectedEntry != nil)
             .background(NoteTheme.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
             .notePrimaryHeader { historyHeader }
+        }
+        .accessibilityHidden(selectedEntry != nil)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: selectedEntry != nil)
+                .frame(width: 0, height: 0)
         }
         .sheet(item: $selectedEntry) { entry in
             switch entry {
@@ -1309,20 +1335,8 @@ private struct V02HistoryInspirationDetailView: View {
                 .padding(.bottom, 110)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
-                        .accessibilityLabel("返回历史")
-                }
-                ToolbarItem(placement: .principal) {
-                    Text("灵感详情")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { inspirationDetailHeader }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
                     do {
@@ -1340,6 +1354,18 @@ private struct V02HistoryInspirationDetailView: View {
                 .padding(.vertical, 10)
                 .background(NoteTheme.background.opacity(0.94))
             }
+        }
+    }
+
+    private var inspirationDetailHeader: some View {
+        V02SecondaryPageHeader("灵感详情") {
+            V02GlassIconButton(
+                systemName: "chevron.left",
+                label: "返回历史",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
         }
     }
 }
@@ -1395,20 +1421,8 @@ private struct V02HistoryCollectionDetailView: View {
                 .padding(.bottom, 110)
             }
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { dismiss() } label: { V02GlassIconLabel(systemName: "chevron.left") }
-                        .accessibilityLabel("返回历史")
-                }
-                ToolbarItem(placement: .principal) {
-                    Text("构思历程详情")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader { collectionHistoryHeader }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
                     do {
@@ -1427,6 +1441,18 @@ private struct V02HistoryCollectionDetailView: View {
                 .padding(.vertical, 10)
                 .background(NoteTheme.background.opacity(0.94))
             }
+        }
+    }
+
+    private var collectionHistoryHeader: some View {
+        V02SecondaryPageHeader("构思历程详情") {
+            V02GlassIconButton(
+                systemName: "chevron.left",
+                label: "返回历史",
+                action: { dismiss() }
+            )
+        } trailing: {
+            V02SecondaryHeaderPlaceholder()
         }
     }
 }

@@ -42,28 +42,18 @@ struct V02WorkbenchAttachmentSheet: View {
                     .scrollContentBackground(.hidden)
                 }
             }
+            .accessibilityHidden(sourcePanel)
             .background(NoteTheme.background.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("附件")
-                        .noteFontCapped(size: 20, maximumScale: 1.2, weight: .semibold, design: .rounded, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .accessibilityAddTraits(.isHeader)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("完成") { dismiss() }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        sourcePanel = true
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .accessibilityLabel("添加附件")
-                }
+            .toolbar(.hidden, for: .navigationBar)
+            .notePrimaryHeader {
+                attachmentHeader
+                    .accessibilityHidden(sourcePanel)
             }
+        }
+        .accessibilityHidden(sourcePanel || preview != nil)
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: preview != nil)
+                .frame(width: 0, height: 0)
         }
         .overlay(alignment: .bottom) {
             if sourcePanel {
@@ -121,6 +111,18 @@ struct V02WorkbenchAttachmentSheet: View {
             Button("取消", role: .cancel) { removing = nil }
         } message: { _ in
             Text("既有构思小票中的附件快照不会被改写。")
+        }
+    }
+
+    private var attachmentHeader: some View {
+        V02SecondaryPageHeader("附件") {
+            V02GlassTextButton(title: "完成") { dismiss() }
+        } trailing: {
+            V02GlassIconButton(
+                systemName: "plus",
+                label: "添加附件",
+                action: { sourcePanel = true }
+            )
         }
     }
 
