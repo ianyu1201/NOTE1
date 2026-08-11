@@ -3,7 +3,11 @@ import UIKit
 
 enum NoteTheme {
     static let ink = Color(red: 0.035, green: 0.105, blue: 0.205)
-    static let secondaryInk = Color(red: 0.48, green: 0.54, blue: 0.67)
+    static let secondaryInk = Color(
+        red: V02ColorContrastPolicy.secondaryInk.red,
+        green: V02ColorContrastPolicy.secondaryInk.green,
+        blue: V02ColorContrastPolicy.secondaryInk.blue
+    )
     static let accent = ink
     static let danger = Color(red: 0.91, green: 0.24, blue: 0.27)
     static let canvas = Color(red: 0.953, green: 0.956, blue: 0.995)
@@ -53,6 +57,43 @@ enum NoteTheme {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
+}
+
+/// Small secondary labels appear directly on the darkest stop of NOTE1's
+/// light canvas as well as on paper. Keep their shared ink above the 4.5:1
+/// body-text contrast floor instead of compensating page by page.
+enum V02ColorContrastPolicy {
+    static let secondaryInk = (red: 0.34, green: 0.40, blue: 0.54)
+    static let darkestCanvas = (red: 0.912, green: 0.922, blue: 0.988)
+
+    static var minimumSecondaryTextContrast: Double {
+        contrastRatio(foreground: secondaryInk, background: darkestCanvas)
+    }
+
+    private static func contrastRatio(
+        foreground: (red: Double, green: Double, blue: Double),
+        background: (red: Double, green: Double, blue: Double)
+    ) -> Double {
+        let foregroundLuminance = relativeLuminance(foreground)
+        let backgroundLuminance = relativeLuminance(background)
+        return (max(foregroundLuminance, backgroundLuminance) + 0.05)
+            / (min(foregroundLuminance, backgroundLuminance) + 0.05)
+    }
+
+    private static func relativeLuminance(
+        _ color: (red: Double, green: Double, blue: Double)
+    ) -> Double {
+        let red = linearized(color.red)
+        let green = linearized(color.green)
+        let blue = linearized(color.blue)
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    }
+
+    private static func linearized(_ component: Double) -> Double {
+        component <= 0.04045
+            ? component / 12.92
+            : pow((component + 0.055) / 1.055, 2.4)
+    }
 }
 
 enum NoteMotion {

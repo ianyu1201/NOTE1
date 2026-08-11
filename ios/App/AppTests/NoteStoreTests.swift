@@ -1823,4 +1823,12 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02InspirationSelectionCopy.returnToCardFlow, "放回卡片流")
         XCTAssertEqual(V02InspirationSelectionCopy.assignToCollection, "归入构思集")
     }
+
+    func testV03SecondaryTextContrastMeetsBodyTextFloor() {
+        XCTAssertGreaterThanOrEqual(
+            V02ColorContrastPolicy.minimumSecondaryTextContrast,
+            4.5,
+            "Secondary labels must remain readable on the darkest canvas stop."
+        )
+    }
 }

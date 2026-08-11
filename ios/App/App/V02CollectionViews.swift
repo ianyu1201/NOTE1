@@ -306,7 +306,7 @@ private struct V02CollectionPaperCard: View {
                     if let updateLabel {
                         Text("更新 \(updateLabel)")
                             .noteFont(size: 11, relativeTo: .caption2)
-                            .foregroundStyle(NoteTheme.secondaryInk.opacity(0.82))
+                            .foregroundStyle(NoteTheme.secondaryInk)
                     }
                 }
                 Spacer(minLength: 4)
