@@ -9,22 +9,22 @@
 
 | 字段 | 当前值 |
 | --- | --- |
-| `workspace_root` | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` |
-| `active_version_root` | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` |
-| `repo_root` | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1` |
-| `staging_root` | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1`；当前唯一 V0.3 隔离候选 worktree |
-| `archive_root` | 未物化独立归档目录；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材保存在本候选的 `media/` 与 `evidence/` |
-| `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git`；只作为共享 Git 对象库，不授权修改原始工作树 |
-| 受保护原始工作树 | `/Users/yusiyuan/Documents/NOTE1@b403277d61335eaf1ea0c930faca338686624d8c`；本任务不得写入 |
+| `workspace_root` | `/Users/yusiyuan/Documents/NOTE1` |
+| `active_version_root` | `/Users/yusiyuan/Documents/NOTE1` |
+| `repo_root` | `/Users/yusiyuan/Documents/NOTE1` |
+| `staging_root` | 未单独物化；用户于 2026-08-11 明确要求只保留一个项目文件夹，V0.3 活动候选在唯一主工作树中维护 |
+| `archive_root` | 未物化独立归档目录；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材保存在 `media/` 与 `evidence/` |
+| `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git` |
+| 唯一工作树 | `/Users/yusiyuan/Documents/NOTE1`；隔离 worktree 已在完成接管和验证后注销 |
 | 正式任务 ID | `019fe09c-5903-7293-bd06-37e5f915fca0` |
 
-拓扑为“编号式单仓库生命周期 + 隔离 worktree 候选”。源码只有一份活跃路径；不建立永久并行的 V0.1/V0.2/V0.3 源码副本。
+拓扑为“编号式单仓库生命周期 + 单一主工作树”。源码只有一份活跃路径；不建立永久并行的 V0.1/V0.2/V0.3 源码副本。被取代的原目录重组已保存到安全分支 `codex/note1-original-layout-snapshot-20260811@86d7f0ae80546ba2ba3398beeec1d1d6ea05c38a`，不再占用第二个项目文件夹。
 
 ## 2. 版本治理状态
 
 | 字段 | 当前值 |
 | --- | --- |
-| `latest_observed` | `V0.3@137005de23aa8a258bdaae237e9946f50dd0f38a` |
+| `latest_observed` | `V0.3`，分支 `codex/note1-v03-product-design`；当前完整提交以该分支 `HEAD` 为准 |
 | `current_approved` | `pending`；现有材料没有独立的版本批准记录，不把来源固定点推定为正式批准版本 |
 | `active_candidate` | `V0.3`，分支 `codex/note1-v03-product-design`，候选代码固定点 `137005de23aa8a258bdaae237e9946f50dd0f38a` |
 | `source_lineage` | `b403277d61335eaf1ea0c930faca338686624d8c` |
@@ -76,4 +76,4 @@
 | 文档 | `changed-and-verified` | 入口、状态、目录规则和证据 manifest 已收敛；本轮执行链接与引用检查 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
 | 记忆 | `out-of-scope` | Codex 宿主生成记忆未获授权写入，本轮只维护仓库内权威文件 |
-| 工作区 | `verified-current` | 当前隔离 worktree 无范围外文件；分支/worktree 清理明确延后并保留复核现场 |
+| 工作区 | `verified-current` | `/Users/yusiyuan/Documents/NOTE1` 是唯一注册工作树；被取代布局只保留在安全 Git 分支中 |

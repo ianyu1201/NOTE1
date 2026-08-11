@@ -4,7 +4,7 @@
 
 | 标题 | 任务 ID | 职责 | 状态 | 工作目录 / 分支 | 来源与候选 | 必读入口 | 日期 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| NOTE1｜V0.3｜01 产品与设计 | `019fe09c-5903-7293-bd06-37e5f915fca0` | S2→S3：冻结产品差量、确认设计、实现约束和运行验收合同；当前同时维护已授权实现候选 | `active`；S3 未冻结；阶段交付提交 `pending` | `/Users/yusiyuan/.codex/worktrees/760b/NOTE1`；`codex/note1-v03-product-design` | 来源 `b403277d61335eaf1ea0c930faca338686624d8c`；候选代码 `137005de23aa8a258bdaae237e9946f50dd0f38a` | `AGENTS.md`、`docs/00_项目治理/PROJECT_BRIEF.md`、三份 V0.3 现役基线、`evidence/V0.3/运行验收/MANIFEST.md` | 创建 2026-08-08；关闭 `pending` |
+| NOTE1｜V0.3｜01 产品与设计 | `019fe09c-5903-7293-bd06-37e5f915fca0` | S2→S3：冻结产品差量、确认设计、实现约束和运行验收合同；当前同时维护已授权实现候选 | `active`；S3 未冻结；阶段交付提交 `pending` | `/Users/yusiyuan/Documents/NOTE1`；`codex/note1-v03-product-design` | 来源 `b403277d61335eaf1ea0c930faca338686624d8c`；候选代码 `137005de23aa8a258bdaae237e9946f50dd0f38a` | `AGENTS.md`、`docs/00_项目治理/PROJECT_BRIEF.md`、三份 V0.3 现役基线、`evidence/V0.3/运行验收/MANIFEST.md` | 创建 2026-08-08；关闭 `pending` |
 
 ## 创建门禁
 
@@ -17,5 +17,5 @@
 
 - 用户最新明确确认高于历史候选方案；候选图、当前代码和测试均不自动成为最终需求；
 - 当前候选已通过 85/85 XCTest 和 iOS 26.5 模拟器构建/启动，不替代真机、VoiceOver、真实连续手势、附件、分享、录音或 iOS 17–25；
-- 原始工作树 `/Users/yusiyuan/Documents/NOTE1` 保持在 `b403277d61335eaf1ea0c930faca338686624d8c`，本任务不得修改；
-- 不清理分支、worktree 或证据，直至完整治理/验收报告后获得单独授权。
+- `/Users/yusiyuan/Documents/NOTE1` 是用户确认保留的唯一项目工作树；被取代的 148 项目录重组保存在 `codex/note1-original-layout-snapshot-20260811@86d7f0ae80546ba2ba3398beeec1d1d6ea05c38a`；
+- 不删除安全分支或证据，直至完整治理/验收报告后获得单独授权。
