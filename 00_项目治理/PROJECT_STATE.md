@@ -16,7 +16,7 @@
 | `archive_root` | 未物化独立代码归档；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材统一保存在 `03_工程/evidence/` |
 | `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git` |
 | 唯一工作树 | `/Users/yusiyuan/Documents/NOTE1`；隔离 worktree 已在完成接管和验证后注销 |
-| 正式任务 ID | `019fe09c-5903-7293-bd06-37e5f915fca0` |
+| 当前正式任务 ID | `019fef8d-3ab6-7fe0-a374-ca2b7329ac72`（NOTE1｜V0.4｜01 视觉与交互设计） |
 
 拓扑为“编号式单仓库生命周期 + 单一主工作树”。源码只有一份活跃路径；不建立永久并行的 V0.1/V0.2/V0.3 源码副本。被取代的原目录重组已保存到安全分支 `codex/note1-original-layout-snapshot-20260811@86d7f0ae80546ba2ba3398beeec1d1d6ea05c38a`，不再占用第二个项目文件夹。
 
@@ -69,7 +69,7 @@
 
 ## 6. 下一步
 
-创建 `NOTE1｜V0.4｜01 视觉与交互设计` 任务：先查看当前模拟器和 V0.4 视觉输入，与用户逐项确认整体身份、四页 UI、组件和动画边界；确认结果就地写回三份稳定基线。S3 冻结前不开发。
+由任务 `019fef8d-3ab6-7fe0-a374-ca2b7329ac72` 推进 `NOTE1｜V0.4｜01 视觉与交互设计`：先查看当前模拟器和 V0.4 视觉输入，与用户逐项确认整体身份、四页 UI、组件和动画边界；确认结果就地写回三份稳定基线。S3 冻结前不开发。
 
 ## 7. 本轮知识治理状态
 
