@@ -2,8 +2,8 @@
 
 > 更新日期：2026-08-11
 > 当前版本：V0.3（MINOR）
-> 当前状态：`candidate_fixed`
-> 唯一当前阶段：S6 独立功能验收准备
+> 当前状态：`owner_closed_without_independent_acceptance`
+> 唯一当前阶段：V0.3 已由用户结束，准备转入 V0.4 S2 视觉与交互设计
 
 ## 1. 项目与路径身份
 
@@ -34,9 +34,9 @@
 | `prd_status` | `scope_approved`；V0.3 功能闭环范围已确认，视觉基线和深入 UI/动画已隔离到 V0.4 |
 | `delivery_contract_status` | `approved`；用户于 2026-08-11 明确确认 V0.3 功能合同与 V0.4 视觉延期边界 |
 | `validation_status` | `locally_verified`；候选与此前 85/85 XCTest、iOS 26.5 模拟器构建/启动之间只有文档治理差异；不替代最终候选独立复验 |
-| `acceptance_status` | `task_created_waiting_startup_confirmation`；独立功能验收任务 `019fef64-7488-7a73-abdc-269ffad58764` 已创建，尚无验收结论 |
-| `version_approval_status` | `pending` |
-| `archive_status` | `not_applicable`；正式版本批准前不归档或清理前序对象 |
+| `acceptance_status` | `owner_terminated / not_accepted`；任务 `019fef64-7488-7a73-abdc-269ffad58764` 由用户归档删除；中止前原始证据保存在 `634508463073563479cc58a6a1f6c7c61b594239`，未形成独立验收结论 |
+| `version_approval_status` | `not_approved`；用户选择直接进入 V0.4，不把 V0.3 写成正式批准版本 |
+| `archive_status` | `deferred`；没有版本批准，不触发前序归档或删除 |
 | `anti_drift_status` | 三份现役基线采用稳定路径且已唯一化；V0.3 功能合同与 V0.4 视觉/动效输入已分离；开发证据不自动升级为视觉基线 |
 
 ## 3. 权威来源
@@ -65,19 +65,19 @@
 - V0.3 不冻结视觉基线；四页视觉身份、UI 质感与深入动效已延期到 V0.4，不再作为 V0.3 阻断项；
 - 降低透明度同视口、真实手指连续拖拽、真机 VoiceOver、真实附件、第三方分享目的地、录音和 iOS 17–25 仍缺运行证据；
 - 历史开发证据多数只可追溯到进入 Git 的提交，没有独立 build ID；最终验收必须在新的固定候选上批量重取；
-- 独立功能验收任务已创建但尚未完成启动复述确认和实际复验；创建任务不等于验收通过；
-- `current_approved` 仍待用户或版本责任人单独裁决。
+- 独立功能验收未形成逐项结论，V0.3 不能声明为 `accepted` 或 `current_approved`；
+- AC-07、AC-10、AC-11、真机 VoiceOver、完整系统版本与其他未覆盖项继续作为 V0.4 非回归风险输入。
 
 ## 6. 下一步
 
-下一步由任务 `019fef64-7488-7a73-abdc-269ffad58764` 推进 S6 独立功能验收：先完成启动复述确认，再按 `03_工程/NOTE1_V0.3开发启动包.md` 在固定候选上逐项复验并形成 `pass/fail/pending/not-applicable` 结论。独立验收通过后仍需用户单独执行 V0.3 版本批准；版本批准前不创建 `v0.3.0` 标签，不归档、移动或删除前序历史材料。
+以 V0.3 固定功能候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` 及中止前原始证据为 V0.4 输入，创建 V0.4 产品与设计任务，先冻结 NOTE1 的视觉身份、四页 UI 和动画交互合同，再进入实现。不得补写 V0.3 已通过或创建 `v0.3.0` 标签。
 
 ## 7. 本轮知识治理状态
 
 | 事实面 | 状态 | 依据或边界 |
 | --- | --- | --- |
 | 代码 | `candidate-fixed` | 固定功能验收候选为 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e`，本轮不修改业务代码 |
-| 运行态 | `pending` | 85/85 XCTest 与 iOS 26.5 模拟器通过；最终候选真机和系统版本门禁未完成 |
+| 运行态 | `partial-accepted-by-owner-for-next-version-input` | 85/85 XCTest、iOS 26.5 模拟器及中止前部分运行取证可作为 V0.4 输入；不构成 V0.3 独立验收通过 |
 | 文档 | `changed-and-verified` | 现役基线使用稳定文件名；仓库根入口收口为 `00→04` 编号式生命周期目录 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
 | 记忆 | `out-of-scope` | Codex 宿主生成记忆未获授权写入，本轮只维护仓库内权威文件 |
