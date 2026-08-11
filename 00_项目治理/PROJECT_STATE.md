@@ -34,7 +34,7 @@
 | `prd_status` | `scope_approved`；V0.3 功能闭环范围已确认，视觉基线和深入 UI/动画已隔离到 V0.4 |
 | `delivery_contract_status` | `approved`；用户于 2026-08-11 明确确认 V0.3 功能合同与 V0.4 视觉延期边界 |
 | `validation_status` | `locally_verified`；候选与此前 85/85 XCTest、iOS 26.5 模拟器构建/启动之间只有文档治理差异；不替代最终候选独立复验 |
-| `acceptance_status` | `ready_not_started`；固定候选和启动包已就绪，尚无独立验收结论 |
+| `acceptance_status` | `task_created_waiting_startup_confirmation`；独立功能验收任务 `019fef64-7488-7a73-abdc-269ffad58764` 已创建，尚无验收结论 |
 | `version_approval_status` | `pending` |
 | `archive_status` | `not_applicable`；正式版本批准前不归档或清理前序对象 |
 | `anti_drift_status` | 三份现役基线采用稳定路径且已唯一化；V0.3 功能合同与 V0.4 视觉/动效输入已分离；开发证据不自动升级为视觉基线 |
@@ -65,12 +65,12 @@
 - V0.3 不冻结视觉基线；四页视觉身份、UI 质感与深入动效已延期到 V0.4，不再作为 V0.3 阻断项；
 - 降低透明度同视口、真实手指连续拖拽、真机 VoiceOver、真实附件、第三方分享目的地、录音和 iOS 17–25 仍缺运行证据；
 - 历史开发证据多数只可追溯到进入 Git 的提交，没有独立 build ID；最终验收必须在新的固定候选上批量重取；
-- 尚未执行基于固定候选的独立功能验收；当前任务只形成启动包，不代替独立验收者给出结论；
+- 独立功能验收任务已创建但尚未完成启动复述确认和实际复验；创建任务不等于验收通过；
 - `current_approved` 仍待用户或版本责任人单独裁决。
 
 ## 6. 下一步
 
-下一步只推进 S6 独立功能验收：按 `03_工程/NOTE1_V0.3开发启动包.md` 在固定候选上逐项复验并形成 `pass/fail/pending/not-applicable` 结论。独立验收通过后仍需用户单独执行 V0.3 版本批准；版本批准前不创建 `v0.3.0` 标签，不归档、移动或删除前序历史材料。
+下一步由任务 `019fef64-7488-7a73-abdc-269ffad58764` 推进 S6 独立功能验收：先完成启动复述确认，再按 `03_工程/NOTE1_V0.3开发启动包.md` 在固定候选上逐项复验并形成 `pass/fail/pending/not-applicable` 结论。独立验收通过后仍需用户单独执行 V0.3 版本批准；版本批准前不创建 `v0.3.0` 标签，不归档、移动或删除前序历史材料。
 
 ## 7. 本轮知识治理状态
 
