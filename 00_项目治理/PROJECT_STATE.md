@@ -2,8 +2,8 @@
 
 > 更新日期：2026-08-11
 > 当前版本：V0.3（MINOR）
-> 当前状态：`defining`
-> 唯一当前阶段：S3 功能交付合同候选，待用户确认后固定独立验收候选
+> 当前状态：`candidate_fixed`
+> 唯一当前阶段：S6 独立功能验收准备
 
 ## 1. 项目与路径身份
 
@@ -28,12 +28,13 @@
 | --- | --- |
 | `latest_observed` | `V0.3`，分支 `codex/note1-v03-product-design`；当前完整提交以该分支 `HEAD` 为准 |
 | `current_approved` | `pending`；现有材料没有独立的版本批准记录，不把来源固定点推定为正式批准版本 |
-| `active_candidate` | `V0.3`，分支 `codex/note1-v03-product-design`；功能代码候选起点 `137005de23aa8a258bdaae237e9946f50dd0f38a`，目录治理后最新已验证提交 `5b5ae6b833a3d3bb04d73fbefe252780e7d50a01`，待 S3 确认后重新固定完整候选 |
+| `active_candidate` | `V0.3`，分支 `codex/note1-v03-product-design`；固定功能验收候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` |
 | `source_lineage` | `b403277d61335eaf1ea0c930faca338686624d8c` |
 | `governance_cycle_id` | `NOTE1-V03-GOV-20260811-01` |
 | `prd_status` | `scope_approved`；V0.3 功能闭环范围已确认，视觉基线和深入 UI/动画已隔离到 V0.4 |
-| `validation_status` | `locally_verified`；候选代码已通过 85/85 XCTest 与 iOS 26.5 模拟器构建/启动 |
-| `acceptance_status` | `not_started`；没有基于最终固定候选的独立验收 |
+| `delivery_contract_status` | `approved`；用户于 2026-08-11 明确确认 V0.3 功能合同与 V0.4 视觉延期边界 |
+| `validation_status` | `locally_verified`；候选与此前 85/85 XCTest、iOS 26.5 模拟器构建/启动之间只有文档治理差异；不替代最终候选独立复验 |
+| `acceptance_status` | `ready_not_started`；固定候选和启动包已就绪，尚无独立验收结论 |
 | `version_approval_status` | `pending` |
 | `archive_status` | `not_applicable`；正式版本批准前不归档或清理前序对象 |
 | `anti_drift_status` | 三份现役基线采用稳定路径且已唯一化；V0.3 功能合同与 V0.4 视觉/动效输入已分离；开发证据不自动升级为视觉基线 |
@@ -56,24 +57,26 @@
 - 当前 worktree 在本治理开工时无未提交改动；
 - 候选代码已形成完整离线功能闭环，85/85 XCTest 与 iOS 26.5 模拟器构建/启动通过；
 - 当前没有已知未处置 P0/P1；用户已同意以现有功能为优化起点，但这不等于证明绝对没有 Bug。
+- V0.3 功能差量、四页可观察功能结果、状态矩阵、手势边界、非回归和运行验收合同已由用户确认；视觉与深入动效已隔离到 V0.4；
+- 固定功能验收候选为 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e`，启动包为 `03_工程/NOTE1_V0.3开发启动包.md`；
 
 ## 5. 未满足门禁
 
 - V0.3 不冻结视觉基线；四页视觉身份、UI 质感与深入动效已延期到 V0.4，不再作为 V0.3 阻断项；
 - 降低透明度同视口、真实手指连续拖拽、真机 VoiceOver、真实附件、第三方分享目的地、录音和 iOS 17–25 仍缺运行证据；
 - 历史开发证据多数只可追溯到进入 Git 的提交，没有独立 build ID；最终验收必须在新的固定候选上批量重取；
-- 尚未创建 V0.3 开发启动包、开发总控或独立验收任务；S3 冻结前继续保持这一边界；
+- 尚未执行基于固定候选的独立功能验收；当前任务只形成启动包，不代替独立验收者给出结论；
 - `current_approved` 仍待用户或版本责任人单独裁决。
 
 ## 6. 下一步
 
-当前只推进 S3 功能合同确认：用户确认后固定完整候选，再进入 S6 独立功能验收。独立验收通过后仍需用户单独执行 V0.3 版本批准；版本批准前不创建 `v0.3.0` 标签，不归档、移动或删除前序历史材料。
+下一步只推进 S6 独立功能验收：按 `03_工程/NOTE1_V0.3开发启动包.md` 在固定候选上逐项复验并形成 `pass/fail/pending/not-applicable` 结论。独立验收通过后仍需用户单独执行 V0.3 版本批准；版本批准前不创建 `v0.3.0` 标签，不归档、移动或删除前序历史材料。
 
 ## 7. 本轮知识治理状态
 
 | 事实面 | 状态 | 依据或边界 |
 | --- | --- | --- |
-| 代码 | `verified-current` | 活动实现候选固定为 `137005de23aa8a258bdaae237e9946f50dd0f38a`，本轮不修改业务代码 |
+| 代码 | `candidate-fixed` | 固定功能验收候选为 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e`，本轮不修改业务代码 |
 | 运行态 | `pending` | 85/85 XCTest 与 iOS 26.5 模拟器通过；最终候选真机和系统版本门禁未完成 |
 | 文档 | `changed-and-verified` | 现役基线使用稳定文件名；仓库根入口收口为 `00→04` 编号式生命周期目录 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
