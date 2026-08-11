@@ -140,14 +140,49 @@ enum V02PrimaryTypographyPolicy {
     static let contextLabelMaximumScale: CGFloat = 1.25
 }
 
+/// One accessibility fallback for every NOTE1-owned glass surface. The
+/// geometry stays unchanged when Reduce Transparency is enabled; only the
+/// material becomes opaque and its edge gains enough contrast to remain
+/// legible against the light canvas.
+enum V02GlassSurfacePolicy {
+    static let reducedTransparencyBorderOpacity = 0.50
+    static let reducedTransparencyShadowOpacity = 0.08
+
+    static func usesOpaqueSurface(reduceTransparency: Bool) -> Bool {
+        reduceTransparency
+    }
+}
+
 struct GlassSurface: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     var cornerRadius: CGFloat = NoteTheme.cornerRadius
     var strokeOpacity: Double = 0.76
     var castsShadow = true
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
+        if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
+            content
+                .background(NoteTheme.paper)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(
+                            NoteTheme.ink.opacity(
+                                V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
+                            ),
+                            lineWidth: 1
+                        )
+                }
+                .shadow(
+                    color: castsShadow
+                        ? NoteTheme.ink.opacity(V02GlassSurfacePolicy.reducedTransparencyShadowOpacity)
+                        : .clear,
+                    radius: castsShadow ? 12 : 0,
+                    y: castsShadow ? 5 : 0
+                )
+        } else if #available(iOS 26.0, *) {
             content
                 .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
                 .shadow(
@@ -236,74 +271,6 @@ struct V02PresentedContentAccessibilityIsolation: UIViewRepresentable {
     }
 }
 
-struct RoundGlassButton: View {
-    let systemName: String
-    let label: String
-    var selected = false
-    var size = NoteTheme.controlSize
-    var iconSize: CGFloat = 19
-    var externallyPressed: Bool?
-    let action: () -> Void
-
-    @ViewBuilder
-    var body: some View {
-        if let externallyPressed {
-            button
-                .buttonStyle(.plain)
-                .modifier(
-                    RoundGlassPressedFeedback(
-                        isPressed: externallyPressed
-                    )
-                )
-        } else {
-            button
-                .buttonStyle(RoundGlassPressButtonStyle())
-        }
-    }
-
-    private var button: some View {
-        Button(action: action) {
-            visualLabel
-        }
-        .frame(width: size, height: size)
-        .contentShape(Circle())
-        .accessibilityLabel(label)
-    }
-
-    @ViewBuilder
-    private var visualLabel: some View {
-        iconLabel
-            .clipShape(Circle())
-            .overlay {
-                if !selected {
-                    Circle()
-                        .stroke(Color.white.opacity(0.68), lineWidth: 1)
-                }
-            }
-            .shadow(color: NoteTheme.ink.opacity(0.07), radius: 16, y: 7)
-    }
-
-    private var iconLabel: some View {
-        Image(systemName: systemName)
-            .font(.system(size: iconSize, weight: .semibold))
-            .foregroundStyle(selected ? .white : NoteTheme.ink)
-            .frame(width: size, height: size)
-            .background {
-                if selected {
-                    Circle().fill(NoteTheme.ink)
-                } else {
-                        Circle()
-                        .fill(Color.white.opacity(0.24))
-                        .overlay {
-                            Circle()
-                                .fill(NoteTheme.ink.opacity(0.014))
-                        }
-                }
-            }
-            .contentShape(Circle())
-    }
-}
-
 struct V02GlassIconButton: View {
     let systemName: String
     let label: String
@@ -317,6 +284,8 @@ struct V02GlassIconButton: View {
 }
 
 struct V02GlassIconLabel: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     let systemName: String
 
     var body: some View {
@@ -325,7 +294,20 @@ struct V02GlassIconLabel: View {
             .foregroundStyle(NoteTheme.ink)
             .frame(width: NoteTheme.controlSize, height: NoteTheme.controlSize)
             .background {
-                if #available(iOS 26.0, *) {
+                if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
+                    Circle()
+                        .fill(NoteTheme.paper)
+                        .frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize)
+                        .overlay {
+                            Circle()
+                                .stroke(
+                                    NoteTheme.ink.opacity(
+                                        V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
+                                    ),
+                                    lineWidth: 1
+                                )
+                        }
+                } else if #available(iOS 26.0, *) {
                     Color.clear.frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize).glassEffect(.regular.interactive(), in: .circle)
                 } else {
                     Circle()
@@ -501,6 +483,8 @@ struct V02SecondaryHeaderPlaceholder: View {
 }
 
 struct V02GlassTextButton: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     let title: String
     let action: () -> Void
 
@@ -514,7 +498,19 @@ struct V02GlassTextButton: View {
 
     @ViewBuilder
     private var textLabel: some View {
-        if #available(iOS 26.0, *) {
+        if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
+            labelContent
+                .background(NoteTheme.paper, in: Capsule())
+                .overlay {
+                    Capsule()
+                        .stroke(
+                            NoteTheme.ink.opacity(
+                                V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
+                            ),
+                            lineWidth: 1
+                        )
+                }
+        } else if #available(iOS 26.0, *) {
             labelContent
                 .glassEffect(.regular.interactive(), in: .capsule)
         } else {
@@ -605,53 +601,6 @@ struct PressScaleButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.965 : 1)
             .opacity(configuration.isPressed ? 0.84 : 1)
             .animation(NoteMotion.press(reduceMotion: reduceMotion), value: configuration.isPressed)
-    }
-}
-
-struct SharedTopBar: View {
-    var onBack: (() -> Void)?
-    let historySelected: Bool
-    let onHistory: () -> Void
-
-    var body: some View {
-        ZStack {
-            Text("NOTE1")
-                .noteFontCapped(
-                    size: 22,
-                    maximumScale: 1.3,
-                    weight: .medium,
-                    design: .rounded,
-                    relativeTo: .title3
-                )
-                .tracking(7)
-                .foregroundStyle(NoteTheme.ink)
-                .accessibilityAddTraits(.isHeader)
-
-            HStack {
-                Group {
-                    if let onBack {
-                        RoundGlassButton(
-                            systemName: "chevron.left",
-                            label: "返回",
-                            action: onBack
-                        )
-                    } else {
-                        Color.clear
-                    }
-                }
-                .frame(width: NoteTheme.controlSize, height: NoteTheme.controlSize)
-
-                Spacer()
-
-                RoundGlassButton(
-                    systemName: "clock.arrow.circlepath",
-                    label: "历史记录",
-                    selected: historySelected,
-                    action: onHistory
-                )
-            }
-        }
-        .frame(height: NoteTheme.topBarHeight)
     }
 }
 

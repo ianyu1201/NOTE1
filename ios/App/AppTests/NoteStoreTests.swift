@@ -1373,6 +1373,13 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertLessThanOrEqual(V02PrimaryTypographyPolicy.contextLabelMaximumScale, 1.5)
     }
 
+    func testV03GlassSurfacesUseOpaqueAccessibleFallback() {
+        XCTAssertFalse(V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: false))
+        XCTAssertTrue(V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: true))
+        XCTAssertGreaterThanOrEqual(V02GlassSurfacePolicy.reducedTransparencyBorderOpacity, 0.50)
+        XCTAssertGreaterThan(V02GlassSurfacePolicy.reducedTransparencyShadowOpacity, 0)
+    }
+
     func testV02AppSheetUsesStableMutuallyExclusiveIdentities() {
         func makeReceipt(collectionName: String) -> V02Receipt {
             V02Receipt(
