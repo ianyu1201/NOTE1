@@ -1,9 +1,9 @@
 # NOTE1 项目状态
 
 > 更新日期：2026-08-11
-> 当前版本：V0.3（MINOR）
-> 当前状态：`owner_closed_without_independent_acceptance`
-> 唯一当前阶段：V0.3 已由用户结束，准备转入 V0.4 S2 视觉与交互设计
+> 当前版本：V0.4（MINOR）
+> 当前状态：`defining`
+> 唯一当前阶段：S2 视觉与交互设计
 
 ## 1. 项目与路径身份
 
@@ -26,24 +26,24 @@
 
 | 字段 | 当前值 |
 | --- | --- |
-| `latest_observed` | `V0.3`，分支 `codex/note1-v03-product-design`；当前完整提交以该分支 `HEAD` 为准 |
+| `latest_observed` | `V0.4`，分支 `codex/note1-v04-visual-design`；当前完整提交以该分支 `HEAD` 为准 |
 | `current_approved` | `pending`；现有材料没有独立的版本批准记录，不把来源固定点推定为正式批准版本 |
-| `active_candidate` | `V0.3`，分支 `codex/note1-v03-product-design`；固定功能验收候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` |
-| `source_lineage` | `b403277d61335eaf1ea0c930faca338686624d8c` |
-| `governance_cycle_id` | `NOTE1-V03-GOV-20260811-01` |
-| `prd_status` | `scope_approved`；V0.3 功能闭环范围已确认，视觉基线和深入 UI/动画已隔离到 V0.4 |
-| `delivery_contract_status` | `approved`；用户于 2026-08-11 明确确认 V0.3 功能合同与 V0.4 视觉延期边界 |
-| `validation_status` | `locally_verified`；候选与此前 85/85 XCTest、iOS 26.5 模拟器构建/启动之间只有文档治理差异；不替代最终候选独立复验 |
-| `acceptance_status` | `owner_terminated / not_accepted`；任务 `019fef64-7488-7a73-abdc-269ffad58764` 由用户归档删除；中止前原始证据保存在 `634508463073563479cc58a6a1f6c7c61b594239`，未形成独立验收结论 |
-| `version_approval_status` | `not_approved`；用户选择直接进入 V0.4，不把 V0.3 写成正式批准版本 |
-| `archive_status` | `deferred`；没有版本批准，不触发前序归档或删除 |
-| `anti_drift_status` | 三份现役基线采用稳定路径且已唯一化；V0.3 功能合同与 V0.4 视觉/动效输入已分离；开发证据不自动升级为视觉基线 |
+| `active_candidate` | `V0.4`，分支 `codex/note1-v04-visual-design`；尚处 S2，不存在已批准视觉或实现候选 |
+| `source_lineage` | V0.3 关闭点 `b92d2a7938ebf9bf6bca91cde91a6cb9ded60273`；功能候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` |
+| `governance_cycle_id` | `NOTE1-V04-GOV-20260811-01` |
+| `prd_status` | `defining`；稳定 PRD 文件仍保存 V0.3 功能基线，待 V0.4 用户确认后就地更新 |
+| `delivery_contract_status` | `not_started`；V0.4 UI 实现与运行验收合同尚未形成 |
+| `validation_status` | `not_started`；V0.3 证据只作为非回归输入 |
+| `acceptance_status` | `not_applicable_at_S2` |
+| `version_approval_status` | `not_started` |
+| `archive_status` | `deferred`；V0.3 未获版本批准，不执行前序归档或删除 |
+| `anti_drift_status` | 单一稳定文档路径继续使用；V0.3 功能事实、V0.4 视觉输入和真实运行证据保持身份分离 |
 
 ## 3. 权威来源
 
-1. 稳定项目定位：`00_项目治理/PROJECT_BRIEF.md`；
-2. 产品、对象、范围和业务规则：`01_产品/NOTE1_PRD.md`；
-3. 页面、状态、功能交互、适配和无障碍：`02_设计/NOTE1_产品设计与交互规格.md`；视觉基线在 V0.4 另行建立；
+1. 稳定项目定位与当前阶段：`00_项目治理/PROJECT_BRIEF.md`、本文件；
+2. V0.3 功能来源基线与待更新的 V0.4 产品入口：`01_产品/NOTE1_PRD.md`；
+3. V0.3 功能交互来源与待建立的 V0.4 视觉基线：`02_设计/NOTE1_产品设计与交互规格.md`；
 4. 工程约束、非回归和运行验收：`03_工程/NOTE1_开发与运行验收基线.md`；
 5. 长期技术决定：`04_技术决策/`；
 6. 证据批次和提交映射：`03_工程/evidence/V0.3/MANIFEST.md`。
@@ -52,32 +52,31 @@
 
 ## 4. 已满足门禁
 
-- 根目录、分支、来源固定点和唯一活动候选已经明确；
+- 根目录、V0.4 分支、V0.3 关闭点和功能来源候选已经明确；
 - 三份 V0.3 现役基线和四个 ADR 路径有效；
 - 当前 worktree 在本治理开工时无未提交改动；
 - 候选代码已形成完整离线功能闭环，85/85 XCTest 与 iOS 26.5 模拟器构建/启动通过；
 - 当前没有已知未处置 P0/P1；用户已同意以现有功能为优化起点，但这不等于证明绝对没有 Bug。
-- V0.3 功能差量、四页可观察功能结果、状态矩阵、手势边界、非回归和运行验收合同已由用户确认；视觉与深入动效已隔离到 V0.4；
-- 固定功能验收候选为 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e`，启动包为 `03_工程/NOTE1_V0.3开发启动包.md`；
+- V0.3 功能候选、85/85 自动化基线与中止前部分运行证据已保存，可供 V0.4 做非回归；
+- 用户已明确要求结束 V0.3 并进入 V0.4 UI 与动画优化。
 
 ## 5. 未满足门禁
 
-- V0.3 不冻结视觉基线；四页视觉身份、UI 质感与深入动效已延期到 V0.4，不再作为 V0.3 阻断项；
-- 降低透明度同视口、真实手指连续拖拽、真机 VoiceOver、真实附件、第三方分享目的地、录音和 iOS 17–25 仍缺运行证据；
-- 历史开发证据多数只可追溯到进入 Git 的提交，没有独立 build ID；最终验收必须在新的固定候选上批量重取；
-- 独立功能验收未形成逐项结论，V0.3 不能声明为 `accepted` 或 `current_approved`；
-- AC-07、AC-10、AC-11、真机 VoiceOver、完整系统版本与其他未覆盖项继续作为 V0.4 非回归风险输入。
+- V0.4 的视觉原则、组件语言、四页确认稿、动画层级和减少动态效果方案尚未由用户确认；
+- V0.4 PRD 差量、设计状态矩阵、UI 实现约束和运行证据矩阵尚未冻结；
+- V0.3 未覆盖的 AC-07、AC-10、AC-11、真机 VoiceOver、系统版本与真实系统入口继续是非回归风险；
+- S3 冻结前不授权修改 `03_工程/ios/` 业务代码。
 
 ## 6. 下一步
 
-以 V0.3 固定功能候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` 及中止前原始证据为 V0.4 输入，创建 V0.4 产品与设计任务，先冻结 NOTE1 的视觉身份、四页 UI 和动画交互合同，再进入实现。不得补写 V0.3 已通过或创建 `v0.3.0` 标签。
+创建 `NOTE1｜V0.4｜01 视觉与交互设计` 任务：先查看当前模拟器和 V0.4 视觉输入，与用户逐项确认整体身份、四页 UI、组件和动画边界；确认结果就地写回三份稳定基线。S3 冻结前不开发。
 
 ## 7. 本轮知识治理状态
 
 | 事实面 | 状态 | 依据或边界 |
 | --- | --- | --- |
-| 代码 | `candidate-fixed` | 固定功能验收候选为 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e`，本轮不修改业务代码 |
-| 运行态 | `partial-accepted-by-owner-for-next-version-input` | 85/85 XCTest、iOS 26.5 模拟器及中止前部分运行取证可作为 V0.4 输入；不构成 V0.3 独立验收通过 |
+| 代码 | `source-fixed / no-v0.4-change` | V0.4 尚未修改业务代码；V0.3 功能候选为来源基线 |
+| 运行态 | `source-evidence-only` | 85/85 XCTest、iOS 26.5 模拟器及中止前部分运行取证只作为 V0.4 非回归输入 |
 | 文档 | `changed-and-verified` | 现役基线使用稳定文件名；仓库根入口收口为 `00→04` 编号式生命周期目录 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
 | 记忆 | `out-of-scope` | Codex 宿主生成记忆未获授权写入，本轮只维护仓库内权威文件 |
