@@ -13,14 +13,14 @@
 | `active_version_root` | `/Users/yusiyuan/Documents/NOTE1` |
 | `repo_root` | `/Users/yusiyuan/Documents/NOTE1` |
 | `staging_root` | 未单独物化；用户于 2026-08-11 明确要求只保留一个项目文件夹，V0.3 活动候选在唯一主工作树中维护 |
-| `archive_root` | 未物化独立代码归档；旧代码和文档由 `/Users/yusiyuan/Documents/NOTE1/.git` 的 Git 历史/标签保存，历史运行素材统一保存在 `03_工程/evidence/` |
+| `archive_root` | `/Users/yusiyuan/Documents/NOTE1/90_历史归档`；旧代码和文档仍由 Git 历史/标签保存，已关闭版本的运行材料按版本归档 |
 | `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git` |
 | 唯一工作树 | `/Users/yusiyuan/Documents/NOTE1`；隔离 worktree 已在完成接管和验证后注销 |
 | 当前正式任务 ID | `019fef8d-3ab6-7fe0-a374-ca2b7329ac72`（NOTE1｜V0.4｜01 视觉与交互设计） |
 
 拓扑为“编号式单仓库生命周期 + 单一主工作树”。源码只有一份活跃路径；不建立永久并行的 V0.1/V0.2/V0.3 源码副本。被取代的原目录重组已保存到安全分支 `codex/note1-original-layout-snapshot-20260811@86d7f0ae80546ba2ba3398beeec1d1d6ea05c38a`，不再占用第二个项目文件夹。
 
-仓库根目录按 Project Delivery Suite 的生命周期顺序固定为 `00_项目治理/`、`01_产品/`、`02_设计/`、`03_工程/`、`04_技术决策/`。活跃 iOS 工程保留技术栈名称 `03_工程/ios/`，运行材料收入 `03_工程/evidence/`。隐藏的 `.git/` 保存历史，不再额外复制一份“历史代码”目录。
+仓库根目录按 Project Delivery Suite 的生命周期顺序固定为 `00_项目治理/`、`01_产品/`、`02_设计/`、`03_工程/`、`04_技术决策/`、`90_历史归档/`。活跃 iOS 工程保留技术栈名称 `03_工程/ios/`；V0.1–V0.3 运行材料已迁入 `90_历史归档/<版本>/运行证据/`。隐藏的 `.git/` 保存代码与文档历史，不再额外复制一份“历史代码”目录。
 
 ## 2. 版本治理状态
 
@@ -36,8 +36,8 @@
 | `validation_status` | `not_started`；V0.3 证据只作为非回归输入 |
 | `acceptance_status` | `not_applicable_at_S2` |
 | `version_approval_status` | `not_started` |
-| `archive_status` | `deferred`；V0.3 未获版本批准，不执行前序归档或删除 |
-| `anti_drift_status` | 单一稳定文档路径继续使用；V0.3 功能事实、V0.4 视觉输入和真实运行证据保持身份分离 |
+| `archive_status` | `partial-complete`；V0.1–V0.3 运行材料已归档，代码与文档历史继续由 Git 保存；未删除原始材料 |
+| `anti_drift_status` | 单一稳定文档路径继续使用；现役工程与已关闭版本运行材料已物理分离，V0.3 视觉材料仅作为 V0.4 输入 |
 
 ## 3. 权威来源
 
@@ -46,7 +46,7 @@
 3. V0.3 功能交互来源与待建立的 V0.4 视觉基线：`02_设计/NOTE1_产品设计与交互规格.md`；
 4. 工程约束、非回归和运行验收：`03_工程/NOTE1_开发与运行验收基线.md`；
 5. 长期技术决定：`04_技术决策/`；
-6. 证据批次和提交映射：`03_工程/evidence/V0.3/MANIFEST.md`。
+6. 证据批次和提交映射：`90_历史归档/V0.3/运行证据/MANIFEST.md`。
 
 现役产品决定以 PRD 第 8 节实际列项为准，不从编号连续性反推缺失决定；UI 实现合同由工程基线维护；实施过程由 Git 和各证据批次 README 保存。此前在本文件中的完整实施流水账及历史批次编号可从治理前固定点 `137005de23aa8a258bdaae237e9946f50dd0f38a` 追溯，不再与当前状态并列。
 
@@ -77,7 +77,7 @@
 | --- | --- | --- |
 | 代码 | `source-fixed / no-v0.4-change` | V0.4 尚未修改业务代码；V0.3 功能候选为来源基线 |
 | 运行态 | `source-evidence-only` | 85/85 XCTest、iOS 26.5 模拟器及中止前部分运行取证只作为 V0.4 非回归输入 |
-| 文档 | `changed-and-verified` | 现役基线使用稳定文件名；仓库根入口收口为 `00→04` 编号式生命周期目录 |
+| 文档 | `changed-and-verified` | 现役基线使用稳定文件名；根入口收口为 `00→04` 现役生命周期目录加 `90_历史归档/` |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
 | 记忆 | `out-of-scope` | Codex 宿主生成记忆未获授权写入，本轮只维护仓库内权威文件 |
 | 工作区 | `verified-current` | `/Users/yusiyuan/Documents/NOTE1` 是唯一注册工作树；被取代布局只保留在安全 Git 分支中 |

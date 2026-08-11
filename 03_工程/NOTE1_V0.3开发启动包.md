@@ -22,7 +22,7 @@
 5. `02_设计/NOTE1_产品设计与交互规格.md`
 6. `03_工程/NOTE1_开发与运行验收基线.md`
 7. `04_技术决策/` 中全部现役 ADR
-8. `03_工程/evidence/V0.3/MANIFEST.md`
+8. `90_历史归档/V0.3/运行证据/MANIFEST.md`
 9. `03_工程/ios/App/App/` 活跃 Swift 入口与 `03_工程/ios/App/AppTests/`
 
 ## 3. 已确认范围
