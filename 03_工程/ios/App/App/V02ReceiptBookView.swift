@@ -369,7 +369,7 @@ struct V04ReceiptReaderView: View {
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.16), value: index)
+        .animation(.easeOut(duration: reduceMotion ? 0.16 : 0.30), value: index)
         .simultaneousGesture(receiptSwitchGesture)
         .accessibilityAdjustableAction { direction in
             switch direction {

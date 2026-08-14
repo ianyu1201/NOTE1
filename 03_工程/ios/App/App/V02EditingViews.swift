@@ -11,6 +11,8 @@ struct V02InspirationEditorView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var text = ""
     @State private var savedText = ""
+    @State private var sessionOriginalText = ""
+    @State private var didFinishEditSession = false
     @State private var pendingSaveTask: Task<Void, Never>?
     @State private var photos: [PhotosPickerItem] = []
     @State private var sourcePanel = false
@@ -69,14 +71,14 @@ struct V02InspirationEditorView: View {
                     guard startsAtLeadingEdge,
                           value.translation.width >= 72,
                           value.translation.width > abs(value.translation.height) * 1.2 else { return }
-                    saveNow()
-                    focused = false
-                    dismiss()
+                    closeEditor()
                 }
         )
         .onAppear {
             text = inspiration?.text ?? ""
             savedText = text
+            sessionOriginalText = text
+            didFinishEditSession = false
             // Keep the largest accessibility layout anchored at the start of
             // the long-text field so the page remains legible on entry. The
             // field is still fully editable; tapping it starts editing and
@@ -84,7 +86,10 @@ struct V02InspirationEditorView: View {
             guard !dynamicTypeSize.isAccessibilitySize else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { focused = true }
         }
-        .onDisappear { pendingSaveTask?.cancel(); saveNow() }
+        .onDisappear {
+            pendingSaveTask?.cancel()
+            _ = finishEditSession()
+        }
         .overlay(alignment: .bottom) { if sourcePanel { AttachmentSourcePanel(onSelect: selectSource, onCancel: { sourcePanel = false }).padding(.horizontal, 18).padding(.bottom, 82) } }
         .fileImporter(isPresented: $fileImporter, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
             Task { @MainActor in do { try add(try await AttachmentImporter.inputs(from: result.get())) } catch { reportError(error) } }
@@ -121,9 +126,7 @@ struct V02InspirationEditorView: View {
         }.buttonStyle(.plain).accessibilityIdentifier("v02.editor.addAttachment")
         Spacer()
         Button {
-            saveNow()
-            focused = false
-            dismiss()
+            closeEditor()
         } label: {
             Text("完成")
                 .noteFontCapped(size: 15, maximumScale: 1.25, weight: .semibold, relativeTo: .subheadline)
@@ -161,8 +164,41 @@ struct V02InspirationEditorView: View {
 
     private func selectSource(_ source: AttachmentSource) { sourcePanel = false; DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { if source == .photos { photoPicker = true } else { fileImporter = true } } }
     private func scheduleSave() { pendingSaveTask?.cancel(); guard text != savedText else { return }; pendingSaveTask = Task { @MainActor in try? await Task.sleep(for: .milliseconds(450)); guard !Task.isCancelled else { return }; saveNow() } }
-    private func saveNow() { guard text != savedText else { return }; do { try store.updateInspiration(inspirationID, text: text); savedText = text } catch { reportError(error) } }
-    private func closeEditor() { saveNow(); focused = false; dismiss() }
+    private func saveNow() {
+        guard text != savedText else { return }
+        do {
+            try store.updateInspiration(
+                inspirationID,
+                text: text,
+                recordsEffectiveEdit: false
+            )
+            savedText = text
+        } catch {
+            reportError(error)
+        }
+    }
+    private func finishEditSession() -> Bool {
+        guard !didFinishEditSession else { return true }
+        do {
+            try store.finishInspirationEditSession(
+                inspirationID,
+                originalText: sessionOriginalText,
+                finalText: text
+            )
+            savedText = text
+            didFinishEditSession = true
+            return true
+        } catch {
+            reportError(error)
+            return false
+        }
+    }
+    private func closeEditor() {
+        pendingSaveTask?.cancel()
+        guard finishEditSession() else { return }
+        focused = false
+        dismiss()
+    }
     private func add(_ inputs: [AttachmentInput]) throws { guard !inputs.isEmpty else { return }; try store.addImportedResources(inputs, to: inspirationID) }
 }
 

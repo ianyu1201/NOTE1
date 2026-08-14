@@ -68,7 +68,9 @@ struct V02AppShellView: View {
     }
 
     private var shouldHideTabBarAccessibility: Bool {
-        shouldHidePrimaryContentAccessibility || isCollectionWorkbenchPresented
+        shouldHidePrimaryContentAccessibility
+            || isCollectionWorkbenchPresented
+            || isCardOverlayPresented
     }
 
     private var shouldHideFloatingComposer: Bool {

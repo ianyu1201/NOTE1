@@ -282,6 +282,7 @@ private struct V02CollectionWorkbenchView: View {
     let onClose: () -> Void
     @State private var index = 0
     @State private var memberText = ""
+    @State private var memberSessionOriginalText = ""
     @State private var editingMemberID: UUID?
     @State private var pendingMemberSave: Task<Void, Never>?
     @State private var isShowingOutline = false
@@ -639,10 +640,12 @@ private struct V02CollectionWorkbenchView: View {
         guard members.indices.contains(index) else {
             editingMemberID = nil
             memberText = ""
+            memberSessionOriginalText = ""
             return
         }
         editingMemberID = members[index].id
         memberText = members[index].text
+        memberSessionOriginalText = memberText
     }
 
     private func scheduleMemberSave(for id: UUID) {
@@ -651,7 +654,13 @@ private struct V02CollectionWorkbenchView: View {
         pendingMemberSave = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(450))
             guard !Task.isCancelled else { return }
-            do { try store.updateInspiration(id, text: textToSave) }
+            do {
+                try store.updateInspiration(
+                    id,
+                    text: textToSave,
+                    recordsEffectiveEdit: false
+                )
+            }
             catch { reportError(error) }
         }
     }
@@ -659,11 +668,14 @@ private struct V02CollectionWorkbenchView: View {
     @discardableResult
     private func persistEditingMember() -> Bool {
         pendingMemberSave?.cancel()
-        guard let id = editingMemberID,
-              let member = members.first(where: { $0.id == id }),
-              member.text != memberText else { return true }
+        guard let id = editingMemberID else { return true }
         do {
-            try store.updateInspiration(id, text: memberText)
+            try store.finishInspirationEditSession(
+                id,
+                originalText: memberSessionOriginalText,
+                finalText: memberText
+            )
+            memberSessionOriginalText = memberText
             return true
         } catch {
             reportError(error)

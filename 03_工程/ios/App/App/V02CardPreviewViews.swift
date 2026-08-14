@@ -93,7 +93,7 @@ struct V02CardPreviewView: View {
         // The full-screen editor is presented by this page's navigation
         // stack. Hide the entire card surface, including its floating group
         // action, while the editor owns focus.
-        .accessibilityHidden(editingInspiration != nil)
+        .accessibilityHidden(editingInspiration != nil || localOverlayPresented)
         .onAppear { restoreCardPosition(in: cards) }
         .onChange(of: cards.map(\.id)) { _, _ in restoreCardPosition(in: cards) }
         .onChange(of: index) { _, newIndex in
@@ -107,24 +107,26 @@ struct V02CardPreviewView: View {
         .fullScreenCover(item: $editingInspiration, onDismiss: { onEditingChange(false) }) { inspiration in
             V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
         }
-        .overlay {
-            if isShowingCollectionPicker {
-                V02ExistingCollectionPicker(
-                    collections: store.activeCollections,
-                    memberCount: memberCount(for:),
-                    onCreate: {
-                        isShowingCollectionPicker = false
-                        newCollectionName = ""
-                        isShowingCreateCollection = true
-                    },
-                    onSelect: { collection in
-                        assignPendingInspiration(to: collection.id)
-                    },
-                    onDismiss: { isShowingCollectionPicker = false }
-                )
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                .zIndex(4)
-            }
+        .background {
+            V02PresentedContentAccessibilityIsolation(isPresented: isShowingCollectionPicker)
+                .frame(width: 0, height: 0)
+        }
+        .fullScreenCover(isPresented: $isShowingCollectionPicker) {
+            V02ExistingCollectionPicker(
+                collections: store.activeCollections,
+                memberCount: memberCount(for:),
+                onCreate: {
+                    isShowingCollectionPicker = false
+                    newCollectionName = ""
+                    isShowingCreateCollection = true
+                },
+                onSelect: { collection in
+                    assignPendingInspiration(to: collection.id)
+                },
+                onDismiss: { isShowingCollectionPicker = false }
+            )
+            .presentationBackground(.clear)
+            .interactiveDismissDisabled()
         }
         .alert("新建构思集", isPresented: $isShowingCreateCollection) {
             TextField("构思集名称", text: $newCollectionName)
@@ -156,6 +158,7 @@ struct V02CardPreviewView: View {
                 ) {
                     V02PrimaryHeaderTitle()
                 }
+                .accessibilityHidden(localOverlayPresented)
             }
         }
         }
@@ -329,10 +332,10 @@ private struct V02ExistingCollectionPicker: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Button("取消归入构思集", action: onDismiss)
+            Color.black.opacity(0.08)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.opacity(0.08))
-                .buttonStyle(.plain)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onDismiss)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
@@ -348,6 +351,8 @@ private struct V02ExistingCollectionPicker: View {
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .noteGlass(cornerRadius: 18, castsShadow: false)
                     .buttonStyle(RoundGlassPressButtonStyle())
+                ScrollView {
+                    LazyVStack(spacing: 10) {
                 ForEach(collections) { collection in
                     let count = memberCount(collection)
                     Button {
@@ -385,6 +390,10 @@ private struct V02ExistingCollectionPicker: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("v02.collection-picker.empty")
                 }
+                    }
+                }
+                .scrollIndicators(.hidden)
+                .frame(maxHeight: 300)
             }
             .padding(22)
             .background(NoteTheme.background, in: RoundedRectangle(cornerRadius: 28, style: .continuous))

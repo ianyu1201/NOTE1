@@ -337,6 +337,7 @@ final class V02Store: ObservableObject {
     func updateInspiration(
         _ id: UUID,
         text: String,
+        recordsEffectiveEdit: Bool = true,
         now: Date = .now
     ) throws {
         try transact { state in
@@ -346,7 +347,8 @@ final class V02Store: ObservableObject {
             guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !state.inspirations[index].resourceIDs.isEmpty else {
                 throw StoreError.emptyIdea
             }
-            if state.inspirations[index].text != text,
+            if recordsEffectiveEdit,
+               state.inspirations[index].text != text,
                let collectionID = state.inspirations[index].collectionID,
                let roundID = state.collections.first(where: { $0.id == collectionID })?.currentRoundID,
                let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID }) {
@@ -355,6 +357,34 @@ final class V02Store: ObservableObject {
             }
             state.inspirations[index].text = text
             state.inspirations[index].updatedAt = now
+        }
+    }
+
+    func finishInspirationEditSession(
+        _ id: UUID,
+        originalText: String,
+        finalText: String,
+        now: Date = .now
+    ) throws {
+        try transact { state in
+            guard let index = state.inspirations.firstIndex(where: { $0.id == id }) else {
+                throw V02DomainError.inspirationNotFound
+            }
+            guard !finalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || !state.inspirations[index].resourceIDs.isEmpty else {
+                throw StoreError.emptyIdea
+            }
+            let changedDuringSession = originalText != finalText
+            state.inspirations[index].text = finalText
+            state.inspirations[index].updatedAt = now
+            guard changedDuringSession,
+                  let collectionID = state.inspirations[index].collectionID,
+                  let roundID = state.collections.first(where: { $0.id == collectionID })?.currentRoundID,
+                  let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID }) else { return }
+            state.rounds[roundIndex].effectiveEditCount += 1
+            state.rounds[roundIndex].events.append(
+                .init(id: UUID(), kind: .inspirationEdited, occurredAt: now, inspirationID: id)
+            )
         }
     }
 

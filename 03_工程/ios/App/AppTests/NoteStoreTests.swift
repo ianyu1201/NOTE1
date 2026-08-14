@@ -393,6 +393,59 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.state.inspirations.first?.collectionID, collection.id)
     }
 
+    func testV04EffectiveEditCountsOneChangedSessionInsteadOfAutosaves() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("effective-edit-session"))
+        let inspiration = try store.createInspiration(text: "初稿")
+        let collection = try store.createCollectionAndRound(name: "编辑计数")
+        try store.assign(inspiration.id, to: collection.id)
+
+        try store.updateInspiration(
+            inspiration.id,
+            text: "自动保存一",
+            recordsEffectiveEdit: false
+        )
+        try store.updateInspiration(
+            inspiration.id,
+            text: "自动保存二",
+            recordsEffectiveEdit: false
+        )
+        try store.finishInspirationEditSession(
+            inspiration.id,
+            originalText: "初稿",
+            finalText: "最终稿"
+        )
+
+        let roundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
+        var round = try XCTUnwrap(store.state.rounds.first(where: { $0.id == roundID }))
+        XCTAssertEqual(round.effectiveEditCount, 1)
+        XCTAssertEqual(round.events.count(where: { $0.kind == .inspirationEdited }), 1)
+
+        try store.finishInspirationEditSession(
+            inspiration.id,
+            originalText: "最终稿",
+            finalText: "最终稿"
+        )
+        round = try XCTUnwrap(store.state.rounds.first(where: { $0.id == roundID }))
+        XCTAssertEqual(round.effectiveEditCount, 1)
+
+        XCTAssertThrowsError(
+            try store.finishInspirationEditSession(
+                inspiration.id,
+                originalText: "最终稿",
+                finalText: "   "
+            )
+        )
+        XCTAssertEqual(store.state.inspirations.first?.text, "最终稿")
+        XCTAssertEqual(
+            store.state.rounds.first(where: { $0.id == roundID })?.effectiveEditCount,
+            1
+        )
+
+        let receipt = try store.endRound(roundID)
+        XCTAssertEqual(receipt.snapshot.effectiveEditCount, 1)
+        XCTAssertEqual(receipt.snapshot.members.first?.text, "最终稿")
+    }
+
     func testV02TrashRestoresAnIndependentInspirationAndExpiresAtThirtyDays() throws {
         let v02Directory = directory.appendingPathComponent("trash")
         let store = V02Store(storageDirectory: v02Directory)
