@@ -2,8 +2,8 @@
 
 > 更新日期：2026-08-14
 > 当前版本：V0.4（MINOR）
-> 当前状态：`defining`
-> 唯一当前阶段：S2 视觉与交互设计
+> 当前状态：`building`
+> 唯一当前阶段：S4 开发准备 → S5 实施验证
 
 ## 1. 项目与路径身份
 
@@ -16,7 +16,8 @@
 | `archive_root` | `/Users/yusiyuan/Documents/NOTE1/90_历史归档`；旧代码和文档仍由 Git 历史/标签保存，已关闭版本的运行材料按版本归档 |
 | `git_common_dir` | `/Users/yusiyuan/Documents/NOTE1/.git` |
 | 唯一工作树 | `/Users/yusiyuan/Documents/NOTE1`；隔离 worktree 已在完成接管和验证后注销 |
-| 当前正式任务 ID | `019fef8d-3ab6-7fe0-a374-ca2b7329ac72`（NOTE1｜V0.4｜01 视觉与交互设计） |
+| 当前正式任务 ID | `019fffab-8669-76f0-b122-19fd9b1ff29c`（NOTE1｜V0.4｜02 UI 开发总控） |
+| 活动运行证据 | `/Users/yusiyuan/Documents/NOTE1/03_工程/运行证据/V0.4`；实现阶段按批次建立，版本关闭后迁入 `90_历史归档/V0.4/运行证据/` |
 
 拓扑为“编号式单仓库生命周期 + 单一主工作树”。源码只有一份活跃路径；不建立永久并行的 V0.1/V0.2/V0.3 源码副本。被取代的原目录重组已保存到安全分支 `codex/note1-original-layout-snapshot-20260811@86d7f0ae80546ba2ba3398beeec1d1d6ea05c38a`，不再占用第二个项目文件夹。
 
@@ -26,15 +27,15 @@
 
 | 字段 | 当前值 |
 | --- | --- |
-| `latest_observed` | `V0.4`，分支 `codex/note1-v04-visual-design`；当前完整提交以该分支 `HEAD` 为准 |
+| `latest_observed` | `V0.4`，分支 `codex/note1-v04-ui-development`；当前完整提交以该分支 `HEAD` 为准 |
 | `current_approved` | `pending`；现有材料没有独立的版本批准记录，不把来源固定点推定为正式批准版本 |
-| `active_candidate` | `V0.4`，分支 `codex/note1-v04-visual-design`；四页结构、“梅墨雾白”、“薄雾精密”、“原位渐进”、完整小票视觉/交互范围及无固定构思集容量已确认；动效手感与适配/无障碍转为开发后运行验收，实现候选仍不存在 |
+| `active_candidate` | `V0.4`，分支 `codex/note1-v04-ui-development`；从 S2 固定基线 `ea6ddbf7f0b85db567576e04e0f153557b2a47a6` 开始实现，候选尚未形成 |
 | `source_lineage` | V0.3 关闭点 `b92d2a7938ebf9bf6bca91cde91a6cb9ded60273`；功能候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` |
 | `governance_cycle_id` | `NOTE1-V04-GOV-20260811-01` |
-| `prd_status` | `defining / confirmed-for-s3`；四页结构、入口语义、完整小票范围及无固定构思集容量已就地更新，未被取代的 V0.3 功能继续作为来源 |
-| `delivery_contract_status` | `ready-for-s3-confirmation`；静态视觉与产品规则已确认，动效手感和适配/无障碍已形成开发后运行验收清单；等待用户明确授权进入 S3 |
-| `validation_status` | `not_started`；V0.3 证据只作为非回归输入 |
-| `acceptance_status` | `not_applicable_at_S2` |
+| `prd_status` | `confirmed-for-implementation`；四页结构、入口语义、完整小票范围及无固定构思集容量已就地更新，未被取代的 V0.3 功能继续作为来源 |
+| `delivery_contract_status` | `contracted`；用户已于 2026-08-14 明确授权进入 S4→S5 UI 开发 |
+| `validation_status` | `pending`；V0.3 证据只作为非回归输入，V0.4 实现尚无通过结论 |
+| `acceptance_status` | `not_started`；独立验收任务只在固定开发候选与证据索引形成后创建 |
 | `version_approval_status` | `not_started` |
 | `archive_status` | `organized`；V0.1–V0.3 运行材料和 V0.3 历史启动包已离开现役工程区，代码与其余文档历史继续由 Git 保存；未删除原始材料 |
 | `anti_drift_status` | `anti-drift enforced`；临时结构化覆盖核对 13 条高影响约束并得到 `semantic_coverage_passed`，单一现役入口、历史降权和 S3 下游边界快照均已具备 |
@@ -74,11 +75,11 @@
 - 卡片切换/收起、归入和构思切卡的实际阻尼、惯性与速度尚未实现，须在 S3 实际构建中调优并由用户体验确认；
 - 真机 VoiceOver、最大辅助字号、减少透明度、增强对比度及 iOS 17–当前支持版本尚未运行验收；验收合同已冻结，但不能写成结果已通过；
 - V0.3 未覆盖的 AC-07、AC-10、AC-11、真机 VoiceOver、系统版本与真实系统入口继续是非回归风险；
-- S3 冻结前不授权修改 `03_工程/ios/` 业务代码。
+- 开发尚未形成固定候选；任何构建、测试或开发者自评均不得提前写成独立验收或版本批准。
 
 ## 6. 下一步
 
-由任务 `019fef8d-3ab6-7fe0-a374-ca2b7329ac72` 收口 `NOTE1｜V0.4｜01 视觉与交互设计`：以已确认四页结构、“梅墨雾白”、“薄雾精密”、“原位渐进”、完整小票范围及无固定构思集容量为单一基线。下一步只有在用户明确授权后才进入 S3 UI 实现；实现中按 `AC-V04-06` 调优卡片/构思动效，并批量验收适配与无障碍，实际体验再由用户确认。本阶段不修改业务代码。
+由任务 `019fffab-8669-76f0-b122-19fd9b1ff29c` 推进 `NOTE1｜V0.4｜02 UI 开发总控`：从固定基线 `ea6ddbf7f0b85db567576e04e0f153557b2a47a6` 按共享系统、四页差量、小票、适配/无障碍和整体验证分波次实施；活动证据进入 `03_工程/运行证据/V0.4/`。发现需要改变已确认产品或视觉结果时暂停受影响实现并局部返回 S2 裁决。
 
 ## 7. 本轮知识治理状态
 
