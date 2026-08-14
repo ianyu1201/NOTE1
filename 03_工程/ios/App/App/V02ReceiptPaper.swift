@@ -256,7 +256,7 @@ struct V02ReceiptPaperSurface: View {
 
     var body: some View {
         V02ReceiptPaperShape()
-            .fill(NoteTheme.receiptPaperSurface)
+            .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.receiptObject))
             .overlay {
                 V02ReceiptPaperTexture()
                     .clipShape(V02ReceiptPaperShape())

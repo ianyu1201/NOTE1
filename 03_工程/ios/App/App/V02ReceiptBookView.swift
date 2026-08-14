@@ -97,7 +97,7 @@ struct V02ReceiptBookView: View {
             }
             .scrollIndicators(.hidden)
             .accessibilityHidden(localOverlayPresented)
-            .background(NoteTheme.background.ignoresSafeArea())
+            .background(NoteTheme.canvas.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
                     .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
@@ -245,7 +245,7 @@ struct V02ReceiptBookView: View {
     private var emptyBook: some View {
         ContentUnavailableView(
             "还没有构思小票",
-            systemImage: "ticket",
+            systemImage: V04ReceiptSymbolPolicy.emptyStateSymbol,
             description: Text("结束一轮构思并生成小票后，会在这里看到最新小票和全部索引。")
         )
         .frame(maxWidth: .infinity, minHeight: 430)
@@ -267,7 +267,7 @@ struct V02ReceiptBookView: View {
             HStack(spacing: 14) {
                 Image(systemName: isSelecting
                     ? (selectedIDs.contains(receipt.id) ? "checkmark.circle.fill" : "circle")
-                    : "ticket")
+                    : V04ReceiptSymbolPolicy.objectIndexSymbol)
                     .font(.system(size: 21, weight: .medium))
                     .foregroundStyle(NoteTheme.ink)
                     .frame(width: 44, height: 44)
@@ -423,14 +423,17 @@ struct V04ReceiptReaderView: View {
 
     var body: some View {
         GeometryReader { proxy in
+            let targetIndex = visibleTargetIndex
+            let transition = V04ReceiptSwitchTransitionPolicy.layout(
+                translation: dragTranslation,
+                extent: proxy.size.width,
+                hasTarget: targetIndex != nil,
+                reduceMotion: reduceMotion
+            )
             ZStack {
-                let targetIndex = visibleTargetIndex
-                let transition = V04ReceiptSwitchTransitionPolicy.layout(
-                    translation: dragTranslation,
-                    extent: proxy.size.width,
-                    hasTarget: targetIndex != nil,
-                    reduceMotion: reduceMotion
-                )
+                Rectangle()
+                    .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.receiptReaderHost))
+                    .ignoresSafeArea()
 
                 if let targetIndex, receipts.indices.contains(targetIndex) {
                     receiptDetail(at: targetIndex)
@@ -468,7 +471,8 @@ struct V04ReceiptReaderView: View {
         V02ReceiptDetailView(
             store: store,
             receipt: receipts[itemIndex],
-            onDelete: onDelete
+            onDelete: onDelete,
+            usesSharedReaderCanvas: true
         )
         .id(receipts[itemIndex].id)
     }

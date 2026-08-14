@@ -32,7 +32,9 @@ struct V02CardPreviewView: View {
     var body: some View {
         NavigationStack {
         ZStack(alignment: .top) {
-            NoteTheme.canvas.ignoresSafeArea()
+            Rectangle()
+                .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardPageHost))
+                .ignoresSafeArea()
             VStack(spacing: 0) {
                 if cards.isEmpty {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: emptyStateMessage)
@@ -151,7 +153,11 @@ struct V02CardPreviewView: View {
                 // its action cannot be mistaken for a tab tap.
                 .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
         }
-        .background(NoteTheme.canvas.ignoresSafeArea())
+        .background {
+            Rectangle()
+                .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardPageHost))
+                .ignoresSafeArea()
+        }
         .toolbar(.hidden, for: .navigationBar)
         .notePrimaryHeader {
             if editingInspiration == nil {
@@ -168,7 +174,11 @@ struct V02CardPreviewView: View {
         }
         }
         .accessibilityHidden(editingInspiration != nil)
-        .background(NoteTheme.canvas.ignoresSafeArea())
+        .background {
+            Rectangle()
+                .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardPageHost))
+                .ignoresSafeArea()
+        }
     }
 
     @ViewBuilder

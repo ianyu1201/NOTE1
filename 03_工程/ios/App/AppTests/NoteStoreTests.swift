@@ -1927,6 +1927,44 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
+    func testV04ObjectTransitionsKeepOnlyObjectsOnPaperSurfaces() {
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.cardPageHost, .canvas)
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.cardDragHost, .transparent)
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.cardNeighbourHost, .transparent)
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.cardObject, .notePaper)
+
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.receiptReaderHost, .canvas)
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.receiptPageHost, .transparent)
+        XCTAssertEqual(V04ObjectTransitionSurfacePolicy.receiptObject, .receiptPaper)
+    }
+
+    func testV04InspirationHomeHasNoInlineTuckAndDomainTuckRemainsAvailable() throws {
+        XCTAssertFalse(V04InspirationTimelineRowPolicy.showsInlineTuckAction)
+        XCTAssertTrue(V04InspirationTimelineRowPolicy.opensEditorFromWholeRow)
+        XCTAssertTrue(V04InspirationTimelineRowPolicy.supportsBatchSelection)
+
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("home-row-tuck-non-regression"))
+        let inspiration = try store.createInspiration(text: "首页整行进入编辑")
+        try store.tuckAway(inspiration.id)
+        let tuckedInspiration = try XCTUnwrap(
+            store.state.inspirations.first { $0.id == inspiration.id }
+        )
+        XCTAssertEqual(tuckedInspiration.cardFlowState, .tuckedAway)
+        try store.returnToCardFlow(inspiration.id)
+        let returnedInspiration = try XCTUnwrap(
+            store.state.inspirations.first { $0.id == inspiration.id }
+        )
+        XCTAssertEqual(returnedInspiration.cardFlowState, .visible)
+    }
+
+    func testV04ReceiptObjectIndexesUseMiniatureReceiptSymbolOutsideSelection() {
+        XCTAssertEqual(V04ReceiptSymbolPolicy.objectIndexSymbol, "receipt")
+        XCTAssertEqual(V04ReceiptSymbolPolicy.emptyStateSymbol, "receipt")
+        XCTAssertEqual(V04ReceiptSymbolPolicy.historyObjectSymbol, "receipt")
+        XCTAssertEqual(V04ReceiptSymbolPolicy.historyEmptyStateSymbol, "receipt")
+        XCTAssertNotEqual(V04ReceiptSymbolPolicy.objectIndexSymbol, "ticket")
+    }
+
     func testV04ReceiptExtractionUsesOnlyTopTwentyFourPointsAndFrozenThresholds() {
         XCTAssertEqual(V02ReceiptGesturePolicy.extractionHandleHeight, 24)
         XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 24)))

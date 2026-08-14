@@ -74,7 +74,6 @@ struct V02InspirationListView: View {
                                 isSelecting: isSelecting,
                                 isSelected: selectedIDs.contains(item.id),
                                 onSelect: { toggleSelection(item.id) },
-                                onTuck: { tuckAway(item.id) },
                                 onLongPress: {
                                     // Long press is the batch-selection entry
                                     // point. Preserve an existing selection and
@@ -229,14 +228,6 @@ struct V02InspirationListView: View {
         }.first
     }
 
-    private func tuckAway(_ id: UUID) {
-        do {
-            try store.tuckAway(id)
-        } catch {
-            reportError(error)
-        }
-    }
-
 }
 private struct V02InspirationDateGroup: Identifiable {
     let date: Date
@@ -251,7 +242,6 @@ private struct V02InspirationTimelineRow: View {
     let isSelecting: Bool
     let isSelected: Bool
     let onSelect: () -> Void
-    let onTuck: () -> Void
     let onLongPress: () -> Void
     let onOpen: () -> Void
 
@@ -265,15 +255,6 @@ private struct V02InspirationTimelineRow: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isSelected ? "取消选择" : "选择灵感")
-            } else {
-                Button("收起灵感", systemImage: "minus.circle", action: onTuck)
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                    .frame(width: 44, height: 44)
-                    .contentShape(.circle)
-                    .buttonStyle(.plain)
-                    .disabled(inspiration.cardFlowState == .tuckedAway)
             }
             Button(action: onOpen) {
                 HStack(alignment: .top, spacing: 16) {
@@ -308,6 +289,7 @@ private struct V02InspirationTimelineRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         // Let a completed long press win over the nested tap button. Using a
         // simultaneous recognizer would also fire the button on release and

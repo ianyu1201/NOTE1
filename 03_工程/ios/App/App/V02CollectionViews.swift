@@ -1052,7 +1052,7 @@ private struct V02HistoryEntryRow: View {
                 V02ReceiptPaperShape()
                     .fill(NoteTheme.paper.opacity(0.95))
                     .overlay { V02ReceiptPaperShape().stroke(NoteTheme.secondaryInk.opacity(0.2), lineWidth: 1) }
-                Image(systemName: "ticket")
+                Image(systemName: V04ReceiptSymbolPolicy.historyObjectSymbol)
                     .font(.system(size: 22, weight: .medium))
                     .foregroundStyle(NoteTheme.secondaryInk)
             }
@@ -1152,7 +1152,7 @@ private struct V02HistoryEmptyState: View {
         case .all: "clock.arrow.circlepath"
         case .tuckedAway: "archivebox"
         case .thinkingHistory: "folder"
-        case .receipts: "ticket"
+        case .receipts: V04ReceiptSymbolPolicy.historyEmptyStateSymbol
         }
     }
 

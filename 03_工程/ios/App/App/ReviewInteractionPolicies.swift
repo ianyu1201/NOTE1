@@ -65,3 +65,50 @@ enum V02CollectionOperationPolicy {
         activeCollectionCount <= 0
     }
 }
+
+enum V04ObjectTransitionSurface: Equatable {
+    case canvas
+    case transparent
+    case notePaper
+    case receiptPaper
+}
+
+/// Card and receipt transitions share one explicit surface contract: the
+/// viewport owns the app canvas, transition hosts stay transparent, and only
+/// the bounded content object draws paper.
+enum V04ObjectTransitionSurfacePolicy {
+    static let cardPageHost: V04ObjectTransitionSurface = .canvas
+    static let cardDragHost: V04ObjectTransitionSurface = .transparent
+    static let cardNeighbourHost: V04ObjectTransitionSurface = .transparent
+    static let cardObject: V04ObjectTransitionSurface = .notePaper
+
+    static let receiptReaderHost: V04ObjectTransitionSurface = .canvas
+    static let receiptPageHost: V04ObjectTransitionSurface = .transparent
+    static let receiptObject: V04ObjectTransitionSurface = .receiptPaper
+
+    static func style(for surface: V04ObjectTransitionSurface) -> AnyShapeStyle {
+        switch surface {
+        case .canvas:
+            AnyShapeStyle(NoteTheme.canvas)
+        case .transparent:
+            AnyShapeStyle(Color.clear)
+        case .notePaper:
+            AnyShapeStyle(NoteTheme.paperSurface)
+        case .receiptPaper:
+            AnyShapeStyle(NoteTheme.receiptPaperSurface)
+        }
+    }
+}
+
+enum V04InspirationTimelineRowPolicy {
+    static let showsInlineTuckAction = false
+    static let opensEditorFromWholeRow = true
+    static let supportsBatchSelection = true
+}
+
+enum V04ReceiptSymbolPolicy {
+    static let objectIndexSymbol = "receipt"
+    static let emptyStateSymbol = "receipt"
+    static let historyObjectSymbol = "receipt"
+    static let historyEmptyStateSymbol = "receipt"
+}

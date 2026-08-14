@@ -7,6 +7,7 @@ struct V02ReceiptDetailView: View {
     @ObservedObject var store: V02Store
     let receipt: V02Receipt
     let onDelete: ((Set<UUID>) -> Void)?
+    let usesSharedReaderCanvas: Bool
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -24,18 +25,22 @@ struct V02ReceiptDetailView: View {
     init(
         store: V02Store,
         receipt: V02Receipt,
-        onDelete: ((Set<UUID>) -> Void)? = nil
+        onDelete: ((Set<UUID>) -> Void)? = nil,
+        usesSharedReaderCanvas: Bool = false
     ) {
         self.store = store
         self.receipt = receipt
         self.onDelete = onDelete
+        self.usesSharedReaderCanvas = usesSharedReaderCanvas
         _template = State(initialValue: V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources))
     }
 
     var body: some View {
         NavigationStack {
             ZStack {
-                NoteTheme.background.ignoresSafeArea()
+                Rectangle()
+                    .fill(V04ObjectTransitionSurfacePolicy.style(for: pageHostSurface))
+                    .ignoresSafeArea()
                 ScrollView {
                     longTicket
                     .padding(.horizontal, 12)
@@ -48,6 +53,7 @@ struct V02ReceiptDetailView: View {
             .toolbar(.hidden, for: .navigationBar)
             .notePrimaryHeader { receiptPageHeader }
         }
+        .background(V04ObjectTransitionSurfacePolicy.style(for: pageHostSurface))
         .accessibilityHidden(isPresentingChildSheet)
         .background {
             V02PresentedContentAccessibilityIsolation(isPresented: isPresentingChildSheet)
@@ -104,7 +110,13 @@ struct V02ReceiptDetailView: View {
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
-        .background(NoteTheme.background)
+        .background(V04ObjectTransitionSurfacePolicy.style(for: pageHostSurface))
+    }
+
+    private var pageHostSurface: V04ObjectTransitionSurface {
+        usesSharedReaderCanvas
+            ? V04ObjectTransitionSurfacePolicy.receiptPageHost
+            : V04ObjectTransitionSurfacePolicy.receiptReaderHost
     }
 
     private var isPresentingChildSheet: Bool {

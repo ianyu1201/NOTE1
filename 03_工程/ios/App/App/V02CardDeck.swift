@@ -180,6 +180,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 }
                 if verticalOffset > 0, resolvedIndex > 0 {
                     paper(cards[resolvedIndex - 1])
+                        .background(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardNeighbourHost))
                         .offset(y: -proxy.size.height + displayedVerticalOffset)
                         .scaleEffect(0.985 + verticalProgress * 0.015)
                         .opacity(0.72 + verticalProgress * 0.28)
@@ -187,6 +188,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 }
                 if verticalOffset < 0, resolvedIndex + 1 < cards.count {
                     paper(cards[resolvedIndex + 1])
+                        .background(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardNeighbourHost))
                         .offset(y: proxy.size.height + displayedVerticalOffset)
                         .scaleEffect(0.985 + verticalProgress * 0.015)
                         .opacity(0.72 + verticalProgress * 0.28)
@@ -229,6 +231,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardDragHost))
             .clipped()
         }
         // Keep the operation slot and page indicator visible at the largest
@@ -244,7 +247,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         content(card)
             .padding(26)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(NoteTheme.paperSurface, in: RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous))
+            .background(
+                V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject),
+                in: RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
                     .stroke(NoteTheme.paperBorder, lineWidth: 1)
@@ -293,7 +299,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
 
     private var paperLayer: some View {
         RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-            .fill(NoteTheme.paperSurface)
+            .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject))
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
                     .stroke(NoteTheme.paperBorder, lineWidth: 1)
@@ -305,7 +311,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
 
     private var paperEdge: some View {
         RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-            .fill(NoteTheme.paperSurface)
+            .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject))
             .overlay {
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
                     .stroke(NoteTheme.paperBorder, lineWidth: 1)
