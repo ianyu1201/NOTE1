@@ -256,7 +256,9 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                     .padding(.top, 10)
                     .accessibilityHidden(true)
             }
-            .shadow(color: NoteTheme.ink.opacity(0.12), radius: 24, y: 13)
+            // Keep the paper separated from the continuous canvas without a
+            // full-width shadow band below the card edge.
+            .shadow(color: NoteTheme.ink.opacity(0.055), radius: 12, y: 5)
             .padding(.horizontal, paperHorizontalPadding)
     }
 

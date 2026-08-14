@@ -14,7 +14,9 @@ enum NoteTheme {
     static let canvasBottom = Color(red: 0.953, green: 0.945, blue: 0.957)
     static let canvas = canvasTop
     static let paper = Color(red: 0.992, green: 0.988, blue: 0.994)
-    static let receiptPaper = Color(red: 0.988, green: 0.988, blue: 0.984)
+    // Thermal paper stays neutral/cool white; keep the blue channel at least as
+    // bright as red/green so the surface never drifts toward yellow or kraft.
+    static let receiptPaper = Color(red: 0.988, green: 0.989, blue: 0.992)
     static let receiptInk = Color(red: 0.075, green: 0.078, blue: 0.085)
     static let receiptSecondaryInk = Color(red: 0.37, green: 0.38, blue: 0.41)
     static let receiptDivider = receiptInk.opacity(0.16)
@@ -49,9 +51,9 @@ enum NoteTheme {
 
     static let receiptPaperSurface = LinearGradient(
         colors: [
-            Color(red: 0.998, green: 0.998, blue: 0.996),
+            Color(red: 0.998, green: 0.999, blue: 1.000),
             receiptPaper,
-            Color(red: 0.958, green: 0.958, blue: 0.954)
+            Color(red: 0.972, green: 0.973, blue: 0.976)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing

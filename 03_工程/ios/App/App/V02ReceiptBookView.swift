@@ -15,6 +15,8 @@ struct V02ReceiptBookView: View {
     @State private var detailReceipt: V02Receipt?
     @State private var undoTrashEntryIDs = Set<UUID>()
     @State private var templateOverrides: [UUID: V02ReceiptTemplate] = [:]
+    @State private var latestExtractionTranslation: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var selectedReceipts: [V02Receipt] {
         store.state.receipts.filter { selectedIDs.contains($0.id) }
@@ -58,11 +60,26 @@ struct V02ReceiptBookView: View {
                                 .frame(height: 286, alignment: .top)
                                 .clipped()
                                 .contentShape(Rectangle())
+                                .offset(y: latestExtractionTranslation)
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("最新小票，\(latest.snapshot.collectionName)，\(latest.statistics.roundTitle)")
                             .accessibilityHint("双击查看完整小票")
                             .accessibilityIdentifier("v04.receipt.latest")
+                            .overlay(alignment: .top) {
+                                Button {
+                                    detailReceipt = latest
+                                } label: {
+                                    Rectangle()
+                                        .fill(Color.clear)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: V02ReceiptGesturePolicy.extractionHandleHeight)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .highPriorityGesture(latestExtractionGesture(for: latest))
+                                .accessibilityHidden(true)
+                            }
                         }
 
                         Text("全部小票")
@@ -283,6 +300,50 @@ struct V02ReceiptBookView: View {
         .accessibilityHint(isSelecting ? "双击切换选择" : "双击查看完整小票")
     }
 
+    private func latestExtractionGesture(for receipt: V02Receipt) -> some Gesture {
+        DragGesture(
+            minimumDistance: V02ReceiptGesturePolicy.lockDistance,
+            coordinateSpace: .local
+        )
+        .onChanged { value in
+            guard V02ReceiptGesturePolicy.canStartExtraction(at: value.startLocation),
+                  value.translation.height > 0,
+                  V02ReceiptGesturePolicy.axis(for: value.translation) == .downward else {
+                latestExtractionTranslation = 0
+                return
+            }
+
+            // Keep the latest preview connected to the pull while retaining a
+            // little resistance so a long drag does not throw the root page
+            // out of place.
+            let extractionScale: CGFloat = reduceMotion ? 0.24 : 0.68
+            let extractionLimit: CGFloat = reduceMotion ? 16 : 128
+            latestExtractionTranslation = min(value.translation.height * extractionScale, extractionLimit)
+        }
+        .onEnded { value in
+            let startsAtHandle = V02ReceiptGesturePolicy.canStartExtraction(at: value.startLocation)
+            let isDownward = V02ReceiptGesturePolicy.axis(for: value.translation) == .downward
+            let extracts = startsAtHandle
+                && isDownward
+                && V02ReceiptGesturePolicy.shouldExtract(
+                    value.translation.height,
+                    predictedEndTranslation: value.predictedEndTranslation.height
+                )
+
+            if extracts {
+                // The full-screen reader owns the receipt after this point;
+                // reset the preview before presenting it so a cancelled
+                // presentation cannot leave a displaced root page behind.
+                latestExtractionTranslation = 0
+                detailReceipt = receipt
+            } else {
+                withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
+                    latestExtractionTranslation = 0
+                }
+            }
+        }
+    }
+
     private func templateFor(_ receipt: V02Receipt) -> V02ReceiptTemplate {
         templateOverrides[receipt.id]
             ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
@@ -343,6 +404,9 @@ struct V04ReceiptReaderView: View {
     let onDelete: (Set<UUID>) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var index: Int
+    @State private var dragAxis: V02ReceiptGestureAxis = .none
+    @State private var dragTranslation: CGFloat = 0
+    @State private var transitionTargetIndex: Int?
 
     init(
         store: V02Store,
@@ -358,20 +422,37 @@ struct V04ReceiptReaderView: View {
     }
 
     var body: some View {
-        ZStack {
-            if receipts.indices.contains(index) {
-                V02ReceiptDetailView(
-                    store: store,
-                    receipt: receipts[index],
-                    onDelete: onDelete
+        GeometryReader { proxy in
+            ZStack {
+                let targetIndex = visibleTargetIndex
+                let transition = V04ReceiptSwitchTransitionPolicy.layout(
+                    translation: dragTranslation,
+                    extent: proxy.size.width,
+                    hasTarget: targetIndex != nil,
+                    reduceMotion: reduceMotion
                 )
-                .id(receipts[index].id)
-                .transition(.opacity)
+
+                if let targetIndex, receipts.indices.contains(targetIndex) {
+                    receiptDetail(at: targetIndex)
+                        .offset(x: transition.targetOffset)
+                        .scaleEffect(transition.targetScale)
+                        .opacity(targetOpacity(for: dragTranslation, extent: proxy.size.width))
+                        .accessibilityHidden(true)
+                        .allowsHitTesting(false)
+                }
+
+                if receipts.indices.contains(index) {
+                    receiptDetail(at: index)
+                        .offset(x: transition.currentOffset)
+                        .scaleEffect(transition.currentScale)
+                        .opacity(currentOpacity(for: dragTranslation, extent: proxy.size.width, hasTarget: targetIndex != nil))
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .simultaneousGesture(receiptSwitchGesture(extent: proxy.size.width))
         }
-        .animation(.easeOut(duration: reduceMotion ? 0.16 : 0.30), value: index)
-        .simultaneousGesture(receiptSwitchGesture)
         .accessibilityAdjustableAction { direction in
+            guard !receipts.isEmpty else { return }
             switch direction {
             case .increment:
                 index = min(index + 1, receipts.count - 1)
@@ -383,17 +464,108 @@ struct V04ReceiptReaderView: View {
         }
     }
 
-    private var receiptSwitchGesture: some Gesture {
+    private func receiptDetail(at itemIndex: Int) -> some View {
+        V02ReceiptDetailView(
+            store: store,
+            receipt: receipts[itemIndex],
+            onDelete: onDelete
+        )
+        .id(receipts[itemIndex].id)
+    }
+
+    private var visibleTargetIndex: Int? {
+        if let transitionTargetIndex {
+            return transitionTargetIndex
+        }
+        guard dragAxis == .horizontal else { return nil }
+        return V02ReceiptGesturePolicy.candidateIndex(
+            index: index,
+            count: receipts.count,
+            translation: dragTranslation
+        )
+    }
+
+    private func currentOpacity(
+        for translation: CGFloat,
+        extent: CGFloat,
+        hasTarget: Bool
+    ) -> Double {
+        guard reduceMotion, hasTarget else { return 1 }
+        let progress = min(abs(translation) / max(abs(extent), 1), 1)
+        return Double(1 - progress)
+    }
+
+    private func targetOpacity(for translation: CGFloat, extent: CGFloat) -> Double {
+        guard reduceMotion else { return 1 }
+        let progress = min(abs(translation) / max(abs(extent), 1), 1)
+        return Double(progress)
+    }
+
+    private func receiptSwitchGesture(extent: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: V02ReceiptGesturePolicy.lockDistance)
+            .onChanged { value in
+                guard transitionTargetIndex == nil else { return }
+                if dragAxis == .none {
+                    guard V02ReceiptGesturePolicy.axis(for: value.translation) == .horizontal else {
+                        return
+                    }
+                    dragAxis = .horizontal
+                }
+                guard dragAxis == .horizontal else { return }
+                dragTranslation = value.translation.width
+            }
             .onEnded { value in
-                guard V02ReceiptGesturePolicy.axis(for: value.translation) == .horizontal,
-                      let target = V02ReceiptGesturePolicy.horizontalTarget(
-                        index: index,
-                        count: receipts.count,
-                        translation: value.translation.width,
-                        predictedEndTranslation: value.predictedEndTranslation.width
-                      ) else { return }
-                index = target
+                guard transitionTargetIndex == nil else { return }
+                guard dragAxis == .horizontal else {
+                    dragTranslation = 0
+                    return
+                }
+
+                let candidate = V02ReceiptGesturePolicy.candidateIndex(
+                    index: index,
+                    count: receipts.count,
+                    translation: value.translation.width
+                )
+                let target = V02ReceiptGesturePolicy.horizontalTarget(
+                    index: index,
+                    count: receipts.count,
+                    translation: value.translation.width,
+                    predictedEndTranslation: value.predictedEndTranslation.width
+                )
+                let duration: TimeInterval = reduceMotion ? 0.16 : 0.30
+
+                if let target {
+                    transitionTargetIndex = target
+                    let direction: CGFloat = value.translation.width < 0 ? -1 : 1
+                    let finalTranslation = direction * max(abs(extent), 1)
+                    withAnimation(
+                        reduceMotion
+                            ? .easeOut(duration: duration)
+                            : .smooth(duration: duration)
+                    ) {
+                        dragTranslation = finalTranslation
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
+                        guard transitionTargetIndex == target else { return }
+                        index = target
+                        dragTranslation = 0
+                        transitionTargetIndex = nil
+                        dragAxis = .none
+                    }
+                } else {
+                    // Keep any revealed neighbour in the stack while the
+                    // current receipt returns to centre. The index is never
+                    // changed for an under-threshold or boundary attempt.
+                    transitionTargetIndex = candidate
+                    withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
+                        dragTranslation = 0
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
+                        guard transitionTargetIndex == candidate else { return }
+                        transitionTargetIndex = nil
+                        dragAxis = .none
+                    }
+                }
             }
     }
 }

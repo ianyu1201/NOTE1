@@ -58,13 +58,6 @@ struct V02ReceiptPaper: View {
             return resource
         }
     }
-    private var memberText: String {
-        receipt.snapshot.members
-            .map { $0.text.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: isPreview ? 10 : 16) {
             header
@@ -86,12 +79,11 @@ struct V02ReceiptPaper: View {
         }
         .padding(.horizontal, isPreview ? 20 : 24)
         .padding(.bottom, isPreview ? 18 : 24)
-        .padding(.top, isPreview ? 48 : 24)
+        .padding(.top, isPreview ? 42 : 24)
         .frame(minHeight: minimumHeight ?? (isPreview ? 258 : nil), alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(NoteTheme.receiptInk)
         .background(paperSurface)
-        .overlay { ticketNotches.clipShape(V02ReceiptPaperShape()) }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(resolvedTemplate.rawValue)，\(receipt.snapshot.collectionName)，\(receipt.snapshot.members.count) 条灵感")
     }
@@ -252,46 +244,101 @@ struct V02ReceiptPaper: View {
     }
 
     private var paperSurface: some View {
+        V02ReceiptPaperSurface(strokeOpacity: isPreview ? 0.9 : 1)
+    }
+}
+
+/// A paper-only surface shared by previews and full receipt reading. The
+/// texture is deliberately generated from fixed arithmetic rather than an
+/// image asset so every render stays deterministic and cheap.
+struct V02ReceiptPaperSurface: View {
+    var strokeOpacity: Double = 1
+
+    var body: some View {
         V02ReceiptPaperShape()
             .fill(NoteTheme.receiptPaperSurface)
+            .overlay {
+                V02ReceiptPaperTexture()
+                    .clipShape(V02ReceiptPaperShape())
+            }
             .overlay {
                 V02ReceiptPaperShape()
                     .fill(
                         LinearGradient(
                             colors: [
-                                NoteTheme.receiptInk.opacity(0.014),
+                                Color.white.opacity(0.018),
                                 .clear,
-                                Color.white.opacity(0.22),
+                                NoteTheme.receiptInk.opacity(0.008),
                                 .clear,
-                                NoteTheme.receiptInk.opacity(0.012)
+                                Color.white.opacity(0.012)
                             ],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
+                    .clipShape(V02ReceiptPaperShape())
             }
             .overlay {
                 V02ReceiptPaperShape()
-                    .stroke(NoteTheme.receiptDivider.opacity(isPreview ? 0.9 : 1), lineWidth: 1)
+                    .stroke(NoteTheme.receiptDivider.opacity(strokeOpacity), lineWidth: 1)
             }
-            .shadow(color: NoteTheme.receiptInk.opacity(0.04), radius: 3, y: 1)
-            .shadow(color: NoteTheme.receiptInk.opacity(0.14), radius: 20, y: 12)
+            .shadow(color: NoteTheme.receiptInk.opacity(0.035), radius: 2, y: 1)
+            .shadow(color: NoteTheme.receiptInk.opacity(0.09), radius: 12, y: 7)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
+}
 
-    private var ticketNotches: some View {
-        GeometryReader { proxy in
-            ZStack {
-                Circle()
-                    .fill(NoteTheme.background)
-                    .frame(width: 14, height: 14)
-                    .position(x: 0, y: proxy.size.height * 0.66)
-                Circle()
-                    .fill(NoteTheme.background)
-                    .frame(width: 14, height: 14)
-                    .position(x: proxy.size.width, y: proxy.size.height * 0.66)
+private struct V02ReceiptPaperTexture: View {
+    var body: some View {
+        Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: false) { context, size in
+            guard size.width > 0, size.height > 0 else { return }
+
+            var horizontalFibers = Path()
+            let rowSpacing: CGFloat = 14
+            let rowCount = Int(size.height / rowSpacing) + 2
+            for row in 0..<rowCount {
+                let y = CGFloat(row) * rowSpacing + CGFloat((row * 7) % 5) - 1
+                var x = CGFloat((row * 17) % 23) - 12
+                var segment = 0
+                while x < size.width {
+                    let length = 17 + CGFloat((row * 11 + segment * 7) % 19)
+                    let yDrift = CGFloat((row + segment * 3) % 3) - 1
+                    horizontalFibers.move(to: CGPoint(x: x, y: y + yDrift))
+                    horizontalFibers.addLine(to: CGPoint(x: min(x + length, size.width), y: y + yDrift))
+                    x += length + 13 + CGFloat((row * 5 + segment * 11) % 17)
+                    segment += 1
+                }
             }
+            context.stroke(
+                horizontalFibers,
+                with: .color(NoteTheme.receiptInk.opacity(0.018)),
+                style: StrokeStyle(lineWidth: 0.35, lineCap: .round)
+            )
+
+            var verticalFibers = Path()
+            let columnSpacing: CGFloat = 31
+            let columnCount = Int(size.width / columnSpacing) + 2
+            for column in 0..<columnCount {
+                let x = CGFloat(column) * columnSpacing + CGFloat((column * 13) % 11) - 5
+                var y = CGFloat((column * 19) % 27) - 16
+                var segment = 0
+                while y < size.height {
+                    let length = 11 + CGFloat((column * 7 + segment * 5) % 15)
+                    verticalFibers.move(to: CGPoint(x: x, y: y))
+                    verticalFibers.addLine(to: CGPoint(x: x, y: min(y + length, size.height)))
+                    y += length + 35 + CGFloat((column * 3 + segment * 13) % 21)
+                    segment += 1
+                }
+            }
+            context.stroke(
+                verticalFibers,
+                with: .color(NoteTheme.receiptInk.opacity(0.010)),
+                style: StrokeStyle(lineWidth: 0.3, lineCap: .round)
+            )
         }
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

@@ -658,9 +658,8 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02ReceiptGesturePolicy.normalizedProgress(translation: 10, extent: 0), 1, accuracy: 0.001)
         XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(70))
         XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(120))
-        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 72)))
-        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 96)))
-        XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 97)))
+        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 24)))
+        XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 24.1)))
         XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 420)))
     }
 
@@ -1837,5 +1836,84 @@ final class NoteStoreTests: XCTestCase {
             4.5,
             "Secondary labels must remain readable on the darkest canvas stop."
         )
+    }
+
+    func testV04ReceiptExtractionUsesOnlyTopTwentyFourPointsAndFrozenThresholds() {
+        XCTAssertEqual(V02ReceiptGesturePolicy.extractionHandleHeight, 24)
+        XCTAssertTrue(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 24)))
+        XCTAssertFalse(V02ReceiptGesturePolicy.canStartExtraction(at: CGPoint(x: 120, y: 24.1)))
+        XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(95.9))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(96))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(70, predictedEndTranslation: 140))
+    }
+
+    func testV04ReceiptSwitchTransitionKeepsCurrentAndTargetConnectedToDrag() {
+        let layout = V04ReceiptSwitchTransitionPolicy.layout(
+            translation: -120,
+            extent: 360,
+            hasTarget: true,
+            reduceMotion: false
+        )
+
+        XCTAssertEqual(layout.currentOffset, -120, accuracy: 0.001)
+        XCTAssertEqual(layout.targetOffset, 240, accuracy: 0.001)
+        XCTAssertLessThan(layout.currentScale, 1)
+        XCTAssertLessThan(layout.targetScale, 1)
+        XCTAssertGreaterThan(layout.targetScale, layout.currentScale)
+
+        let reduced = V04ReceiptSwitchTransitionPolicy.layout(
+            translation: -120,
+            extent: 360,
+            hasTarget: true,
+            reduceMotion: true
+        )
+        XCTAssertLessThanOrEqual(abs(reduced.currentOffset), 16)
+        XCTAssertLessThanOrEqual(abs(reduced.targetOffset), 16)
+        XCTAssertEqual(reduced.currentScale, 1, accuracy: 0.001)
+        XCTAssertEqual(reduced.targetScale, 1, accuracy: 0.001)
+    }
+
+    func testV04EndRoundConfirmationOwnsAccessibilityTreeOnlyWhilePresented() {
+        XCTAssertFalse(V04EndRoundAccessibilityPolicy.hidesWorkbench(isPresented: false))
+        XCTAssertTrue(V04EndRoundAccessibilityPolicy.hidesWorkbench(isPresented: true))
+        XCTAssertTrue(V04EndRoundAccessibilityPolicy.showsConfirmation(isPresented: true))
+        XCTAssertFalse(V04EndRoundAccessibilityPolicy.showsConfirmation(isPresented: false))
+    }
+
+    func testV04ReceiptTabUsesMiniatureReceiptSemanticSymbol() {
+        XCTAssertEqual(V02PrimaryPage.receipts.symbol, "receipt")
+        XCTAssertNotEqual(V02PrimaryPage.receipts.symbol, "ticket")
+    }
+
+    func testV04AssignmentUndoRestoresSameInspirationAndOriginalCollection() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("assignment-undo"))
+        let original = try store.createCollectionAndRound(name: "原构思集")
+        let target = try store.createCollectionAndRound(name: "目标构思集")
+        let inspiration = try store.createInspiration(text: "保持同一对象")
+        try store.assign(inspiration.id, to: original.id)
+
+        let undo = try store.assignWithUndo(inspiration.id, to: target.id)
+        XCTAssertEqual(undo.inspirationID, inspiration.id)
+        XCTAssertEqual(undo.originalCollectionID, original.id)
+
+        try store.undoAssignment(undo)
+        XCTAssertEqual(store.state.inspirations.first(where: { $0.id == inspiration.id })?.id, inspiration.id)
+        XCTAssertEqual(store.state.inspirations.first(where: { $0.id == inspiration.id })?.collectionID, original.id)
+
+        let independent = try store.createInspiration(text: "原本未归入")
+        let independentUndo = try store.assignWithUndo(independent.id, to: target.id)
+        try store.undoAssignment(independentUndo)
+        XCTAssertEqual(store.state.inspirations.first(where: { $0.id == independent.id })?.id, independent.id)
+        XCTAssertNil(store.state.inspirations.first(where: { $0.id == independent.id })?.collectionID)
+
+        let newTargetInspiration = try store.createInspiration(text: "新建目标后撤回")
+        let collectionIDsBeforeCreate = Set(store.state.collections.map(\.id))
+        let newTargetUndo = try store.createCollectionAndRoundAndAssignWithUndo(
+            inspirationID: newTargetInspiration.id,
+            name: "短时目标"
+        )
+        try store.undoAssignment(newTargetUndo)
+        XCTAssertNil(store.state.inspirations.first(where: { $0.id == newTargetInspiration.id })?.collectionID)
+        XCTAssertEqual(Set(store.state.collections.map(\.id)), collectionIDsBeforeCreate)
     }
 }

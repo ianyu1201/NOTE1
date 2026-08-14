@@ -184,40 +184,26 @@ struct V02ReceiptDetailView: View {
     }
 
     private var longTicket: some View {
-        ZStack(alignment: .top) {
-            V02ReceiptPaperShape()
-                .fill(NoteTheme.receiptPaperSurface)
-                .overlay {
-                    V02ReceiptPaperShape()
-                        .stroke(NoteTheme.receiptDivider, lineWidth: 1)
-                }
-                .shadow(color: NoteTheme.receiptInk.opacity(0.14), radius: 18, y: 10)
-
-            VStack(alignment: .leading, spacing: 20) {
-                receiptHeader
-                V02ThermalReceiptRule(style: .double)
-                timeline
-                ForEach(filteredMembers, id: \.member.inspirationID) { item in
-                    memberSection(index: item.index, member: item.member)
-                }
-                if filteredMembers.isEmpty {
-                    Text(searchQuery.isEmpty ? "这一轮没有可显示的灵感。" : "没有匹配的灵感或附件。")
-                        .foregroundStyle(NoteTheme.receiptSecondaryInk)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                V02ThermalReceiptRule(style: .double)
-                footer
+        VStack(alignment: .leading, spacing: 20) {
+            receiptHeader
+            V02ThermalReceiptRule(style: .double)
+            timeline
+            ForEach(filteredMembers, id: \.member.inspirationID) { item in
+                memberSection(index: item.index, member: item.member)
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 62)
-            .padding(.bottom, 30)
-            .foregroundStyle(NoteTheme.receiptInk)
-
-            // The clip sits over the paper's top edge; content begins below it.
-            V02TicketClip()
-                .padding(.horizontal, 12)
-                .accessibilityHidden(true)
+            if filteredMembers.isEmpty {
+                Text(searchQuery.isEmpty ? "这一轮没有可显示的灵感。" : "没有匹配的灵感或附件。")
+                    .foregroundStyle(NoteTheme.receiptSecondaryInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            V02ThermalReceiptRule(style: .double)
+            footer
         }
+        .padding(.horizontal, 22)
+        .padding(.top, 26)
+        .padding(.bottom, 30)
+        .foregroundStyle(NoteTheme.receiptInk)
+        .background { V02ReceiptPaperSurface() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(template.rawValue)，\(receipt.snapshot.collectionName)小票，\(receipt.statistics.detailText)")
         .accessibilityAction(named: "在小票中查找") { isSearching = true }

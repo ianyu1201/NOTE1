@@ -16,7 +16,7 @@ enum V02PrimaryPage: String, CaseIterable, Identifiable {
         case .inspirations: "sparkles"
         case .cards: "rectangle.on.rectangle"
         case .collections: "folder"
-        case .receipts: "ticket"
+        case .receipts: "receipt"
         }
     }
 }

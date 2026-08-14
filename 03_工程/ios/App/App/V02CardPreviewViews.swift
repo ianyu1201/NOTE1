@@ -14,6 +14,7 @@ struct V02CardPreviewView: View {
     @State private var index = 0
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
     @State private var undoTuckedInspiration: V02Inspiration?
+    @State private var undoAssignmentToken: V02AssignmentUndoToken?
     @State private var editingInspiration: V02Inspiration?
     @State private var isShowingCollectionPicker = false
     @State private var isShowingCreateCollection = false
@@ -57,7 +58,11 @@ struct V02CardPreviewView: View {
                         } onTuck: { card in
                             switch card {
                             case .inspiration(let inspiration):
-                                do { try store.tuckAway(inspiration.id); undoTuckedInspiration = inspiration }
+                                do {
+                                    try store.tuckAway(inspiration.id)
+                                    undoAssignmentToken = nil
+                                    undoTuckedInspiration = inspiration
+                                }
                                 catch { reportError(error) }
                             }
                         }
@@ -200,6 +205,37 @@ struct V02CardPreviewView: View {
                 guard !Task.isCancelled else { return }
                 self.undoTuckedInspiration = nil
             }
+        } else if let undoAssignmentToken {
+            HStack(spacing: 12) {
+                Text("已归入构思集")
+                    .allowsHitTesting(false)
+                Spacer(minLength: 8)
+                Button("撤回") {
+                    do { try store.undoAssignment(undoAssignmentToken) }
+                    catch { reportError(error) }
+                    self.undoAssignmentToken = nil
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .padding(.horizontal, 15)
+                .frame(minHeight: 38)
+                .foregroundStyle(NoteTheme.ink)
+                .noteGlass(cornerRadius: 20, castsShadow: false)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(NoteTheme.paper.opacity(0.82))
+                    .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.74), lineWidth: 1) }
+                    .allowsHitTesting(false)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .task(id: undoAssignmentToken.targetCollectionID) {
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                self.undoAssignmentToken = nil
+            }
         }
     }
 
@@ -219,7 +255,9 @@ struct V02CardPreviewView: View {
             return
         }
         do {
-            try store.assign(inspirationID, to: collectionID)
+            let token = try store.assignWithUndo(inspirationID, to: collectionID)
+            undoTuckedInspiration = nil
+            undoAssignmentToken = token
             pendingInspirationID = nil
             isShowingCollectionPicker = false
         } catch {
@@ -231,10 +269,12 @@ struct V02CardPreviewView: View {
         guard let inspirationID = pendingInspirationID else { return }
         do {
             let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            _ = try store.createCollectionAndRoundAndAssign(
+            let token = try store.createCollectionAndRoundAndAssignWithUndo(
                 inspirationID: inspirationID,
                 name: trimmed.isEmpty ? nil : trimmed
             )
+            undoTuckedInspiration = nil
+            undoAssignmentToken = token
             pendingInspirationID = nil
         } catch {
             reportError(error)
@@ -396,7 +436,7 @@ private struct V02ExistingCollectionPicker: View {
                 .frame(maxHeight: 300)
             }
             .padding(22)
-            .background(NoteTheme.background, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .background(NoteTheme.canvas, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
             .overlay { RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(Color.white.opacity(0.8), lineWidth: 1) }
             .padding(.horizontal, 14)
             .padding(.bottom, NoteTheme.navigationHeight + 12)

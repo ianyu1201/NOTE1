@@ -38,6 +38,37 @@ enum V02CardPreviewEntry: Identifiable {
     }
 }
 
+/// Reversible context for a successful "归入构思集" operation. The token
+/// carries the source identity rather than a copied inspiration, so undo can
+/// put the same persisted object back where it came from.
+struct V02AssignmentUndoToken: Equatable, Sendable {
+    let inspirationID: UUID
+    let originalCollectionID: UUID?
+    let targetCollectionID: UUID
+    let originalRoundID: UUID?
+    let originalMemberIndex: Int?
+    let originalCardFlowState: V02CardFlowState
+    let targetWasCreated: Bool
+
+    init(
+        inspirationID: UUID,
+        originalCollectionID: UUID?,
+        targetCollectionID: UUID,
+        originalRoundID: UUID?,
+        originalMemberIndex: Int?,
+        originalCardFlowState: V02CardFlowState,
+        targetWasCreated: Bool = false
+    ) {
+        self.inspirationID = inspirationID
+        self.originalCollectionID = originalCollectionID
+        self.targetCollectionID = targetCollectionID
+        self.originalRoundID = originalRoundID
+        self.originalMemberIndex = originalMemberIndex
+        self.originalCardFlowState = originalCardFlowState
+        self.targetWasCreated = targetWasCreated
+    }
+}
+
 enum StoreError: LocalizedError {
     case attachmentTooLarge(name: String)
     case emptyIdea
@@ -513,6 +544,43 @@ final class V02Store: ObservableObject {
         return created
     }
 
+    /// Atomic create-and-assign variant used by the card-preview success
+    /// feedback. The returned token still points at the original inspiration
+    /// (and its original collection, if any), so a newly created target can
+    /// be undone through the same path as an existing target.
+    @discardableResult
+    func createCollectionAndRoundAndAssignWithUndo(
+        inspirationID: UUID,
+        name: String? = nil,
+        now: Date = .now
+    ) throws -> V02AssignmentUndoToken {
+        guard let inspiration = state.inspirations.first(where: { $0.id == inspirationID }) else {
+            throw V02DomainError.inspirationNotFound
+        }
+        let originalCollectionID = inspiration.collectionID
+        let originalRoundID = originalCollectionID.flatMap { sourceCollectionID in
+            state.collections.first(where: { $0.id == sourceCollectionID })?.currentRoundID
+        }
+        let originalMemberIndex = originalRoundID.flatMap { roundID in
+            state.rounds.first(where: { $0.id == roundID })?.memberIDs.firstIndex(of: inspirationID)
+        }
+        let originalCardFlowState = inspiration.cardFlowState
+        let collection = try createCollectionAndRoundAndAssign(
+            inspirationID: inspirationID,
+            name: name,
+            now: now
+        )
+        return V02AssignmentUndoToken(
+            inspirationID: inspirationID,
+            originalCollectionID: originalCollectionID,
+            targetCollectionID: collection.id,
+            originalRoundID: originalRoundID,
+            originalMemberIndex: originalMemberIndex,
+            originalCardFlowState: originalCardFlowState,
+            targetWasCreated: true
+        )
+    }
+
     func assign(_ inspirationID: UUID, to collectionID: UUID) throws {
         try transact { state in
             try V02DomainEngine.assign(
@@ -520,6 +588,109 @@ final class V02Store: ObservableObject {
                 to: collectionID,
                 in: &state
             )
+        }
+    }
+
+    /// Assigns an inspiration and returns enough source context to undo that
+    /// exact move during the transient success window. The operation remains
+    /// one persisted transaction; no copied inspiration is created.
+    @discardableResult
+    func assignWithUndo(
+        _ inspirationID: UUID,
+        to collectionID: UUID,
+        now: Date = .now
+    ) throws -> V02AssignmentUndoToken {
+        guard let inspiration = state.inspirations.first(where: { $0.id == inspirationID }) else {
+            throw V02DomainError.inspirationNotFound
+        }
+        let originalCollectionID = inspiration.collectionID
+        let originalRoundID = originalCollectionID.flatMap { collectionID in
+            state.collections.first(where: { $0.id == collectionID })?.currentRoundID
+        }
+        let originalMemberIndex = originalRoundID.flatMap { roundID in
+            state.rounds.first(where: { $0.id == roundID })?.memberIDs.firstIndex(of: inspirationID)
+        }
+        let token = V02AssignmentUndoToken(
+            inspirationID: inspirationID,
+            originalCollectionID: originalCollectionID,
+            targetCollectionID: collectionID,
+            originalRoundID: originalRoundID,
+            originalMemberIndex: originalMemberIndex,
+            originalCardFlowState: inspiration.cardFlowState,
+            targetWasCreated: false
+        )
+        try transact { state in
+            try V02DomainEngine.assign(
+                inspirationID: inspirationID,
+                to: collectionID,
+                in: &state,
+                now: now
+            )
+        }
+        return token
+    }
+
+    /// Restores the original collection identity and membership captured by
+    /// `assignWithUndo`. A stale token is rejected rather than moving an
+    /// inspiration that the user has since assigned elsewhere.
+    func undoAssignment(
+        _ token: V02AssignmentUndoToken,
+        now: Date = .now
+    ) throws {
+        try transact { state in
+            guard let inspirationIndex = state.inspirations.firstIndex(where: { $0.id == token.inspirationID }) else {
+                throw V02DomainError.inspirationNotFound
+            }
+            guard state.inspirations[inspirationIndex].collectionID == token.targetCollectionID else {
+                throw StoreError.invalidOperation("这次归入已经发生变化，无法撤回。")
+            }
+            guard let targetCollection = state.collections.first(where: { $0.id == token.targetCollectionID }),
+                  let targetRoundID = targetCollection.currentRoundID,
+                  let targetRoundIndex = state.rounds.firstIndex(where: { $0.id == targetRoundID && $0.state == .thinking }) else {
+                throw StoreError.invalidOperation("这次归入已经结束，无法撤回。")
+            }
+
+            state.rounds[targetRoundIndex].memberIDs.removeAll { $0 == token.inspirationID }
+            state.rounds[targetRoundIndex].events.append(
+                .init(id: UUID(), kind: .memberRemoved, occurredAt: now, inspirationID: token.inspirationID)
+            )
+
+            if let originalCollectionID = token.originalCollectionID {
+                guard let originalCollection = state.collections.first(where: { $0.id == originalCollectionID }) else {
+                    throw StoreError.invalidOperation("原构思集已不存在，无法撤回这次归入。")
+                }
+                // An ended source collection has no current round, but its
+                // ended round already retains this member. Restore the
+                // collection identity without mutating that frozen history.
+                if let originalRoundID = token.originalRoundID ?? originalCollection.currentRoundID {
+                    guard let originalRoundIndex = state.rounds.firstIndex(where: { $0.id == originalRoundID && $0.state == .thinking }) else {
+                        throw StoreError.invalidOperation("原构思集已结束，无法撤回这次归入。")
+                    }
+                    let insertionIndex = min(
+                        max(token.originalMemberIndex ?? state.rounds[originalRoundIndex].memberIDs.count, 0),
+                        state.rounds[originalRoundIndex].memberIDs.count
+                    )
+                    state.rounds[originalRoundIndex].memberIDs.insert(token.inspirationID, at: insertionIndex)
+                    state.rounds[originalRoundIndex].events.append(
+                        .init(id: UUID(), kind: .memberAdded, occurredAt: now, inspirationID: token.inspirationID)
+                    )
+                }
+                state.inspirations[inspirationIndex].collectionID = originalCollectionID
+            } else {
+                state.inspirations[inspirationIndex].collectionID = nil
+            }
+            state.inspirations[inspirationIndex].cardFlowState = token.originalCardFlowState
+            state.inspirations[inspirationIndex].updatedAt = now
+
+            // A successful new-collection assignment must not leave an empty
+            // shell behind when the transient undo is used. Existing targets
+            // are preserved because they may have pre-existing context.
+            if token.targetWasCreated,
+               state.rounds[targetRoundIndex].memberIDs.isEmpty,
+               let targetCollectionIndex = state.collections.firstIndex(where: { $0.id == token.targetCollectionID }) {
+                state.rounds.remove(at: targetRoundIndex)
+                state.collections.remove(at: targetCollectionIndex)
+            }
         }
     }
 

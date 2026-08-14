@@ -8,7 +8,10 @@ enum V02ReceiptGesturePolicy {
     static let horizontalPredictedThreshold: CGFloat = 120
     static let downwardThreshold: CGFloat = 96
     static let downwardPredictedThreshold: CGFloat = 140
-    static let extractionHandleHeight: CGFloat = 96
+    /// Only the first 24pt of the latest-paper preview owns the downward
+    /// extraction gesture. Keeping this edge narrow leaves the rest of the
+    /// paper free for ordinary vertical reading/scrolling.
+    static let extractionHandleHeight: CGFloat = 24
     static let boundaryResistance: CGFloat = 0.24
 
     static func axis(for translation: CGSize) -> V02ReceiptGestureAxis {
@@ -59,7 +62,81 @@ enum V02ReceiptGesturePolicy {
     }
 
     static func canStartExtraction(at location: CGPoint) -> Bool {
-        location.y <= extractionHandleHeight
+        location.y >= 0 && location.y <= extractionHandleHeight
+    }
+}
+
+/// The two papers involved in a horizontal receipt switch share one layout
+/// calculation. This keeps the current paper and its neighbour connected to
+/// the finger throughout the gesture instead of waiting for the end event and
+/// cross-fading between unrelated snapshots.
+struct V04ReceiptSwitchTransitionLayout: Equatable {
+    let currentOffset: CGFloat
+    let targetOffset: CGFloat
+    let currentScale: CGFloat
+    let targetScale: CGFloat
+}
+
+enum V04ReceiptSwitchTransitionPolicy {
+    /// A small amount of scale is enough to establish depth without making
+    /// the receipt look like it is shrinking away from the reader.
+    private static let currentScaleTravel: CGFloat = 0.08
+    private static let targetScaleBase: CGFloat = 0.96
+    private static let targetScaleTravel: CGFloat = 0.05
+    private static let maximumTargetScale: CGFloat = 0.99
+    private static let reducedMotionTravel: CGFloat = 16
+
+    static func layout(
+        translation: CGFloat,
+        extent: CGFloat,
+        hasTarget: Bool,
+        reduceMotion: Bool
+    ) -> V04ReceiptSwitchTransitionLayout {
+        let safeExtent = max(abs(extent), 1)
+        let progress = min(abs(translation) / safeExtent, 1)
+
+        if reduceMotion {
+            // Reduce Motion retains the relationship between the two papers,
+            // but limits travel to a short displacement and removes scaling.
+            let travel = min(abs(translation), reducedMotionTravel)
+            let direction: CGFloat = translation < 0 ? -1 : (translation > 0 ? 1 : 0)
+            let currentOffset = direction * travel
+            let targetOffset = hasTarget ? -currentOffset : 0
+            return V04ReceiptSwitchTransitionLayout(
+                currentOffset: currentOffset,
+                targetOffset: targetOffset,
+                currentScale: 1,
+                targetScale: 1
+            )
+        }
+
+        guard hasTarget else {
+            // At the first/last receipt, resist the attempted move rather than
+            // exposing a phantom target or allowing the deck to loop.
+            return V04ReceiptSwitchTransitionLayout(
+                currentOffset: translation * V02ReceiptGesturePolicy.boundaryResistance,
+                targetOffset: 0,
+                currentScale: 1,
+                targetScale: 1
+            )
+        }
+
+        let direction: CGFloat = translation < 0 ? -1 : (translation > 0 ? 1 : 0)
+        let currentOffset = translation
+        // The neighbour starts one viewport away and therefore arrives at the
+        // centre as the current receipt leaves it.
+        let targetOffset = translation + (direction * safeExtent * -1)
+        let currentScale = 1 - (currentScaleTravel * progress)
+        let targetScale = min(
+            maximumTargetScale,
+            targetScaleBase + (targetScaleTravel * progress)
+        )
+        return V04ReceiptSwitchTransitionLayout(
+            currentOffset: currentOffset,
+            targetOffset: targetOffset,
+            currentScale: currentScale,
+            targetScale: targetScale
+        )
     }
 }
 

@@ -1,5 +1,19 @@
 import SwiftUI
 
+/// Keeps the workbench and its end-round confirmation as two mutually
+/// exclusive accessibility surfaces. The confirmation is a SwiftUI overlay
+/// in the same visual host, so the policy is deliberately state-only and can
+/// be asserted without constructing a view hierarchy.
+enum V04EndRoundAccessibilityPolicy {
+    static func hidesWorkbench(isPresented: Bool) -> Bool {
+        isPresented
+    }
+
+    static func showsConfirmation(isPresented: Bool) -> Bool {
+        isPresented
+    }
+}
+
 struct V02CollectionListView: View {
     @ObservedObject var store: V02Store
     @Binding var isWorkbenchPresented: Bool
@@ -54,7 +68,7 @@ struct V02CollectionListView: View {
             // not leave the covered collection rows in the VoiceOver order;
             // they remain underneath for the visual transition only.
             .accessibilityHidden(workingCollection != nil || isGenerationPresented)
-            .background(NoteTheme.background.ignoresSafeArea())
+            .background(NoteTheme.canvas.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Color.clear
                     .frame(height: V02NavigationLayoutPolicy.primaryContentBottomPadding)
@@ -77,6 +91,7 @@ struct V02CollectionListView: View {
                 .zIndex(2)
             }
           }
+          .background(NoteTheme.canvas.ignoresSafeArea())
           .toolbar(.hidden, for: .navigationBar)
           .notePrimaryHeader {
               if workingCollection == nil && !isGenerationPresented {
@@ -258,7 +273,7 @@ private struct V04EndRoundConfirmationView: View {
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(NoteTheme.background.ignoresSafeArea())
+        .background(NoteTheme.canvas.ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("v04.end-round-confirmation")
     }
@@ -311,36 +326,38 @@ private struct V02CollectionWorkbenchView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            workbenchContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.top, 8)
-                .background(NoteTheme.background.ignoresSafeArea())
-                .toolbar(.hidden, for: .navigationBar)
-                .notePrimaryHeader { workbenchHeader }
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Button("上一张卡片") { moveCard(by: -1) }
-                            .disabled(index <= 0)
-                        Button("下一张卡片") { moveCard(by: 1) }
-                            .disabled(index + 1 >= members.count)
-                        Spacer()
-                        Button("收起键盘") { editorFocused = false }
+        ZStack {
+            if !V04EndRoundAccessibilityPolicy.hidesWorkbench(isPresented: isEnding) {
+                NavigationStack {
+                    workbenchContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 8)
+                        .background(NoteTheme.canvas.ignoresSafeArea())
+                        .toolbar(.hidden, for: .navigationBar)
+                        .notePrimaryHeader { workbenchHeader }
+                        .toolbar {
+                            ToolbarItemGroup(placement: .keyboard) {
+                                Button("上一张卡片") { moveCard(by: -1) }
+                                    .disabled(index <= 0)
+                                Button("下一张卡片") { moveCard(by: 1) }
+                                    .disabled(index + 1 >= members.count)
+                                Spacer()
+                                Button("收起键盘") { editorFocused = false }
+                            }
+                        }
+                        .onAppear { syncMemberText() }
+                        .onChange(of: index) { _, _ in
+                            persistEditingMember()
+                            syncMemberText()
+                        }
+                        .onChange(of: members.map(\.id)) { _, ids in
+                            index = min(index, max(ids.count - 1, 0))
+                            syncMemberText()
+                        }
+                        .onDisappear { persistEditingMember() }
                     }
-                }
-                .onAppear { syncMemberText() }
-                .onChange(of: index) { _, _ in
-                    persistEditingMember()
-                    syncMemberText()
-                }
-                .onChange(of: members.map(\.id)) { _, ids in
-                    index = min(index, max(ids.count - 1, 0))
-                    syncMemberText()
-                }
-                .onDisappear { persistEditingMember() }
-        }
-        .overlay {
-            if isEnding, let round {
+                    .accessibilityHidden(isPresentingWorkbenchSheet)
+            } else if V04EndRoundAccessibilityPolicy.showsConfirmation(isPresented: isEnding), let round {
                 V04EndRoundConfirmationView(
                     round: round,
                     members: members,
@@ -363,7 +380,6 @@ private struct V02CollectionWorkbenchView: View {
                 .padding(.bottom, V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding)
             }
         }
-        .accessibilityHidden(isPresentingWorkbenchSheet || isEnding)
         .background {
             V02PresentedContentAccessibilityIsolation(isPresented: isPresentingWorkbenchSheet)
                 .frame(width: 0, height: 0)
@@ -386,7 +402,7 @@ private struct V02CollectionWorkbenchView: View {
                 }
                 .environment(\.editMode, $outlineEditMode)
                 .scrollContentBackground(.hidden)
-                .background(NoteTheme.background.ignoresSafeArea())
+                .background(NoteTheme.canvas.ignoresSafeArea())
                 .toolbar(.hidden, for: .navigationBar)
                 .notePrimaryHeader { outlineHeader }
             }
@@ -492,7 +508,7 @@ private struct V02CollectionWorkbenchView: View {
             .padding(.horizontal, NoteTheme.horizontalPadding)
         }
         .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
-        .background(NoteTheme.background)
+        .background(NoteTheme.canvas)
     }
 
     private var outlineHeader: some View {
