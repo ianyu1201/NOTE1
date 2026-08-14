@@ -397,6 +397,22 @@ final class V02Store: ObservableObject {
         finalText: String,
         now: Date = .now
     ) throws {
+        // A presentation-only disappearance (for example, opening the
+        // end-round confirmation) finishes the current editor session even
+        // when the user changed nothing. Validate that request, then return
+        // before entering the persistence transaction so timestamps, events,
+        // counters, and the database file all remain untouched.
+        if originalText == finalText {
+            guard let inspiration = state.inspirations.first(where: { $0.id == id }) else {
+                throw V02DomainError.inspirationNotFound
+            }
+            guard !finalText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || !inspiration.resourceIDs.isEmpty else {
+                throw StoreError.emptyIdea
+            }
+            return
+        }
+
         try transact { state in
             guard let index = state.inspirations.firstIndex(where: { $0.id == id }) else {
                 throw V02DomainError.inspirationNotFound
@@ -405,11 +421,9 @@ final class V02Store: ObservableObject {
                     || !state.inspirations[index].resourceIDs.isEmpty else {
                 throw StoreError.emptyIdea
             }
-            let changedDuringSession = originalText != finalText
             state.inspirations[index].text = finalText
             state.inspirations[index].updatedAt = now
-            guard changedDuringSession,
-                  let collectionID = state.inspirations[index].collectionID,
+            guard let collectionID = state.inspirations[index].collectionID,
                   let roundID = state.collections.first(where: { $0.id == collectionID })?.currentRoundID,
                   let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID }) else { return }
             state.rounds[roundIndex].effectiveEditCount += 1

@@ -17,6 +17,13 @@ final class NoteStoreTests: XCTestCase {
         directory = nil
     }
 
+    private func stableDomainSnapshot(_ state: V02DomainState) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        return try encoder.encode(state)
+    }
+
 
     func testReviewGestureLocksVerticalAxisWithoutCompletion() {
         let axis = ReviewGestureClassifier.axis(
@@ -395,7 +402,8 @@ final class NoteStoreTests: XCTestCase {
 
     func testV04EffectiveEditCountsOneChangedSessionInsteadOfAutosaves() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("effective-edit-session"))
-        let inspiration = try store.createInspiration(text: "初稿")
+        let base = Date(timeIntervalSince1970: 1_720_000_000)
+        let inspiration = try store.createInspiration(text: "初稿", now: base)
         let collection = try store.createCollectionAndRound(name: "编辑计数")
         try store.assign(inspiration.id, to: collection.id)
 
@@ -412,21 +420,32 @@ final class NoteStoreTests: XCTestCase {
         try store.finishInspirationEditSession(
             inspiration.id,
             originalText: "初稿",
-            finalText: "最终稿"
+            finalText: "最终稿",
+            now: base.addingTimeInterval(60)
         )
 
         let roundID = try XCTUnwrap(store.activeCollections.first?.currentRoundID)
         var round = try XCTUnwrap(store.state.rounds.first(where: { $0.id == roundID }))
         XCTAssertEqual(round.effectiveEditCount, 1)
         XCTAssertEqual(round.events.count(where: { $0.kind == .inspirationEdited }), 1)
+        XCTAssertEqual(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt,
+            base.addingTimeInterval(60)
+        )
 
         try store.finishInspirationEditSession(
             inspiration.id,
             originalText: "最终稿",
-            finalText: "最终稿"
+            finalText: "最终稿",
+            now: base.addingTimeInterval(120)
         )
         round = try XCTUnwrap(store.state.rounds.first(where: { $0.id == roundID }))
         XCTAssertEqual(round.effectiveEditCount, 1)
+        XCTAssertEqual(round.events.count(where: { $0.kind == .inspirationEdited }), 1)
+        XCTAssertEqual(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt,
+            base.addingTimeInterval(60)
+        )
 
         XCTAssertThrowsError(
             try store.finishInspirationEditSession(
@@ -444,6 +463,76 @@ final class NoteStoreTests: XCTestCase {
         let receipt = try store.endRound(roundID)
         XCTAssertEqual(receipt.snapshot.effectiveEditCount, 1)
         XCTAssertEqual(receipt.snapshot.members.first?.text, "最终稿")
+    }
+
+    func testV04UnchangedFinishedEditSessionDoesNotWriteAnyDomainOrDatabaseState() throws {
+        let storageDirectory = directory.appendingPathComponent("unchanged-edit-session")
+        let store = V02Store(storageDirectory: storageDirectory)
+        let base = Date(timeIntervalSince1970: 1_720_100_000)
+        let inspiration = try store.createInspiration(text: "未修改正文", now: base)
+        let collection = try store.createCollectionAndRound(name: "无变化会话", now: base)
+        try store.assign(inspiration.id, to: collection.id)
+
+        let databaseURL = storageDirectory.appendingPathComponent("note1-v02-data.json")
+        let sentinelModificationDate = Date(timeIntervalSince1970: 1_600_000_000)
+        try FileManager.default.setAttributes(
+            [.modificationDate: sentinelModificationDate],
+            ofItemAtPath: databaseURL.path
+        )
+        let before = try stableDomainSnapshot(store.state)
+        let beforeUpdatedAt = try XCTUnwrap(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt
+        )
+        let beforeRound = try XCTUnwrap(store.state.rounds.first(where: { $0.collectionID == collection.id }))
+
+        try store.finishInspirationEditSession(
+            inspiration.id,
+            originalText: "未修改正文",
+            finalText: "未修改正文",
+            now: base.addingTimeInterval(3_600)
+        )
+
+        XCTAssertEqual(try stableDomainSnapshot(store.state), before)
+        XCTAssertEqual(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt,
+            beforeUpdatedAt
+        )
+        let afterRound = try XCTUnwrap(store.state.rounds.first(where: { $0.id == beforeRound.id }))
+        XCTAssertEqual(afterRound.events.count, beforeRound.events.count)
+        XCTAssertEqual(afterRound.effectiveEditCount, beforeRound.effectiveEditCount)
+        let attributes = try FileManager.default.attributesOfItem(atPath: databaseURL.path)
+        XCTAssertEqual(attributes[.modificationDate] as? Date, sentinelModificationDate)
+    }
+
+    func testV04OpeningAndCancellingEndConfirmationPreservesSnapshotAndAccessibilitySurfaces() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("confirmation-cancel"))
+        let base = Date(timeIntervalSince1970: 1_720_200_000)
+        let inspiration = try store.createInspiration(text: "只打开确认", now: base)
+        let collection = try store.createCollectionAndRound(name: "取消无副作用", now: base)
+        try store.assign(inspiration.id, to: collection.id)
+        let before = try stableDomainSnapshot(store.state)
+        let beforeUpdatedAt = try XCTUnwrap(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt
+        )
+
+        var isConfirmationPresented = true
+        XCTAssertTrue(V04EndRoundAccessibilityPolicy.hidesWorkbench(isPresented: isConfirmationPresented))
+        XCTAssertTrue(V04EndRoundAccessibilityPolicy.showsConfirmation(isPresented: isConfirmationPresented))
+        try store.finishInspirationEditSession(
+            inspiration.id,
+            originalText: "只打开确认",
+            finalText: "只打开确认",
+            now: base.addingTimeInterval(7_200)
+        )
+        isConfirmationPresented = false
+
+        XCTAssertFalse(V04EndRoundAccessibilityPolicy.hidesWorkbench(isPresented: isConfirmationPresented))
+        XCTAssertFalse(V04EndRoundAccessibilityPolicy.showsConfirmation(isPresented: isConfirmationPresented))
+        XCTAssertEqual(try stableDomainSnapshot(store.state), before)
+        XCTAssertEqual(
+            store.state.inspirations.first(where: { $0.id == inspiration.id })?.updatedAt,
+            beforeUpdatedAt
+        )
     }
 
     func testV02TrashRestoresAnIndependentInspirationAndExpiresAtThirtyDays() throws {
