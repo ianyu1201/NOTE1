@@ -19,6 +19,7 @@ struct V02ReceiptDetailView: View {
     @State private var isSearching = false
     @State private var isConfirmingDelete = false
     @FocusState private var searchFocused: Bool
+    @AccessibilityFocusState private var isReceiptHeaderFocused: Bool
 
     init(
         store: V02Store,
@@ -83,6 +84,7 @@ struct V02ReceiptDetailView: View {
             Text("小票会进入回收站，来源构思集和灵感不会改变。")
         }
         .noteErrorAlert($error)
+        .onAppear { isReceiptHeaderFocused = true }
     }
 
     private var receiptPageHeader: some View {
@@ -241,6 +243,7 @@ struct V02ReceiptDetailView: View {
                 .monospacedDigit()
         }
         .frame(maxWidth: .infinity, alignment: .center)
+        .accessibilityFocused($isReceiptHeaderFocused)
     }
 
     private var timeline: some View {

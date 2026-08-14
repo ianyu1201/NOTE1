@@ -1,10 +1,8 @@
 import SwiftUI
-import UIKit
 
 struct V02CollectionListView: View {
     @ObservedObject var store: V02Store
     @Binding var isWorkbenchPresented: Bool
-    @Binding var isRequestingNewCollection: Bool
     let isGenerationPresented: Bool
     let showSettings: () -> Void
     let showTrash: () -> Void
@@ -12,16 +10,12 @@ struct V02CollectionListView: View {
     let showHistory: () -> Void
     let showGeneration: (V02Receipt) -> Void
     let reportError: (Error) -> Void
-    @State private var endingRound: V02ThinkingRound?
     @State private var deletingCollection: V02ThinkingCollection?
-    @State private var undoReceipt: V02Receipt?
     @State private var renamingCollection: V02ThinkingCollection?
     @State private var renamingText = ""
     @State private var editingInspiration: V02Inspiration?
     @State private var addingToCollection: V02ThinkingCollection?
     @State private var workingCollection: V02ThinkingCollection?
-    @State private var isCreatingCollection = false
-    @State private var newCollectionName = ""
 
     private var endedCollections: [V02ThinkingCollection] {
         store.state.collections.filter { $0.currentRoundID == nil }
@@ -32,30 +26,19 @@ struct V02CollectionListView: View {
           ZStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                Text("你的灵感容器 · 持续积累，随时启发")
-                    .noteFontCapped(
-                        size: V02PrimaryTypographyPolicy.contextLabelSize,
-                        maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
-                        weight: .medium,
-                        relativeTo: .subheadline
-                    )
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                    .frame(maxWidth: .infinity)
                 if V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: store.activeCollections.count) {
                     V02CollectionEmptyState()
                         .frame(maxWidth: .infinity, minHeight: 300)
                 } else {
                     ForEach(store.activeCollections) { collection in
                         let round = store.state.rounds.first { $0.id == collection.currentRoundID }
-                        let previewImage = previewImage(for: round)
                         Button {
                             workingCollection = collection
                             isWorkbenchPresented = true
                         } label: {
-                            V02CollectionPaperCard(
+                            V02CollectionRow(
                                 collection: collection,
                                 memberCount: round?.memberIDs.count ?? 0,
-                                previewImage: previewImage,
                                 updatedAt: updatedAt(for: round)
                             )
                         }
@@ -100,58 +83,6 @@ struct V02CollectionListView: View {
                   collectionHeader
               }
           }
-        }
-        .onChange(of: isRequestingNewCollection) { _, requested in
-            guard requested else { return }
-            isRequestingNewCollection = false
-            requestNewCollection()
-        }
-        .alert("结束本轮构思？", isPresented: Binding(
-            get: { endingRound != nil },
-            set: { if !$0 { endingRound = nil } }
-        ), presenting: endingRound) { round in
-            Button("结束并生成小票") {
-                finishRound(round)
-            }
-            Button("取消", role: .cancel) { endingRound = nil }
-        } message: { _ in
-            Text("确认后将结束本轮构思，并生成一张构思小票。")
-        }
-        .alert("新建构思集", isPresented: $isCreatingCollection) {
-            TextField("构思集名称（可不填）", text: $newCollectionName)
-            Button("新建") { createCollection() }
-            Button("取消", role: .cancel) { newCollectionName = "" }
-        } message: {
-            Text("不填写名称时，将按顺序使用“构思集（1）”等默认名称。")
-        }
-        .overlay(alignment: .bottom) {
-            if let undoReceipt {
-                HStack {
-                    Text("本轮构思已结束，\(undoReceipt.snapshot.members.count) 条灵感已收录。")
-                        .lineLimit(2)
-                    Spacer()
-                    Button("撤回") {
-                        do { try store.undoEndRound(undoReceipt.id) }
-                        catch { reportError(error) }
-                        self.undoReceipt = nil
-                    }
-                    .buttonStyle(PressScaleButtonStyle())
-                    .padding(.horizontal, 15)
-                    .frame(minHeight: 38)
-                    .foregroundStyle(NoteTheme.ink)
-                    .noteGlass(cornerRadius: 20, castsShadow: false)
-                }
-                .padding(12)
-                .background(NoteTheme.paper.opacity(0.82), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Color.white.opacity(0.74), lineWidth: 1) }
-                .padding(.horizontal, 16)
-                .task(id: undoReceipt.id) {
-                    try? await Task.sleep(for: .seconds(2))
-                    guard !Task.isCancelled else { return }
-                    self.undoReceipt = nil
-                }
-                .padding(.bottom, V02NavigationLayoutPolicy.transientBannerBottomPadding)
-            }
         }
         .alert("删除构思集？", isPresented: Binding(
             get: { deletingCollection != nil },
@@ -202,43 +133,6 @@ struct V02CollectionListView: View {
         }
     }
 
-    private func finishRound(_ round: V02ThinkingRound) {
-        do {
-            showGeneration(try store.endRound(round.id))
-            endingRound = nil
-        } catch { reportError(error) }
-    }
-
-    private func requestNewCollection() {
-        newCollectionName = ""
-        isCreatingCollection = true
-    }
-
-    private func createCollection() {
-        do {
-            let trimmed = newCollectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            let collection = try store.createCollectionAndRound(name: trimmed.isEmpty ? nil : trimmed)
-            newCollectionName = ""
-            workingCollection = collection
-            isWorkbenchPresented = true
-        } catch {
-            reportError(error)
-        }
-    }
-
-    private func previewImage(for round: V02ThinkingRound?) -> UIImage? {
-        guard let round else { return nil }
-        for memberID in round.memberIDs {
-            guard let member = store.state.inspirations.first(where: { $0.id == memberID }) else { continue }
-            for resourceID in member.resourceIDs {
-                guard let resource = store.state.resources.first(where: { $0.id == resourceID }),
-                      resource.mimeType.hasPrefix("image/") else { continue }
-                if let image = UIImage(contentsOfFile: store.resourceURL(resource).path) { return image }
-            }
-        }
-        return nil
-    }
-
     private func updatedAt(for round: V02ThinkingRound?) -> Date? {
         guard let round else { return nil }
         let memberDates = round.memberIDs.compactMap { memberID in
@@ -247,140 +141,136 @@ struct V02CollectionListView: View {
         return memberDates.max() ?? round.startedAt
     }
 }
-private struct V02CollectionPaperCard: View {
+private struct V02CollectionRow: View {
     let collection: V02ThinkingCollection
     let memberCount: Int
-    let previewImage: UIImage?
     let updatedAt: Date?
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(NoteTheme.paper.opacity(0.34))
-                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.7), lineWidth: 1) }
-                .offset(
-                    x: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset,
-                    y: V02PrimaryContentLayoutPolicy.stackedPaperBackOffset
-                )
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(NoteTheme.paper.opacity(0.62))
-                .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder.opacity(0.8), lineWidth: 1) }
-                .offset(
-                    x: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset,
-                    y: V02PrimaryContentLayoutPolicy.stackedPaperMiddleOffset
-                )
-            HStack(spacing: 15) {
-                V02CollectionThumbnail(image: previewImage)
-                VStack(alignment: .leading, spacing: 7) {
-                    Text(collection.name)
-                        .noteFont(size: 17, weight: .semibold, relativeTo: .headline)
-                        .foregroundStyle(NoteTheme.ink)
-                        .lineLimit(1)
-                    Text("\(memberCount) 条灵感")
-                        .noteFont(size: 13, relativeTo: .subheadline)
-                        .foregroundStyle(NoteTheme.secondaryInk)
-                    if let updateLabel {
-                        Text("更新 \(updateLabel)")
-                            .noteFont(size: 11, relativeTo: .caption2)
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                    }
-                }
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 15, weight: .semibold))
+        HStack(spacing: 14) {
+            Image(systemName: "folder")
+                .font(.system(size: 22, weight: .medium))
+                .foregroundStyle(NoteTheme.ink)
+                .frame(width: 44, height: 44)
+                .background(NoteTheme.selectedGlass.opacity(0.55), in: RoundedRectangle(cornerRadius: 14))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(collection.name)
+                    .noteFont(size: 17, weight: .semibold, relativeTo: .headline)
+                    .foregroundStyle(NoteTheme.ink)
+                    .lineLimit(1)
+                Text(metadata)
+                    .noteFont(size: 13, relativeTo: .subheadline)
                     .foregroundStyle(NoteTheme.secondaryInk)
-                    // Leave a visual exclusion zone for the shell-owned
-                    // floating plus when the last visible card sits above
-                    // the TabView; the whole card remains one hit target.
-                    .padding(.trailing, 24)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 18)
-            .frame(maxWidth: .infinity, minHeight: 148, alignment: .leading)
-            .background(NoteTheme.paperSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay { RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(NoteTheme.paperBorder, lineWidth: 1) }
-            .shadow(color: NoteTheme.ink.opacity(0.075), radius: 16, y: 9)
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(NoteTheme.secondaryInk)
+                .accessibilityHidden(true)
         }
-        // Reserve only vertical room for the revealed sheets. Horizontal
-        // padding would shrink the front paper and break the shared 22pt edge.
-        .padding(.bottom, V02PrimaryContentLayoutPolicy.stackedPaperBackOffset)
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(NoteTheme.divider).frame(height: 1)
+        }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(collection.name)，\(memberCount) 条灵感")
+        .accessibilityLabel("\(collection.name)，\(metadata)")
     }
 
-    private var updateLabel: String? {
-        updatedAt?.formatted(date: .numeric, time: .shortened)
-    }
-}
-
-private struct V02CollectionThumbnail: View {
-    let image: UIImage?
-
-    @ViewBuilder
-    var body: some View {
-        if let image {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 76, height: 94)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        } else {
-            placeholder
-        }
-    }
-
-    private var placeholder: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(NoteTheme.canvas.opacity(0.82))
-            VStack(spacing: 7) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 19, weight: .medium))
-                Capsule()
-                    .fill(NoteTheme.secondaryInk.opacity(0.28))
-                    .frame(width: 34, height: 2)
-                Capsule()
-                    .fill(NoteTheme.secondaryInk.opacity(0.18))
-                    .frame(width: 25, height: 2)
-            }
-            .foregroundStyle(NoteTheme.secondaryInk.opacity(0.72))
-        }
-        .frame(width: 76, height: 94)
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    private var metadata: String {
+        let update = updatedAt?.formatted(date: .abbreviated, time: .shortened) ?? "刚刚"
+        return "\(memberCount) 条灵感 · 更新 \(update)"
     }
 }
 
 private struct V02CollectionEmptyState: View {
     var body: some View {
-        VStack(spacing: 18) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(NoteTheme.paper.opacity(0.45))
-                    .frame(width: 94, height: 52)
-                    .rotationEffect(.degrees(10))
-                    .offset(x: 18, y: -13)
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(NoteTheme.paper.opacity(0.58))
-                    .frame(width: 94, height: 52)
-                    .rotationEffect(.degrees(-8))
-                    .offset(x: -15, y: -5)
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(NoteTheme.paper.opacity(0.88))
-                    .frame(width: 112, height: 62)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .stroke(NoteTheme.secondaryInk.opacity(0.22), lineWidth: 1)
-                    }
-            }
-            .frame(height: 90)
+        VStack(spacing: 14) {
+            Image(systemName: "folder")
+                .font(.system(size: 34, weight: .light))
+                .foregroundStyle(NoteTheme.ink)
             Text("还没有构思集")
                 .noteFont(size: 20, weight: .semibold, relativeTo: .title3)
                 .foregroundStyle(NoteTheme.ink)
-            Text("将相关的灵感汇集成构思集，\n让思考的脉络自然生长。")
+            Text("在卡片预览中点按“归入构思集”，\n可将当前灵感归入现有或新构思集。")
                 .noteFont(size: 14, relativeTo: .body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(NoteTheme.secondaryInk)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct V04EndRoundConfirmationView: View {
+    let round: V02ThinkingRound
+    let members: [V02Inspiration]
+    let onGenerate: () -> Void
+    let onCancel: () -> Void
+
+    private var durationText: String {
+        let minutes = max(1, Int(Date.now.timeIntervalSince(round.startedAt) / 60))
+        return "\(minutes) 分钟"
+    }
+
+    private var attachmentCount: Int {
+        members.reduce(0) { $0 + $1.resourceIDs.count }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("已结束本轮构思")
+                .noteFont(size: 24, weight: .semibold, design: .rounded, relativeTo: .title2)
+                .foregroundStyle(NoteTheme.ink)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.top, 34)
+
+            VStack(spacing: 0) {
+                summaryRow("构思时间", value: durationText)
+                summaryRow("灵感数量", value: "\(members.count)")
+                summaryRow("附件数量", value: "\(attachmentCount)")
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 8)
+            .frame(maxWidth: 330)
+            .noteGlass(cornerRadius: 24, castsShadow: false)
+            .padding(.top, 32)
+
+            Spacer(minLength: 28)
+
+            VStack(spacing: 12) {
+                Button("生成小票", action: onGenerate)
+                    .noteFont(size: 16, weight: .semibold, relativeTo: .body)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .background(NoteTheme.ink, in: Capsule())
+                    .buttonStyle(PressScaleButtonStyle())
+                Button("取消", action: onCancel)
+                    .noteFont(size: 16, weight: .medium, relativeTo: .body)
+                    .foregroundStyle(NoteTheme.ink)
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .noteGlass(cornerRadius: 24, castsShadow: false)
+                    .buttonStyle(RoundGlassPressButtonStyle())
+            }
+            .frame(maxWidth: 330)
+            .padding(.bottom, V02NavigationLayoutPolicy.primaryContentBottomPadding)
+        }
+        .padding(.horizontal, NoteTheme.horizontalPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(NoteTheme.background.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("v04.end-round-confirmation")
+    }
+
+    private func summaryRow(_ title: String, value: String) -> some View {
+        LabeledContent(title, value: value)
+            .noteFont(size: 15, relativeTo: .body)
+            .foregroundStyle(NoteTheme.ink)
+            .frame(minHeight: 52)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(NoteTheme.divider).frame(height: 1)
+            }
     }
 }
 
@@ -448,8 +338,20 @@ private struct V02CollectionWorkbenchView: View {
                 }
                 .onDisappear { persistEditingMember() }
         }
+        .overlay {
+            if isEnding, let round {
+                V04EndRoundConfirmationView(
+                    round: round,
+                    members: members,
+                    onGenerate: finishRound,
+                    onCancel: { isEnding = false }
+                )
+                .transition(.opacity)
+                .zIndex(5)
+            }
+        }
         .overlay(alignment: .bottomTrailing) {
-            if !editorFocused {
+            if !editorFocused && !isEnding {
                 V02FloatingComposerButton(
                     action: {
                         isAdding = true
@@ -460,7 +362,7 @@ private struct V02CollectionWorkbenchView: View {
                 .padding(.bottom, V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding)
             }
         }
-        .accessibilityHidden(isPresentingWorkbenchSheet)
+        .accessibilityHidden(isPresentingWorkbenchSheet || isEnding)
         .background {
             V02PresentedContentAccessibilityIsolation(isPresented: isPresentingWorkbenchSheet)
                 .frame(width: 0, height: 0)
@@ -496,12 +398,6 @@ private struct V02CollectionWorkbenchView: View {
             Button("保存") { do { try store.renameCollection(collectionID, name: renamingText) } catch { reportError(error) } }
             Button("取消", role: .cancel) {}
         }
-        .alert("结束本轮构思？", isPresented: $isEnding) {
-            Button("结束并生成小票") {
-                finishRound()
-            }
-            Button("取消", role: .cancel) {}
-        } message: { Text("确认后会生成一张固定构思小票。") }
         .sheet(item: $managingAttachments) { member in
             V02WorkbenchAttachmentSheet(
                 store: store,

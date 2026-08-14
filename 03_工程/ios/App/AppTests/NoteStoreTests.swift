@@ -186,18 +186,7 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02TuckPolicy.commitDelay, 0.23)
     }
 
-    func testV02GroupTargetUsesOnlyTheFinalLiveHit() {
-        let first = CGRect(x: 0, y: 0, width: 80, height: 80)
-        let second = CGRect(x: 100, y: 100, width: 80, height: 80)
-        let frames = ["group": first, "new": second]
-        XCTAssertEqual(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 40, y: 40), frames: frames), "group")
-        XCTAssertNil(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 90, y: 90), frames: frames))
-        XCTAssertEqual(V02GroupTargetPolicy.activeTarget(at: CGPoint(x: 40, y: 40), frames: frames), "group")
-        XCTAssertEqual(V02GroupTargetPolicy.commitTarget(finalActiveTarget: "group"), "group")
-        XCTAssertNil(V02GroupTargetPolicy.commitTarget(finalActiveTarget: nil))
-    }
-
-    func testV03CardAndGroupGestureBoundariesResistOrCancelWithoutMutation() {
+    func testV03CardGestureBoundariesResistOrCancelWithoutMutation() {
         XCTAssertEqual(
             V02CardDeckPolicy.displayedVerticalTranslation(index: 0, count: 2, translation: 100),
             24,
@@ -213,26 +202,6 @@ final class NoteStoreTests: XCTestCase {
             -100,
             accuracy: 0.001
         )
-        XCTAssertFalse(V02GroupTargetPolicy.shouldReveal(for: .init(width: 0, height: -18)))
-        XCTAssertTrue(V02GroupTargetPolicy.shouldReveal(for: .init(width: 0, height: -18.1)))
-        XCTAssertNil(V02GroupTargetPolicy.committedTarget(
-            translation: .init(width: 0, height: -50),
-            finalActiveTarget: "existing"
-        ))
-        XCTAssertEqual(V02GroupTargetPolicy.committedTarget(
-            translation: .init(width: 0, height: -50.1),
-            finalActiveTarget: "existing"
-        ), "existing")
-        XCTAssertNil(V02GroupTargetPolicy.committedTarget(
-            translation: .init(width: 0, height: -80),
-            finalActiveTarget: nil
-        ))
-    }
-
-    func testV02GroupOperationTargetsAlwaysExposeBothOperationTypes() {
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new", "existing"])
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 3), ["new", "existing"])
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 6), ["new", "existing"])
     }
 
     func testV02CollectionPresentationCoversEmptyAndActiveStates() {
@@ -240,37 +209,6 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertFalse(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 1))
         XCTAssertFalse(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 6))
     }
-
-    func testGroupDropOnlyUsesVisibleTargetFrames() {
-        let groupID = UUID()
-        let groupFrame = CGRect(x: 20, y: 100, width: 120, height: 62)
-        let newFrame = CGRect(x: 150, y: 100, width: 120, height: 62)
-
-        XCTAssertEqual(
-            ReviewGroupDropClassifier.target(
-                at: CGPoint(x: 80, y: 131),
-                groupFrames: [groupID: groupFrame],
-                newFrame: newFrame
-            ),
-            .group(groupID)
-        )
-        XCTAssertEqual(
-            ReviewGroupDropClassifier.target(
-                at: CGPoint(x: 210, y: 131),
-                groupFrames: [groupID: groupFrame],
-                newFrame: newFrame
-            ),
-            .new
-        )
-        XCTAssertNil(
-            ReviewGroupDropClassifier.target(
-                at: CGPoint(x: 210, y: 92),
-                groupFrames: [groupID: groupFrame],
-                newFrame: newFrame
-            )
-        )
-    }
-
 
     func testReviewPositionRestoresPreferredItemAndFallsBackToNeighbor() {
         let first = UUID()
@@ -674,9 +612,18 @@ final class NoteStoreTests: XCTestCase {
     }
 
     func testV03ReceiptGestureBoundariesResistAndNeverLoop() {
-        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 87.9))
-        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -87.9))
-        XCTAssertEqual(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -88), 2)
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 71.9))
+        XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -71.9))
+        XCTAssertEqual(V02ReceiptGesturePolicy.horizontalTarget(index: 1, count: 3, translation: -72), 2)
+        XCTAssertEqual(
+            V02ReceiptGesturePolicy.horizontalTarget(
+                index: 1,
+                count: 3,
+                translation: -40,
+                predictedEndTranslation: -120
+            ),
+            2
+        )
         XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 0, count: 3, translation: 180))
         XCTAssertNil(V02ReceiptGesturePolicy.horizontalTarget(index: 2, count: 3, translation: -180))
         XCTAssertEqual(
@@ -694,8 +641,9 @@ final class NoteStoreTests: XCTestCase {
             -100,
             accuracy: 0.001
         )
-        XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(103.9))
-        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(104))
+        XCTAssertFalse(V02ReceiptGesturePolicy.shouldExtract(95.9))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(96))
+        XCTAssertTrue(V02ReceiptGesturePolicy.shouldExtract(70, predictedEndTranslation: 140))
     }
 
     func testV03ReceiptLayoutExpandsForContentAndDynamicType() {
@@ -742,8 +690,13 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02ReceiptGenerationPolicy.contentOpacity(for: 0.18), 0, accuracy: 0.001)
         XCTAssertGreaterThan(V02ReceiptGenerationPolicy.contentOpacity(for: 0.6), 0)
         XCTAssertEqual(V02ReceiptGenerationPolicy.contentOpacity(for: 1), 1, accuracy: 0.001)
-        XCTAssertLessThan(V02ReceiptGenerationPolicy.reducedMotionDuration, V02ReceiptGenerationPolicy.normalDuration)
-        XCTAssertEqual(V02ReceiptGenerationPolicy.undoWindow, 2, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.outletRevealDuration, 1.4, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.revealPause, 0.08, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.liftDuration, 0.42, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.reducedMotionDuration, 0.2, accuracy: 0.001)
+        XCTAssertLessThanOrEqual(V02ReceiptGenerationPolicy.reducedMotionDisplacement, 8)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.initialPaperScale, 0.84, accuracy: 0.001)
+        XCTAssertEqual(V02ReceiptGenerationPolicy.settledPaperScale, 1, accuracy: 0.001)
     }
 
     func testV02ReceiptGenerationReservesPrimaryNavigationLayer() {

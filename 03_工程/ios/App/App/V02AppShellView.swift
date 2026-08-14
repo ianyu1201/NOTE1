@@ -48,16 +48,19 @@ struct V02AppShellView: View {
     @State private var error: UserFacingAlert?
     @State private var generatedReceipt: V02Receipt?
     @State private var isCollectionWorkbenchPresented = false
-    @State private var isRequestingNewCollection = false
     @State private var isChildEditorPresented = false
     @State private var isManagingSelection = false
     @State private var isCardOverlayPresented = false
     @State private var isReceiptOverlayPresented = false
+    @State private var fullScreenReceipt: V02Receipt?
+    @State private var resumesGeneratedReceiptFromDisk = false
+    @AppStorage("v04.pendingGeneratedReceiptID") private var pendingGeneratedReceiptID = ""
 
     private var isPresentedRootModal: Bool {
         sheet != nil
             || isChildEditorPresented
             || isReceiptOverlayPresented
+            || fullScreenReceipt != nil
     }
 
     private var shouldHidePrimaryContentAccessibility: Bool {
@@ -109,16 +112,15 @@ struct V02AppShellView: View {
                     store: store,
                     receipt: generatedReceipt,
                     onView: { receipt in
-                        sheet = .receipt(receipt)
+                        pendingGeneratedReceiptID = ""
+                        fullScreenReceipt = receipt
                         self.generatedReceipt = nil
                     },
-                    onReturn: { self.generatedReceipt = nil },
-                    onUndo: {
-                        do {
-                            try store.undoEndRound(generatedReceipt.id)
-                            self.generatedReceipt = nil
-                        } catch let caughtError { self.error = UserFacingAlert(error: caughtError) }
-                    }
+                    onReturn: {
+                        pendingGeneratedReceiptID = ""
+                        self.generatedReceipt = nil
+                    },
+                    resumesFromSavedResult: resumesGeneratedReceiptFromDisk
                 )
                 .padding(.bottom, V02ReceiptGenerationLayoutPolicy.bottomPadding(navigationHeight: NoteTheme.navigationHeight))
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -167,6 +169,14 @@ struct V02AppShellView: View {
                 V02ReceiptDetailView(store: store, receipt: receipt)
             }
         }
+        .fullScreenCover(item: $fullScreenReceipt) { receipt in
+            V04ReceiptReaderView(
+                store: store,
+                receipts: store.state.receipts.sorted { $0.createdAt > $1.createdAt },
+                initialReceiptID: receipt.id,
+                onDelete: { _ in }
+            )
+        }
         .tint(NoteTheme.ink)
         .noteErrorAlert($error)
         .onChange(of: page) { _, newPage in
@@ -175,6 +185,7 @@ struct V02AppShellView: View {
                 isCollectionWorkbenchPresented = false
             }
         }
+        .onAppear(perform: restorePendingGeneratedReceipt)
     }
 
     @ViewBuilder
@@ -209,13 +220,12 @@ struct V02AppShellView: View {
             V02CollectionListView(
                 store: store,
                 isWorkbenchPresented: $isCollectionWorkbenchPresented,
-                isRequestingNewCollection: $isRequestingNewCollection,
                 isGenerationPresented: generatedReceipt != nil,
                 showSettings: { sheet = .settings },
                 showTrash: { sheet = .trash },
                 showSearch: { sheet = .search },
                 showHistory: { sheet = .history },
-                showGeneration: { receipt in generatedReceipt = receipt }
+                showGeneration: presentGeneratedReceipt
             ) { error in
                 self.error = UserFacingAlert(error: error)
             }
@@ -245,6 +255,26 @@ struct V02AppShellView: View {
                     page = page.before
                 }
             }
+    }
+
+    private func presentGeneratedReceipt(_ receipt: V02Receipt) {
+        pendingGeneratedReceiptID = receipt.id.uuidString
+        resumesGeneratedReceiptFromDisk = false
+        generatedReceipt = receipt
+    }
+
+    private func restorePendingGeneratedReceipt() {
+        guard let id = UUID(uuidString: pendingGeneratedReceiptID) else {
+            pendingGeneratedReceiptID = ""
+            return
+        }
+        guard let receipt = store.state.receipts.first(where: { $0.id == id }) else {
+            pendingGeneratedReceiptID = ""
+            return
+        }
+        resumesGeneratedReceiptFromDisk = true
+        generatedReceipt = receipt
+        page = .collections
     }
 }
 

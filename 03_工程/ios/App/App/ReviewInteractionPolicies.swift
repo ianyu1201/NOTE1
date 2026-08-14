@@ -1,12 +1,5 @@
 import SwiftUI
 
-struct GroupButtonFrameKey: PreferenceKey {
-    static var defaultValue: CGRect = .zero
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
-    }
-}
-
 enum ReviewDragAxis: Equatable {
     case horizontal
     case vertical
@@ -67,75 +60,8 @@ enum ReviewPositionPolicy {
     }
 }
 
-struct GroupTargetFramesKey: PreferenceKey {
-    static var defaultValue: [String: CGRect] = [:]
-    static func reduce(
-        value: inout [String: CGRect],
-        nextValue: () -> [String: CGRect]
-    ) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
-}
-
-enum ReviewGroupDropTarget: Equatable {
-    case group(UUID)
-    case new
-}
-
-enum V02GroupTargetPolicy {
-    static let revealThreshold: CGFloat = -18
-    static let commitThreshold: CGFloat = -50
-
-    static func shouldReveal(for translation: CGSize) -> Bool {
-        translation.height < revealThreshold
-    }
-
-    static func activeTarget(at point: CGPoint, frames: [String: CGRect]) -> String? {
-        // When the transparent halos overlap at the center line, prefer the
-        // existing-collection target. The visible targets remain distinct;
-        // this only makes a straight vertical release deterministic.
-        if let existing = frames["existing"], existing.contains(point) {
-            return "existing"
-        }
-        return frames.first(where: { $0.value.contains(point) })?.key
-    }
-
-    static func commitTarget(finalActiveTarget: String?) -> String? {
-        finalActiveTarget
-    }
-
-    static func committedTarget(translation: CGSize, finalActiveTarget: String?) -> String? {
-        guard translation.height < commitThreshold else { return nil }
-        return commitTarget(finalActiveTarget: finalActiveTarget)
-    }
-}
-
-enum V02GroupOperationPolicy {
-    /// The long-press affordance always exposes both operation types. Whether
-    /// a target can be selected is resolved by the store's atomic operation.
-    static func targetIDs(activeCollectionCount _: Int) -> [String] {
-        ["new", "existing"]
-    }
-}
-
 enum V02CollectionOperationPolicy {
     static func showsEmptyState(activeCollectionCount: Int) -> Bool {
         activeCollectionCount <= 0
-    }
-}
-
-struct ReviewGroupDropClassifier {
-    static func target(
-        at location: CGPoint,
-        groupFrames: [UUID: CGRect],
-        newFrame: CGRect?
-    ) -> ReviewGroupDropTarget? {
-        if let group = groupFrames.first(where: { $0.value.contains(location) }) {
-            return .group(group.key)
-        }
-        if newFrame?.contains(location) == true {
-            return .new
-        }
-        return nil
     }
 }

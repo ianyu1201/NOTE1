@@ -15,11 +15,6 @@ struct V02CardPreviewView: View {
     @AppStorage("v02.cardPreview.currentID") private var persistedCardID = ""
     @State private var undoTuckedInspiration: V02Inspiration?
     @State private var editingInspiration: V02Inspiration?
-    @State private var isShowingGroupTray = false
-    @State private var groupTargetFrames = [String: CGRect]()
-    @State private var groupButtonFrame = CGRect.zero
-    @State private var activeGroupTargetID: String?
-    @State private var isDraggingGroup = false
     @State private var isShowingCollectionPicker = false
     @State private var isShowingCreateCollection = false
     @State private var pendingInspirationID: UUID?
@@ -72,59 +67,8 @@ struct V02CardPreviewView: View {
                         .overlay(alignment: .bottom) {
                             VStack(spacing: 5) {
                                 if cards.indices.contains(index) {
-                                    V02GroupEntryButton(action: {
+                                    V02AssignCollectionButton {
                                         beginGroupPicker(for: cards)
-                                    }, onDrag: { location, translation, ended in
-                                        if V02GroupTargetPolicy.shouldReveal(for: translation) {
-                                            isShowingGroupTray = true
-                                            isDraggingGroup = true
-                                        }
-                                        // V02GroupEntryButton reports its drag in the same global
-                                        // coordinate space as the tray frames, so the final
-                                        // location is compared directly without frame-offset
-                                        // guesses that drift when the overlay reflows.
-                                        let point = location
-                                        activeGroupTargetID = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                                        if ended {
-                                            let finalTarget = V02GroupTargetPolicy.activeTarget(at: point, frames: groupTargetFrames)
-                                            defer { activeTargetReset() }
-                                            guard case .inspiration(let inspiration) = cards[min(index, cards.count - 1)],
-                                                  let target = V02GroupTargetPolicy.committedTarget(
-                                                    translation: translation,
-                                                    finalActiveTarget: finalTarget
-                                                  ) else { return }
-                                            pendingInspirationID = inspiration.id
-                                            handleGroupOperation(target)
-                                        }
-                                    })
-                                    .background(GeometryReader { proxy in
-                                        Color.clear.preference(key: GroupButtonFrameKey.self, value: proxy.frame(in: .named("cardPreview")))
-                                    })
-                                    // Keep the source control above the page-local dismiss layer. This
-                                    // preserves outside-tap dismissal while allowing a second gesture
-                                    // to begin from the same fixed button after the tray is open.
-                                    .zIndex(isShowingGroupTray ? 6 : 0)
-                                    .accessibilityHint("点按或按住上拖，打开构思集选择托盘")
-                                    .overlay(alignment: .bottom) {
-                                        if isShowingGroupTray {
-                                            V02GroupPickerTray(
-                                                activeCollectionCount: store.activeCollections.count,
-                                                targetFrames: $groupTargetFrames,
-                                                activeTargetID: activeGroupTargetID,
-                                                onSelect: { handleGroupOperation("existing") },
-                                                onCreate: { handleGroupOperation("new") }
-                                            )
-                                            .frame(width: min(350, max(0, UIScreen.main.bounds.width - 24)))
-                                            // The tray remains attached to the button and opens
-                                            // upward, so it never needs the paper's old bottom slot.
-                                            .offset(y: -64)
-                                            .allowsHitTesting(!isDraggingGroup)
-                                            .transition(
-                                                .scale(scale: 0.72, anchor: .bottom)
-                                                    .combined(with: .opacity)
-                                                    .combined(with: .move(edge: .bottom))
-                                            )
-                                        }
                                     }
                                 }
                                 Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
@@ -138,7 +82,7 @@ struct V02CardPreviewView: View {
                             // still making it part of the paper, not a separate
                             // floating module below it.
                             .padding(.bottom, 14)
-                            .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: isShowingGroupTray)
+                            .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: isShowingCollectionPicker)
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -163,26 +107,16 @@ struct V02CardPreviewView: View {
         .fullScreenCover(item: $editingInspiration, onDismiss: { onEditingChange(false) }) { inspiration in
             V02InspirationEditorView(store: store, inspirationID: inspiration.id, reportError: reportError)
         }
-        .coordinateSpace(name: "cardPreview")
-        .simultaneousGesture(
-            SpatialTapGesture().onEnded { value in
-                guard isShowingGroupTray, !isDraggingGroup else { return }
-                let point = value.location
-                let isInsideButton = groupButtonFrame.contains(point)
-                let isInsideTarget = groupTargetFrames.values.contains { $0.contains(point) }
-                guard !isInsideButton, !isInsideTarget else { return }
-                activeGroupTargetID = nil
-                isShowingGroupTray = false
-            }
-        )
-        .onPreferenceChange(GroupButtonFrameKey.self) {
-            groupButtonFrame = $0
-        }
         .overlay {
             if isShowingCollectionPicker {
                 V02ExistingCollectionPicker(
                     collections: store.activeCollections,
                     memberCount: memberCount(for:),
+                    onCreate: {
+                        isShowingCollectionPicker = false
+                        newCollectionName = ""
+                        isShowingCreateCollection = true
+                    },
                     onSelect: { collection in
                         assignPendingInspiration(to: collection.id)
                     },
@@ -266,35 +200,14 @@ struct V02CardPreviewView: View {
         }
     }
 
-    private func handleGroupOperation(_ target: String) {
-        isShowingGroupTray = false
-        activeGroupTargetID = nil
-        isDraggingGroup = false
-        switch target {
-        case "new":
-            newCollectionName = ""
-            isShowingCreateCollection = true
-        case "existing":
-            isShowingCollectionPicker = true
-        default:
-            break
-        }
-    }
-
-    private func activeTargetReset() {
-        activeGroupTargetID = nil
-        isShowingGroupTray = false
-        isDraggingGroup = false
-    }
-
     private var localOverlayPresented: Bool {
-        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection
+        isShowingCollectionPicker || isShowingCreateCollection
     }
 
     private func beginGroupPicker(for cards: [V02CardPreviewEntry]) {
         guard cards.indices.contains(index), case .inspiration(let inspiration) = cards[index] else { return }
         pendingInspirationID = inspiration.id
-        isShowingGroupTray = true
+        isShowingCollectionPicker = true
     }
 
     private func assignPendingInspiration(to collectionID: UUID) {
@@ -392,169 +305,49 @@ struct V02CardPreviewView: View {
         }
     }
 }
-private struct V02GroupEntryButton: View {
+private struct V02AssignCollectionButton: View {
     let action: () -> Void
-    var onDrag: (CGPoint, CGSize, Bool) -> Void = { _, _, _ in }
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @GestureState private var isPressed = false
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            ZStack {
-                Circle()
-                    .fill(NoteTheme.paperSurface)
-                Circle()
-                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
-                Circle()
-                    .stroke(NoteTheme.ink.opacity(0.08), lineWidth: 1)
-                    .padding(6)
-                Image(systemName: "square.stack.3d.up.fill")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(NoteTheme.ink)
-            }
-            .frame(width: 54, height: 54)
-            .shadow(color: NoteTheme.ink.opacity(isPressed ? 0.08 : 0.15), radius: isPressed ? 8 : 15, y: isPressed ? 4 : 8)
-
-            Image(systemName: "plus")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 19, height: 19)
-                .background(NoteTheme.ink, in: Circle())
-                .overlay { Circle().stroke(Color.white.opacity(0.38), lineWidth: 1) }
-                .offset(x: 4, y: -3)
+        Button("归入构思集", systemImage: "folder.badge.plus", action: action)
+            .noteFontCapped(size: 15, maximumScale: 1.25, weight: .medium, relativeTo: .body)
+            .foregroundStyle(NoteTheme.ink)
+            .padding(.horizontal, 18)
+            .frame(minHeight: 46)
+            .noteGlass(cornerRadius: 23, castsShadow: false)
+            .buttonStyle(RoundGlassPressButtonStyle())
+            .accessibilityHint("打开构思集选择面板")
         }
-        .scaleEffect(isPressed && !reduceMotion ? 0.94 : 1)
-        .rotationEffect(.degrees(isPressed && !reduceMotion ? -1.5 : 0))
-        .animation(NoteMotion.press(reduceMotion: reduceMotion), value: isPressed)
-        .contentShape(Circle())
-        .gesture(
-            DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                .updating($isPressed) { _, pressed, _ in pressed = true }
-                .onChanged { value in
-                    guard abs(value.translation.height) >= 10 || abs(value.translation.width) >= 10 else { return }
-                    onDrag(value.location, value.translation, false)
-                }
-                .onEnded { value in
-                    let distance = hypot(value.translation.width, value.translation.height)
-                    if distance < 10 {
-                        action()
-                    } else {
-                        onDrag(value.location, value.translation, true)
-                    }
-                }
-        )
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("归入构思集")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { action() }
-    }
-}
-
-private struct V02GroupPickerTray: View {
-    let activeCollectionCount: Int
-    @Binding var targetFrames: [String: CGRect]
-    let activeTargetID: String?
-    let onSelect: () -> Void
-    let onCreate: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        VStack(spacing: 8) {
-            let targetIDs = V02GroupOperationPolicy.targetIDs(
-                activeCollectionCount: activeCollectionCount
-            )
-            HStack(alignment: .center, spacing: 14) {
-                if targetIDs.contains("new") {
-                    actionTarget(
-                        id: "new",
-                        systemName: "folder.badge.plus",
-                        title: "新建构思集",
-                        action: onCreate
-                    )
-                    .rotationEffect(.degrees(-4))
-                }
-                if targetIDs.contains("existing") {
-                    actionTarget(
-                        id: "existing",
-                        systemName: "folder.fill",
-                        title: "归入现有构思集",
-                        action: onSelect
-                    )
-                    .rotationEffect(.degrees(4))
-                }
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
-        .fixedSize(horizontal: false, vertical: true)
-        .onPreferenceChange(GroupTargetFramesKey.self) {
-            targetFrames = $0
-        }
-    }
-
-    private func actionTarget(
-        id: String,
-        systemName: String,
-        title: String,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: 5) {
-                Image(systemName: systemName)
-                Text(title)
-            }
-            .noteFont(size: 13, weight: .medium, relativeTo: .caption)
-            .foregroundStyle(activeTargetID == id ? Color.white : NoteTheme.ink)
-            .padding(.horizontal, 12)
-            .frame(minWidth: 142, minHeight: 60)
-            .background {
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(activeTargetID == id ? NoteTheme.ink : NoteTheme.paper)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(activeTargetID == id ? Color.white.opacity(0.24) : NoteTheme.paperBorder, lineWidth: 1)
-                    }
-                    .shadow(color: NoteTheme.ink.opacity(activeTargetID == id ? 0.16 : 0.09), radius: 12, y: 7)
-            }
-            .scaleEffect(activeTargetID == id ? 1.045 : 1)
-            .offset(y: activeTargetID == id ? -3 : 0)
-        }
-        .buttonStyle(RoundGlassPressButtonStyle())
-        .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: activeTargetID == id)
-        .accessibilityLabel(title)
-        .background(GeometryReader { proxy in
-            let visibleFrame = proxy.frame(in: .global)
-            // Keep the visual capsules side-by-side, but give the physical
-            // target a forgiving transparent halo for a straight upward drag.
-            // The halo is the frame used by the state machine; it does not
-            // change the confirmed visual relationship.
-            let hitFrame = visibleFrame.insetBy(dx: -8, dy: -14)
-            return Color.clear.preference(key: GroupTargetFramesKey.self, value: [id: hitFrame])
-        })
-    }
-
 }
 
 private struct V02ExistingCollectionPicker: View {
     let collections: [V02ThinkingCollection]
     let memberCount: (V02ThinkingCollection) -> Int
+    let onCreate: () -> Void
     let onSelect: (V02ThinkingCollection) -> Void
     let onDismiss: () -> Void
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.black.opacity(0.001)
-                .contentShape(Rectangle())
-                .onTapGesture(perform: onDismiss)
+            Button("取消归入构思集", action: onDismiss)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.black.opacity(0.08))
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
-                    Text("归入现有构思集")
+                    Text("归入构思集")
                         .noteFont(size: 19, weight: .semibold, relativeTo: .headline)
                     Spacer()
                     Button("取消", action: onDismiss)
                         .buttonStyle(PressScaleButtonStyle())
                 }
+                Button("新建构思集", systemImage: "folder.badge.plus", action: onCreate)
+                    .noteFont(size: 15, weight: .medium, relativeTo: .body)
+                    .foregroundStyle(NoteTheme.ink)
+                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .noteGlass(cornerRadius: 18, castsShadow: false)
+                    .buttonStyle(RoundGlassPressButtonStyle())
                 ForEach(collections) { collection in
                     let count = memberCount(collection)
                     Button {
@@ -583,7 +376,7 @@ private struct V02ExistingCollectionPicker: View {
                             .font(.system(size: 24, weight: .medium))
                         Text("当前没有构思中的构思集")
                             .noteFont(size: 15, weight: .medium, relativeTo: .body)
-                        Text("返回后选择“新建构思集”，即可归入当前灵感。")
+                        Text("新建构思集后，当前灵感会成为第一条成员。")
                             .noteFont(size: 13, relativeTo: .caption)
                             .multilineTextAlignment(.center)
                     }

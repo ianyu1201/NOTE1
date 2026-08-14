@@ -12,16 +12,9 @@ struct V02ReceiptBookView: View {
     @State private var pendingDeleteIDs = Set<UUID>()
     @State private var shareURLs: [URL] = []
     @State private var error: UserFacingAlert?
-    @State private var receiptIndex = 0
     @State private var detailReceipt: V02Receipt?
     @State private var undoTrashEntryIDs = Set<UUID>()
     @State private var templateOverrides: [UUID: V02ReceiptTemplate] = [:]
-    @State private var receiptTranslation: CGSize = .zero
-    @State private var receiptGestureAxis: V02ReceiptGestureAxis = .none
-    @State private var receiptGestureStartedAtEdge = false
-    @State private var receiptGestureStartedAtExtractionHandle = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ScaledMetric(relativeTo: .body) private var receiptTextScale: CGFloat = 1
 
     private var selectedReceipts: [V02Receipt] {
         store.state.receipts.filter { selectedIDs.contains($0.id) }
@@ -32,8 +25,7 @@ struct V02ReceiptBookView: View {
     }
 
     private var currentReceipt: V02Receipt? {
-        guard receipts.indices.contains(receiptIndex) else { return nil }
-        return receipts[receiptIndex]
+        receipts.first
     }
 
     private var localOverlayPresented: Bool {
@@ -43,55 +35,50 @@ struct V02ReceiptBookView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 18) {
                     if isSelecting { selectionToolbar }
                     if receipts.isEmpty {
                         emptyBook
                     } else {
-                        V02ReceiptDeck(
-                            store: store,
-                            receipts: receipts,
-                            index: $receiptIndex,
-                            isSelecting: isSelecting,
-                            selectedIDs: $selectedIDs,
-                            openReceipt: { detailReceipt = $0 },
-                            minimumPaperHeight: currentReceipt.map(receiptPaperHeight)
-                                ?? V02ReceiptLayoutPolicy.minimumPaperHeight,
-                            templateFor: { receipt in
-                                templateOverrides[receipt.id]
-                                    ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
-                            },
-                            translation: receiptTranslation,
-                            axis: receiptGestureAxis
-                        )
-                        .zIndex(1)
-                        Text("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张")
-                            .noteFontCapped(
-                                size: 13,
-                                maximumScale: V02PrimaryTypographyPolicy.contextLabelMaximumScale,
-                                relativeTo: .caption
-                            )
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                            .monospacedDigit()
-                            .lineLimit(1)
-                            .padding(.horizontal, 11)
-                            .padding(.vertical, 6)
-                            .background(NoteTheme.ink.opacity(0.045), in: Capsule())
-                            .accessibilityLabel("第 \(receiptIndex + 1) 张，共 \(receipts.count) 张。可左右切换或向下抽取。")
-                            .padding(.top, 18)
+                        if let latest = receipts.first {
+                            Text("最新小票")
+                                .noteFont(size: 20, weight: .semibold, relativeTo: .title3)
+                                .foregroundStyle(NoteTheme.ink)
+                                .accessibilityAddTraits(.isHeader)
+                            Button {
+                                detailReceipt = latest
+                            } label: {
+                                V02ReceiptPaper(
+                                    store: store,
+                                    receipt: latest,
+                                    template: templateFor(latest),
+                                    minimumHeight: 390
+                                )
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 286, alignment: .top)
+                                .clipped()
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("最新小票，\(latest.snapshot.collectionName)，\(latest.statistics.roundTitle)")
+                            .accessibilityHint("双击查看完整小票")
+                            .accessibilityIdentifier("v04.receipt.latest")
+                        }
+
+                        Text("全部小票")
+                            .noteFont(size: 20, weight: .semibold, relativeTo: .title3)
+                            .foregroundStyle(NoteTheme.ink)
+                            .accessibilityAddTraits(.isHeader)
+                            .padding(.top, 4)
+                        ForEach(receipts) { receipt in
+                            receiptIndexRow(receipt)
+                        }
                     }
                 }
                 .padding(.horizontal, V02PrimaryContentLayoutPolicy.horizontalInset)
                 .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
             }
             .scrollIndicators(.hidden)
-            // Receipt navigation belongs to the same gesture arena as the
-            // reading ScrollView. Upward and non-handle vertical drags are
-            // therefore left to scrolling, while a locked horizontal drag or
-            // explicit top-handle pull drives the paper deck.
-            .simultaneousGesture(
-                receipts.isEmpty || isSelecting ? nil : receiptNavigationGesture()
-            )
             .accessibilityHidden(localOverlayPresented)
             .background(NoteTheme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -111,13 +98,11 @@ struct V02ReceiptBookView: View {
             onOverlayChange(presented)
         }
         .onDisappear { onOverlayChange(false) }
-        .onChange(of: receipts.map(\.id)) { _, ids in
-            receiptIndex = min(receiptIndex, max(0, ids.count - 1))
-        }
-        .sheet(item: $detailReceipt) { receipt in
-            V02ReceiptDetailView(
+        .fullScreenCover(item: $detailReceipt) { receipt in
+            V04ReceiptReaderView(
                 store: store,
-                receipt: receipt,
+                receipts: receipts,
+                initialReceiptID: receipt.id,
                 onDelete: { entryIDs in undoTrashEntryIDs.formUnion(entryIDs) }
             )
         }
@@ -241,20 +226,66 @@ struct V02ReceiptBookView: View {
     }
 
     private var emptyBook: some View {
-        VStack(spacing: 18) {
-            V02TicketClip().padding(.horizontal, 22)
-            VStack(spacing: 10) {
-                Text("每一轮构思，都留下一张存根")
-                    .noteFont(size: 21, weight: .semibold, design: .rounded, relativeTo: .title3)
-                Text("结束一轮构思后，小票会从这里的票据夹中出现。")
-                    .noteFont(size: 15, relativeTo: .body)
-                    .foregroundStyle(NoteTheme.secondaryInk)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.horizontal, 30)
-        }
+        ContentUnavailableView(
+            "还没有构思小票",
+            systemImage: "ticket",
+            description: Text("结束一轮构思并生成小票后，会在这里看到最新小票和全部索引。")
+        )
         .frame(maxWidth: .infinity, minHeight: 430)
         .accessibilityIdentifier("v02.receipt.empty")
+    }
+
+    private func receiptIndexRow(_ receipt: V02Receipt) -> some View {
+        Button {
+            if isSelecting {
+                if selectedIDs.contains(receipt.id) {
+                    selectedIDs.remove(receipt.id)
+                } else {
+                    selectedIDs.insert(receipt.id)
+                }
+            } else {
+                detailReceipt = receipt
+            }
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: isSelecting
+                    ? (selectedIDs.contains(receipt.id) ? "checkmark.circle.fill" : "circle")
+                    : "ticket")
+                    .font(.system(size: 21, weight: .medium))
+                    .foregroundStyle(NoteTheme.ink)
+                    .frame(width: 44, height: 44)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(receipt.snapshot.collectionName)
+                        .noteFont(size: 16, weight: .semibold, relativeTo: .headline)
+                        .foregroundStyle(NoteTheme.ink)
+                        .lineLimit(1)
+                    Text("\(receipt.statistics.roundTitle) · \(receipt.snapshot.members.count) 条灵感 · \(receipt.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                        .noteFont(size: 13, relativeTo: .subheadline)
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                        .lineLimit(2)
+                }
+                Spacer(minLength: 8)
+                if !isSelecting {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(NoteTheme.secondaryInk)
+                        .accessibilityHidden(true)
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(NoteTheme.divider).frame(height: 1)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(receipt.snapshot.collectionName)，\(receipt.statistics.roundTitle)，\(receipt.snapshot.members.count) 条灵感")
+        .accessibilityHint(isSelecting ? "双击切换选择" : "双击查看完整小票")
+    }
+
+    private func templateFor(_ receipt: V02Receipt) -> V02ReceiptTemplate {
+        templateOverrides[receipt.id]
+            ?? V02ReceiptTemplate.recommended(for: receipt, resources: store.state.resources)
     }
 
     private func export(_ receipt: V02Receipt, format: V02ReceiptExportFormat) {
@@ -288,129 +319,6 @@ struct V02ReceiptBookView: View {
         }
     }
 
-    private func receiptPaperHeight(_ receipt: V02Receipt) -> CGFloat {
-        let members = receipt.snapshot.members
-        let memberCount = CGFloat(max(members.count, 1))
-        let estimatedTextLines = CGFloat(members.reduce(0) { partial, member in
-            let count = member.text.trimmingCharacters(in: .whitespacesAndNewlines).count
-            return partial + max(1, Int(ceil(Double(max(count, 1)) / 18.0)))
-        })
-        let hasAttachments = !members.flatMap(\.attachments).isEmpty
-        let hasPhotoStrip = V02ReceiptTemplate.recommended(
-            for: receipt,
-            resources: store.state.resources
-        ) == .film
-
-        // Reserve one measured line budget rather than counting both a full
-        // card row and all of its text twice. The ticket remains long enough
-        // for wrapping, while its footer no longer trails a large blank tail.
-        return V02ReceiptLayoutPolicy.estimatedPaperHeight(
-            memberCount: Int(memberCount),
-            textLineCount: Int(estimatedTextLines),
-            hasAttachments: hasAttachments,
-            hasPhotoStrip: hasPhotoStrip,
-            textScale: receiptTextScale
-        )
-    }
-
-    private func receiptNavigationGesture() -> some Gesture {
-        DragGesture(minimumDistance: 10)
-            .onChanged { value in
-                let width = max(UIScreen.main.bounds.width, 1)
-                let edgeInset = min(32, width * 0.08)
-                if value.startLocation.x < edgeInset || value.startLocation.x > width - edgeInset {
-                    receiptGestureStartedAtEdge = true
-                    return
-                }
-                guard !receiptGestureStartedAtEdge else { return }
-
-                if receiptGestureAxis == .none {
-                    let proposedAxis = V02ReceiptGesturePolicy.axis(for: value.translation)
-                    if proposedAxis == .downward {
-                        receiptGestureStartedAtExtractionHandle = V02ReceiptGesturePolicy.canStartExtraction(
-                            at: value.startLocation
-                        )
-                        guard receiptGestureStartedAtExtractionHandle else { return }
-                    }
-                    guard proposedAxis != .none else { return }
-                    receiptGestureAxis = proposedAxis
-                }
-
-                receiptTranslation = value.translation
-            }
-            .onEnded { value in
-                guard !receiptGestureStartedAtEdge else {
-                    resetReceiptGesture()
-                    return
-                }
-
-                switch receiptGestureAxis {
-                case .horizontal:
-                    finishHorizontalReceiptGesture(value)
-                case .downward:
-                    finishExtractionGesture(value)
-                case .none:
-                    resetReceiptGesture(animated: true)
-                }
-            }
-    }
-
-    private func finishHorizontalReceiptGesture(_ value: DragGesture.Value) {
-        guard let target = V02ReceiptGesturePolicy.horizontalTarget(
-            index: receiptIndex,
-            count: receipts.count,
-            translation: value.translation.width
-        ) else {
-            resetReceiptGesture(animated: true)
-            return
-        }
-
-        let duration = reduceMotion ? 0.12 : 0.32
-        let width = max(UIScreen.main.bounds.width, 1)
-        withAnimation(reduceMotion ? .easeOut(duration: duration) : .smooth(duration: duration)) {
-            receiptTranslation.width = reduceMotion
-                ? (value.translation.width < 0 ? -24 : 24)
-                : (value.translation.width < 0 ? -width : width)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
-            receiptIndex = target
-            resetReceiptGesture()
-        }
-    }
-
-    private func finishExtractionGesture(_ value: DragGesture.Value) {
-        guard receiptGestureStartedAtExtractionHandle,
-              V02ReceiptGesturePolicy.shouldExtract(value.translation.height),
-              let currentReceipt else {
-            resetReceiptGesture(animated: true)
-            return
-        }
-
-        let duration = reduceMotion ? 0.16 : 0.28
-        let extractionDistance = max(UIScreen.main.bounds.height * 1.25, 1)
-        withAnimation(.easeIn(duration: duration)) {
-            receiptTranslation.height = extractionDistance
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.02) {
-            detailReceipt = currentReceipt
-            resetReceiptGesture()
-        }
-    }
-
-    private func resetReceiptGesture(animated: Bool = false) {
-        let changes = {
-            receiptTranslation = .zero
-            receiptGestureAxis = .none
-            receiptGestureStartedAtEdge = false
-            receiptGestureStartedAtExtractionHandle = false
-        }
-        if animated {
-            withAnimation(NoteMotion.settle(reduceMotion: reduceMotion), changes)
-        } else {
-            changes()
-        }
-    }
-
     private func setTemplate(_ template: V02ReceiptTemplate) {
         guard let currentReceipt else { return }
         templateOverrides[currentReceipt.id] = template
@@ -425,6 +333,68 @@ struct V02ReceiptBookView: View {
         guard let currentReceipt else { return }
         let body = currentReceipt.snapshot.members.map(\.text).joined(separator: "\n\n")
         UIPasteboard.general.string = "\(currentReceipt.snapshot.collectionName)\n\n\(body)"
+    }
+}
+
+struct V04ReceiptReaderView: View {
+    @ObservedObject var store: V02Store
+    let receipts: [V02Receipt]
+    let initialReceiptID: UUID
+    let onDelete: (Set<UUID>) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var index: Int
+
+    init(
+        store: V02Store,
+        receipts: [V02Receipt],
+        initialReceiptID: UUID,
+        onDelete: @escaping (Set<UUID>) -> Void
+    ) {
+        self.store = store
+        self.receipts = receipts
+        self.initialReceiptID = initialReceiptID
+        self.onDelete = onDelete
+        _index = State(initialValue: receipts.firstIndex(where: { $0.id == initialReceiptID }) ?? 0)
+    }
+
+    var body: some View {
+        ZStack {
+            if receipts.indices.contains(index) {
+                V02ReceiptDetailView(
+                    store: store,
+                    receipt: receipts[index],
+                    onDelete: onDelete
+                )
+                .id(receipts[index].id)
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: reduceMotion ? 0.12 : 0.16), value: index)
+        .simultaneousGesture(receiptSwitchGesture)
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment:
+                index = min(index + 1, receipts.count - 1)
+            case .decrement:
+                index = max(index - 1, 0)
+            @unknown default:
+                break
+            }
+        }
+    }
+
+    private var receiptSwitchGesture: some Gesture {
+        DragGesture(minimumDistance: V02ReceiptGesturePolicy.lockDistance)
+            .onEnded { value in
+                guard V02ReceiptGesturePolicy.axis(for: value.translation) == .horizontal,
+                      let target = V02ReceiptGesturePolicy.horizontalTarget(
+                        index: index,
+                        count: receipts.count,
+                        translation: value.translation.width,
+                        predictedEndTranslation: value.predictedEndTranslation.width
+                      ) else { return }
+                index = target
+            }
     }
 }
 
