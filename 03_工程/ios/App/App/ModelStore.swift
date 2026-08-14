@@ -420,14 +420,7 @@ struct V02TrashEntry: Identifiable, Codable, Sendable {
     let deletedAt: Date
 }
 
-enum V02CapacityCopy {
-    static let collectionLimit = "最多支持 5 个构思集。"
-    static let collectionCapacity = "每个构思集最多支持 10 条灵感。"
-}
-
 enum V02DomainError: LocalizedError, Equatable {
-    case collectionLimit
-    case collectionCapacity
     case inspirationNotFound
     case collectionNotFound
     case roundNotFound
@@ -440,8 +433,6 @@ enum V02DomainError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
-        case .collectionLimit: V02CapacityCopy.collectionLimit
-        case .collectionCapacity: V02CapacityCopy.collectionCapacity
         case .inspirationNotFound, .collectionNotFound, .roundNotFound: "没有找到对应内容。"
         case .activeRoundRequired: "当前构思集没有可结束的构思轮次。"
         case .duplicateReceipt: "本轮构思已经生成构思小票。"
@@ -623,8 +614,6 @@ struct V02DomainState: Codable, Sendable {
 /// Pure transaction engine. Persistence owns one `V02DomainState` value and
 /// only replaces it after the operation below has returned successfully.
 struct V02DomainEngine {
-    static let maximumActiveCollections = 5
-    static let maximumMembersPerCollection = 10
     static let trashRetention: TimeInterval = 30 * 24 * 60 * 60
 
     static func createCollection(
@@ -632,8 +621,6 @@ struct V02DomainEngine {
         name: String? = nil,
         now: Date = .now
     ) throws -> V02ThinkingCollection {
-        let activeCount = state.collections.filter { $0.currentRoundID != nil }.count
-        guard activeCount < maximumActiveCollections else { throw V02DomainError.collectionLimit }
         let defaultName = "构思集（\(state.nextCollectionNumber)）"
         state.nextCollectionNumber += 1
         let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -651,7 +638,6 @@ struct V02DomainEngine {
     ) throws -> V02ThinkingRound {
         guard let index = state.collections.firstIndex(where: { $0.id == collectionID }) else { throw V02DomainError.collectionNotFound }
         guard state.collections[index].currentRoundID == nil else { throw V02DomainError.activeRoundRequired }
-        guard memberIDs.count <= maximumMembersPerCollection else { throw V02DomainError.collectionCapacity }
         let previousMax = state.rounds
             .filter { $0.collectionID == collectionID }
             .map(\.roundNumber)
@@ -681,8 +667,6 @@ struct V02DomainEngine {
         guard let collection = state.collections.first(where: { $0.id == collectionID }),
               let roundID = collection.currentRoundID,
               let roundIndex = state.rounds.firstIndex(where: { $0.id == roundID && $0.state == .thinking }) else { throw V02DomainError.activeRoundRequired }
-        let existing = state.rounds[roundIndex].memberIDs
-        guard existing.contains(inspirationID) || existing.count < maximumMembersPerCollection else { throw V02DomainError.collectionCapacity }
         if let oldID = state.inspirations[inspirationIndex].collectionID,
            let oldRound = state.collections.first(where: { $0.id == oldID })?.currentRoundID,
            let oldIndex = state.rounds.firstIndex(where: { $0.id == oldRound }) {
@@ -755,8 +739,6 @@ struct V02DomainEngine {
         guard state.collections[collectionIndex].currentRoundID == nil else {
             throw V02DomainError.activeRoundRequired
         }
-        let activeCount = state.collections.filter { $0.currentRoundID != nil }.count
-        guard activeCount < maximumActiveCollections else { throw V02DomainError.collectionLimit }
         guard let previous = state.rounds
             .filter({ $0.collectionID == collectionID && $0.state == .ended })
             .sorted(by: { ($0.endedAt ?? .distantPast) > ($1.endedAt ?? .distantPast) })
@@ -808,10 +790,6 @@ struct V02DomainEngine {
               let collectionIndex = state.collections.firstIndex(where: { $0.id == receipt.collectionID }),
               state.collections[collectionIndex].currentRoundID == nil else {
             throw V02DomainError.roundNotFound
-        }
-        let activeCount = state.collections.filter { $0.currentRoundID != nil }.count
-        guard activeCount < maximumActiveCollections else {
-            throw V02DomainError.collectionLimit
         }
         state.receipts.remove(at: receiptIndex)
         state.rounds[roundIndex].state = .thinking

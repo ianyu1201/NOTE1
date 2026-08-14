@@ -232,20 +232,13 @@ final class NoteStoreTests: XCTestCase {
     func testV02GroupOperationTargetsAlwaysExposeBothOperationTypes() {
         XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 0), ["new", "existing"])
         XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 3), ["new", "existing"])
-        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 5), ["new", "existing"])
-        XCTAssertTrue(V02GroupOperationPolicy.canAccept(memberCount: 9))
-        XCTAssertFalse(V02GroupOperationPolicy.canAccept(memberCount: 10))
-        XCTAssertEqual(V02GroupOperationPolicy.capacityLabel(memberCount: 9), "9/10")
-        XCTAssertEqual(V02GroupOperationPolicy.capacityLabel(memberCount: 10), "已满 10 条")
+        XCTAssertEqual(V02GroupOperationPolicy.targetIDs(activeCollectionCount: 6), ["new", "existing"])
     }
 
-    func testV02CollectionPresentationCoversZeroOneFiveAndMemberCapacity() {
+    func testV02CollectionPresentationCoversEmptyAndActiveStates() {
         XCTAssertTrue(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 0))
         XCTAssertFalse(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 1))
-        XCTAssertTrue(V02CollectionOperationPolicy.canCreate(activeCollectionCount: 4))
-        XCTAssertFalse(V02CollectionOperationPolicy.canCreate(activeCollectionCount: 5))
-        XCTAssertTrue(V02CollectionOperationPolicy.canAddMember(memberCount: 9))
-        XCTAssertFalse(V02CollectionOperationPolicy.canAddMember(memberCount: 10))
+        XCTAssertFalse(V02CollectionOperationPolicy.showsEmptyState(activeCollectionCount: 6))
     }
 
     func testGroupDropOnlyUsesVisibleTargetFrames() {
@@ -363,13 +356,13 @@ final class NoteStoreTests: XCTestCase {
         )
     }
 
-    func testV02CollectionCapacityAndNameCounterAreDomainConstraints() throws {
+    func testV02CollectionNameCounterAllowsAtLeastSixActiveCollections() throws {
         var state = V02DomainState()
-        let collections = try (0 ..< 5).map { _ in
+        let collections = try (0 ..< 6).map { _ in
             try V02DomainEngine.createCollection(in: &state)
         }
         XCTAssertEqual(collections.map(\.name), [
-            "构思集（1）", "构思集（2）", "构思集（3）", "构思集（4）", "构思集（5）"
+            "构思集（1）", "构思集（2）", "构思集（3）", "构思集（4）", "构思集（5）", "构思集（6）"
         ])
         for collection in collections {
             _ = try V02DomainEngine.startRound(
@@ -377,9 +370,8 @@ final class NoteStoreTests: XCTestCase {
                 in: &state
             )
         }
-        XCTAssertThrowsError(try V02DomainEngine.createCollection(in: &state)) {
-            XCTAssertEqual($0 as? V02DomainError, .collectionLimit)
-        }
+        XCTAssertEqual(state.collections.count, 6)
+        XCTAssertEqual(state.collections.filter { $0.currentRoundID != nil }.count, 6)
     }
 
     func testV02CollectionNameTrimsWhitespaceAndUsesDefaultForBlankInput() throws {
@@ -916,18 +908,31 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.search("会议录音", scope: .receipts).count, 1)
     }
 
-    func testV02BatchAssignIsAtomicWhenCapacityIsInsufficient() throws {
-        let store = V02Store(storageDirectory: directory.appendingPathComponent("batch"))
-        let collection = try store.createCollectionAndRound()
-        for index in 0..<9 {
-            let item = try store.createInspiration(text: "已有 \(index)")
-            try store.assign(item.id, to: collection.id)
-        }
-        let first = try store.createInspiration(text: "候选一")
-        let second = try store.createInspiration(text: "候选二")
-        XCTAssertThrowsError(try store.batchAssign([first.id, second.id], to: collection.id))
-        XCTAssertNil(store.state.inspirations.first(where: { $0.id == first.id })?.collectionID)
-        XCTAssertNil(store.state.inspirations.first(where: { $0.id == second.id })?.collectionID)
+    func testV02AssignMovesOneCardAtomicallyBetweenCollections() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("atomic-move"))
+        let source = try store.createCollectionAndRound(name: "来源构思集")
+        let target = try store.createCollectionAndRound(name: "目标构思集")
+        let inspiration = try store.createInspiration(text: "待移动灵感")
+        try store.assign(inspiration.id, to: source.id)
+
+        try store.assign(inspiration.id, to: target.id)
+
+        let sourceRoundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == source.id })?.currentRoundID)
+        let targetRoundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == target.id })?.currentRoundID)
+        let sourceRound = try XCTUnwrap(store.state.rounds.first(where: { $0.id == sourceRoundID }))
+        let targetRound = try XCTUnwrap(store.state.rounds.first(where: { $0.id == targetRoundID }))
+        XCTAssertFalse(sourceRound.memberIDs.contains(inspiration.id))
+        XCTAssertEqual(targetRound.memberIDs, [inspiration.id])
+        XCTAssertEqual(store.state.inspirations.first(where: { $0.id == inspiration.id })?.collectionID, target.id)
+
+        XCTAssertEqual(
+            sourceRound.events.filter { $0.inspirationID == inspiration.id }.map(\.kind),
+            [.memberAdded, .memberRemoved]
+        )
+        XCTAssertEqual(
+            targetRound.events.filter { $0.inspirationID == inspiration.id }.map(\.kind),
+            [.memberAdded]
+        )
     }
 
     func testV02BatchDeleteMovesEverySelectedInspirationToTrash() throws {
@@ -1023,22 +1028,21 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.state.inspirations.first?.collectionID, original.id)
     }
 
-    func testV02UndoEndRoundRespectsActiveCollectionLimit() throws {
-        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-collection-limit"))
-        let inspiration = try store.createInspiration(text: "不能恢复成第六个活动构思集")
+    func testV02UndoEndRoundAllowsRestoringAlongsideSixActiveCollections() throws {
+        let store = V02Store(storageDirectory: directory.appendingPathComponent("undo-collection-unbounded"))
+        let inspiration = try store.createInspiration(text: "撤回后恢复的灵感")
         let original = try store.createCollectionAndRound(name: "已结束构思集")
         try store.assign(inspiration.id, to: original.id)
         let originalRoundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == original.id })?.currentRoundID)
         let receipt = try store.endRound(originalRoundID)
-        for index in 0..<V02DomainEngine.maximumActiveCollections {
+        for index in 0..<6 {
             _ = try store.createCollectionAndRound(name: "活动构思集 \(index + 1)")
         }
 
-        XCTAssertThrowsError(try store.undoEndRound(receipt.id)) { error in
-            XCTAssertEqual(error as? V02DomainError, .collectionLimit)
-        }
-        XCTAssertEqual(store.state.receipts.map(\.id), [receipt.id])
-        XCTAssertEqual(store.activeCollections.count, V02DomainEngine.maximumActiveCollections)
+        XCTAssertNoThrow(try store.undoEndRound(receipt.id))
+        XCTAssertTrue(store.state.receipts.isEmpty)
+        XCTAssertEqual(store.activeCollections.count, 7)
+        XCTAssertEqual(store.state.inspirations.first?.collectionID, original.id)
     }
 
     func testV02DeletingIndependentInspirationDoesNotRemoveEmptyDraftCollection() throws {
@@ -1109,16 +1113,17 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(second.name, "构思集（2）")
     }
 
-    func testV02CreateInspirationInCollectionIsAtomicAtCapacity() throws {
+    func testV02CreateInspirationInCollectionAllowsAtLeastElevenMembers() throws {
         let store = V02Store(storageDirectory: directory.appendingPathComponent("create-in-collection"))
         let collection = try store.createCollectionAndRound()
-        for index in 0..<V02DomainEngine.maximumMembersPerCollection {
+        for index in 0..<11 {
             _ = try store.createInspiration(text: "成员 \(index)", in: collection.id)
         }
 
-        XCTAssertThrowsError(try store.createInspiration(text: "不应写入", in: collection.id))
-        XCTAssertEqual(store.state.inspirations.count, V02DomainEngine.maximumMembersPerCollection)
-        XCTAssertFalse(store.state.inspirations.contains { $0.text == "不应写入" })
+        let roundID = try XCTUnwrap(store.state.collections.first(where: { $0.id == collection.id })?.currentRoundID)
+        let round = try XCTUnwrap(store.state.rounds.first(where: { $0.id == roundID }))
+        XCTAssertEqual(round.memberIDs.count, 11)
+        XCTAssertEqual(store.state.inspirations.count, 11)
     }
 
     func testV02CreateInspirationInMissingOrEndedCollectionReportsTheActualConstraint() throws {
@@ -1316,7 +1321,7 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(store.state.resources.map(\.id), [resource.id])
     }
 
-    func testV02PrimaryNavigationUsesFourFullWidthCellsAndReceiptPageHidesComposer() {
+    func testV04PrimaryNavigationUsesFourFullWidthCellsAndEveryPageAddsInspiration() {
         XCTAssertEqual(V02PrimaryPage.allCases.count, 4)
         XCTAssertGreaterThanOrEqual(V02NavigationLayoutPolicy.cellMinHeight, 44)
         XCTAssertGreaterThanOrEqual(V02NavigationLayoutPolicy.barHeight, V02NavigationLayoutPolicy.cellMinHeight)
@@ -1342,12 +1347,13 @@ final class NoteStoreTests: XCTestCase {
             NoteTheme.navigationHeight + V02NavigationLayoutPolicy.composerBottomGap
         )
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .inspirations, isOverlayPresented: false))
+        XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .cards, isOverlayPresented: false))
         XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .collections, isOverlayPresented: false))
-        XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
+        XCTAssertTrue(V02NavigationLayoutPolicy.showsFloatingComposer(on: .receipts, isOverlayPresented: false))
         XCTAssertFalse(V02NavigationLayoutPolicy.showsFloatingComposer(on: .cards, isOverlayPresented: true))
-        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .inspirations), "记录灵感")
-        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .cards), "新增卡片")
-        XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: .collections), "新建构思集")
+        for page in V02PrimaryPage.allCases {
+            XCTAssertEqual(V02NavigationLayoutPolicy.composerLabel(for: page), "新增灵感")
+        }
     }
 
     func testV03PageHeadersShareOneGeometryAndPrimaryBrandTitle() {
@@ -1356,6 +1362,7 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertEqual(V02PrimaryHeaderPolicy.titleTracking, 5)
         XCTAssertEqual(V02PrimaryHeaderPolicy.actionSpacing, 4)
         XCTAssertEqual(V02NavigationLayoutPolicy.pageHeaderHeight, NoteTheme.controlSize + 8)
+        XCTAssertEqual(NoteTheme.topBarHeight, 56)
         XCTAssertEqual(NoteTheme.controlSize, 48)
         XCTAssertEqual(NoteTheme.controlVisualSize, 46)
     }
@@ -1795,23 +1802,17 @@ final class NoteStoreTests: XCTestCase {
         XCTAssertTrue(V02CardDeckPolicy.acceptsHorizontalTuck(startX: 80, translation: CGSize(width: -120, height: 0)))
     }
 
-    func testV03UserFacingCapacityAndBackupCopyDoesNotExposeLegacyVersionLabels() {
+    func testV03UserFacingBackupCopyDoesNotExposeLegacyVersionLabels() {
         let copy = [
-            V02CapacityCopy.collectionLimit,
-            V02CapacityCopy.collectionCapacity,
             V02BackupCopy.defaultFilename,
             V02BackupCopy.restoreConfirmation,
             V02BackupCopy.oversizedResource,
             V02BackupCopy.unsupportedVersion(99),
             V02BackupCopy.invalidArchive("无法读取文件内容。"),
-            V02DomainError.collectionLimit.localizedDescription,
-            V02DomainError.collectionCapacity.localizedDescription,
             V02BackupError.unsupportedVersion(99).localizedDescription,
             V02BackupError.invalidArchive("无法读取文件内容。").localizedDescription
         ]
 
-        XCTAssertEqual(V02CapacityCopy.collectionLimit, "最多支持 5 个构思集。")
-        XCTAssertEqual(V02CapacityCopy.collectionCapacity, "每个构思集最多支持 10 条灵感。")
         XCTAssertEqual(V02BackupCopy.defaultFilename, "NOTE1-本机备份")
         for text in copy {
             XCTAssertFalse(text.contains("V0.2"))

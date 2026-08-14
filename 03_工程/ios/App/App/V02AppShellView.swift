@@ -139,13 +139,7 @@ struct V02AppShellView: View {
                 isOverlayPresented: shouldHideFloatingComposer || generatedReceipt != nil
             ) {
                 V02FloatingComposerButton(
-                    action: {
-                        if page == .collections {
-                            isRequestingNewCollection = true
-                        } else {
-                            sheet = .composer
-                        }
-                    },
+                    action: { sheet = .composer },
                     label: V02NavigationLayoutPolicy.composerLabel(for: page)
                 )
                     .padding(.trailing, NoteTheme.horizontalPadding)

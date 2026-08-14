@@ -2,25 +2,28 @@ import SwiftUI
 import UIKit
 
 enum NoteTheme {
-    static let ink = Color(red: 0.035, green: 0.105, blue: 0.205)
+    static let ink = Color(red: 0.165, green: 0.090, blue: 0.145)
     static let secondaryInk = Color(
         red: V02ColorContrastPolicy.secondaryInk.red,
         green: V02ColorContrastPolicy.secondaryInk.green,
         blue: V02ColorContrastPolicy.secondaryInk.blue
     )
     static let accent = ink
-    static let danger = Color(red: 0.91, green: 0.24, blue: 0.27)
-    static let canvas = Color(red: 0.953, green: 0.956, blue: 0.995)
-    static let paper = Color(red: 0.988, green: 0.986, blue: 0.996)
-    static let receiptPaper = Color(red: 0.986, green: 0.986, blue: 0.982)
+    static let danger = Color.red
+    static let canvasTop = Color(red: 0.980, green: 0.976, blue: 0.984)
+    static let canvasBottom = Color(red: 0.953, green: 0.945, blue: 0.957)
+    static let canvas = canvasTop
+    static let paper = Color(red: 0.992, green: 0.988, blue: 0.994)
+    static let receiptPaper = Color(red: 0.988, green: 0.988, blue: 0.984)
     static let receiptInk = Color(red: 0.075, green: 0.078, blue: 0.085)
     static let receiptSecondaryInk = Color(red: 0.37, green: 0.38, blue: 0.41)
     static let receiptDivider = receiptInk.opacity(0.16)
-    static let paperBorder = secondaryInk.opacity(0.15)
-    static let divider = secondaryInk.opacity(0.13)
+    static let divider = Color(red: 0.871, green: 0.851, blue: 0.878)
+    static let paperBorder = divider
+    static let selectedGlass = Color(red: 0.933, green: 0.906, blue: 0.925)
 
     static let horizontalPadding: CGFloat = 22
-    static let topBarHeight: CGFloat = 72
+    static let topBarHeight: CGFloat = 56
     static let controlSize: CGFloat = 48
     static let controlVisualSize: CGFloat = 46
     static let floatingComposerSize: CGFloat = 56
@@ -29,23 +32,19 @@ enum NoteTheme {
     static let cornerRadius: CGFloat = 30
 
     static let background = LinearGradient(
-        colors: [
-            Color(red: 0.976, green: 0.977, blue: 1.0),
-            Color(red: 0.943, green: 0.947, blue: 0.998),
-            Color(red: 0.912, green: 0.922, blue: 0.988)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        colors: [canvasTop, canvasBottom],
+        startPoint: .top,
+        endPoint: .bottom
     )
 
     static let paperSurface = LinearGradient(
         colors: [
-            Color(red: 0.997, green: 0.996, blue: 1.0),
+            Color(red: 0.998, green: 0.996, blue: 0.999),
             paper,
-            Color(red: 0.968, green: 0.968, blue: 0.988)
+            Color(red: 0.976, green: 0.971, blue: 0.979)
         ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
+        startPoint: .top,
+        endPoint: .bottom
     )
 
     static let receiptPaperSurface = LinearGradient(
@@ -63,8 +62,8 @@ enum NoteTheme {
 /// light canvas as well as on paper. Keep their shared ink above the 4.5:1
 /// body-text contrast floor instead of compensating page by page.
 enum V02ColorContrastPolicy {
-    static let secondaryInk = (red: 0.34, green: 0.40, blue: 0.54)
-    static let darkestCanvas = (red: 0.912, green: 0.922, blue: 0.988)
+    static let secondaryInk = (red: 0.443, green: 0.416, blue: 0.447)
+    static let darkestCanvas = (red: 0.953, green: 0.945, blue: 0.957)
 
     static var minimumSecondaryTextContrast: Double {
         contrastRatio(foreground: secondaryInk, background: darkestCanvas)
@@ -98,7 +97,7 @@ enum V02ColorContrastPolicy {
 
 enum NoteMotion {
     static func press(reduceMotion: Bool) -> Animation {
-        reduceMotion ? .easeOut(duration: 0.1) : .spring(response: 0.22, dampingFraction: 0.86)
+        .easeOut(duration: reduceMotion ? 0.08 : 0.12)
     }
 
     static func reveal(reduceMotion: Bool) -> Animation {
@@ -141,19 +140,11 @@ enum V02NavigationLayoutPolicy {
     static let transientBannerBottomPadding: CGFloat = NoteTheme.navigationHeight + composerBottomGap
 
     static func showsFloatingComposer(on page: V02PrimaryPage, isOverlayPresented: Bool) -> Bool {
-        // The shell owns the shared floating component for every page that
-        // supports creation. Collection creation is routed back into the
-        // collection root, while the receipt book deliberately has no plus.
-        !isOverlayPresented && page != .receipts
+        !isOverlayPresented
     }
 
     static func composerLabel(for page: V02PrimaryPage) -> String {
-        switch page {
-        case .inspirations: "记录灵感"
-        case .cards: "新增卡片"
-        case .collections: "新建构思集"
-        case .receipts: ""
-        }
+        "新增灵感"
     }
 }
 
@@ -213,14 +204,12 @@ struct GlassSurface: ViewModifier {
     func body(content: Content) -> some View {
         if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
             content
-                .background(NoteTheme.paper)
+                .background(NoteTheme.canvasTop)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                         .stroke(
-                            NoteTheme.ink.opacity(
-                                V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
-                            ),
+                            NoteTheme.divider,
                             lineWidth: 1
                         )
                 }
@@ -228,30 +217,30 @@ struct GlassSurface: ViewModifier {
                     color: castsShadow
                         ? NoteTheme.ink.opacity(V02GlassSurfacePolicy.reducedTransparencyShadowOpacity)
                         : .clear,
-                    radius: castsShadow ? 12 : 0,
-                    y: castsShadow ? 5 : 0
+                    radius: castsShadow ? 8 : 0,
+                    y: castsShadow ? 3 : 0
                 )
         } else if #available(iOS 26.0, *) {
             content
                 .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
                 .shadow(
                     color: castsShadow ? NoteTheme.ink.opacity(0.07) : .clear,
-                    radius: castsShadow ? 20 : 0,
-                    y: castsShadow ? 10 : 0
+                    radius: castsShadow ? 10 : 0,
+                    y: castsShadow ? 4 : 0
                 )
         } else {
             content
                 .background(.ultraThinMaterial)
-                .background(Color.white.opacity(0.16))
+                .background(NoteTheme.canvasTop.opacity(0.18))
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(Color.white.opacity(strokeOpacity), lineWidth: 1)
+                        .stroke(NoteTheme.divider.opacity(strokeOpacity), lineWidth: 1)
                 }
                 .shadow(
-                    color: castsShadow ? NoteTheme.ink.opacity(0.09) : .clear,
-                    radius: castsShadow ? 24 : 0,
-                    y: castsShadow ? 12 : 0
+                    color: castsShadow ? NoteTheme.ink.opacity(0.07) : .clear,
+                    radius: castsShadow ? 10 : 0,
+                    y: castsShadow ? 4 : 0
                 )
         }
     }
@@ -345,14 +334,12 @@ struct V02GlassIconLabel: View {
             .background {
                 if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
                     Circle()
-                        .fill(NoteTheme.paper)
+                        .fill(NoteTheme.canvasTop)
                         .frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize)
                         .overlay {
                             Circle()
                                 .stroke(
-                                    NoteTheme.ink.opacity(
-                                        V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
-                                    ),
+                                    NoteTheme.divider,
                                     lineWidth: 1
                                 )
                         }
@@ -362,8 +349,8 @@ struct V02GlassIconLabel: View {
                     Circle()
                         .fill(.ultraThinMaterial)
                         .frame(width: NoteTheme.controlVisualSize, height: NoteTheme.controlVisualSize)
-                        .overlay { Circle().fill(Color.white.opacity(0.28)) }
-                        .overlay { Circle().stroke(Color.white.opacity(0.78), lineWidth: 1) }
+                        .overlay { Circle().fill(NoteTheme.canvasTop.opacity(0.22)) }
+                        .overlay { Circle().stroke(NoteTheme.divider, lineWidth: 1) }
                 }
             }
             .shadow(color: NoteTheme.ink.opacity(0.055), radius: 8, y: 3)
@@ -461,7 +448,7 @@ struct V02PrimaryPageHeader<Center: View>: View {
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
         .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
-        .background(NoteTheme.background)
+        .background(NoteTheme.canvasTop.opacity(0.96))
     }
 }
 
@@ -506,7 +493,7 @@ struct V02SecondaryPageHeader<Leading: View, Trailing: View>: View {
         }
         .padding(.horizontal, NoteTheme.horizontalPadding)
         .frame(height: V02NavigationLayoutPolicy.pageHeaderHeight)
-        .background(NoteTheme.background)
+        .background(NoteTheme.canvasTop.opacity(0.96))
     }
 }
 
@@ -549,13 +536,11 @@ struct V02GlassTextButton: View {
     private var textLabel: some View {
         if V02GlassSurfacePolicy.usesOpaqueSurface(reduceTransparency: reduceTransparency) {
             labelContent
-                .background(NoteTheme.paper, in: Capsule())
+                .background(NoteTheme.canvasTop, in: Capsule())
                 .overlay {
                     Capsule()
                         .stroke(
-                            NoteTheme.ink.opacity(
-                                V02GlassSurfacePolicy.reducedTransparencyBorderOpacity
-                            ),
+                            NoteTheme.divider,
                             lineWidth: 1
                         )
                 }
@@ -565,7 +550,7 @@ struct V02GlassTextButton: View {
         } else {
             labelContent
                 .background(.ultraThinMaterial, in: Capsule())
-                .overlay { Capsule().stroke(Color.white.opacity(0.78), lineWidth: 1) }
+                .overlay { Capsule().stroke(NoteTheme.divider, lineWidth: 1) }
         }
     }
 
@@ -624,7 +609,7 @@ struct RoundGlassPressedFeedback: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .scaleEffect(isPressed && !reduceMotion ? 0.965 : 1)
+            .scaleEffect(isPressed && !reduceMotion ? 0.97 : 1)
             .brightness(isPressed ? -0.055 : 0)
             .saturation(isPressed ? 0.9 : 1)
             .animation(NoteMotion.press(reduceMotion: reduceMotion), value: isPressed)
@@ -647,7 +632,7 @@ struct PressScaleButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.965 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
             .opacity(configuration.isPressed ? 0.84 : 1)
             .animation(NoteMotion.press(reduceMotion: reduceMotion), value: configuration.isPressed)
     }

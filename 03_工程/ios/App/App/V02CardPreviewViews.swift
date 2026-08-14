@@ -24,7 +24,6 @@ struct V02CardPreviewView: View {
     @State private var isShowingCreateCollection = false
     @State private var pendingInspirationID: UUID?
     @State private var newCollectionName = ""
-    @State private var capacityError: String?
 
     private var cards: [V02CardPreviewEntry] { store.cardPreviewEntries }
 
@@ -200,14 +199,6 @@ struct V02CardPreviewView: View {
         } message: {
             Text("为当前灵感新建一个构思集。")
         }
-        .alert("暂时无法完成", isPresented: Binding(
-            get: { capacityError != nil },
-            set: { if !$0 { capacityError = nil } }
-        )) {
-            Button("知道了", role: .cancel) { capacityError = nil }
-        } message: {
-            Text(capacityError ?? "")
-        }
         // Keep the undo affordance in the page content area. The native
         // TabView owns the navigation surface; an anchored overlay preserves
         // its hit targets and leaves the card flow usable underneath.
@@ -281,12 +272,6 @@ struct V02CardPreviewView: View {
         isDraggingGroup = false
         switch target {
         case "new":
-            guard V02CollectionOperationPolicy.canCreate(
-                activeCollectionCount: store.activeCollections.count
-            ) else {
-                capacityError = "已达到 5 个构思集上限。请先结束一个构思集，再新建。"
-                return
-            }
             newCollectionName = ""
             isShowingCreateCollection = true
         case "existing":
@@ -303,7 +288,7 @@ struct V02CardPreviewView: View {
     }
 
     private var localOverlayPresented: Bool {
-        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection || capacityError != nil
+        isShowingGroupTray || isShowingCollectionPicker || isShowingCreateCollection
     }
 
     private func beginGroupPicker(for cards: [V02CardPreviewEntry]) {
@@ -321,10 +306,6 @@ struct V02CardPreviewView: View {
             try store.assign(inspirationID, to: collectionID)
             pendingInspirationID = nil
             isShowingCollectionPicker = false
-        } catch StoreError.invalidOperation(_) {
-            capacityError = V02CapacityCopy.collectionCapacity
-        } catch V02DomainError.collectionCapacity {
-            capacityError = V02CapacityCopy.collectionCapacity
         } catch {
             reportError(error)
         }
@@ -339,8 +320,6 @@ struct V02CardPreviewView: View {
                 name: trimmed.isEmpty ? nil : trimmed
             )
             pendingInspirationID = nil
-        } catch V02DomainError.collectionLimit {
-            capacityError = "已达到 5 个构思集上限。请先结束一个构思集，再新建。"
         } catch {
             reportError(error)
         }
@@ -576,9 +555,8 @@ private struct V02ExistingCollectionPicker: View {
                     Button("取消", action: onDismiss)
                         .buttonStyle(PressScaleButtonStyle())
                 }
-                ForEach(collections.prefix(5)) { collection in
+                ForEach(collections) { collection in
                     let count = memberCount(collection)
-                    let canAccept = V02GroupOperationPolicy.canAccept(memberCount: count)
                     Button {
                         onSelect(collection)
                     } label: {
@@ -586,7 +564,7 @@ private struct V02ExistingCollectionPicker: View {
                             Image(systemName: "folder.fill")
                             Text(collection.name).lineLimit(1)
                             Spacer()
-                            Text(V02GroupOperationPolicy.capacityLabel(memberCount: count))
+                            Text("\(count) 条灵感")
                                 .foregroundStyle(NoteTheme.secondaryInk)
                         }
                         .noteFont(size: 14, weight: .medium, relativeTo: .body)
@@ -596,18 +574,8 @@ private struct V02ExistingCollectionPicker: View {
                         .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .buttonStyle(RoundGlassPressButtonStyle())
-                    .disabled(!canAccept)
-                    .opacity(canAccept ? 1 : 0.54)
-                    .accessibilityLabel(
-                        canAccept
-                            ? "归入 \(collection.name)，当前 \(count) 条，共 10 条"
-                            : "\(collection.name)，已满 10 条，无法归入"
-                    )
-                    .accessibilityHint(
-                        canAccept
-                            ? "点按将当前灵感归入此构思集"
-                            : "请先从此构思集移出一条灵感"
-                    )
+                    .accessibilityLabel("归入 \(collection.name)，当前 \(count) 条灵感")
+                    .accessibilityHint("点按将当前灵感归入此构思集")
                 }
                 if collections.isEmpty {
                     VStack(spacing: 8) {

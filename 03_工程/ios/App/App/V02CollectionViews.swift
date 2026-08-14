@@ -22,7 +22,6 @@ struct V02CollectionListView: View {
     @State private var workingCollection: V02ThinkingCollection?
     @State private var isCreatingCollection = false
     @State private var newCollectionName = ""
-    @State private var capacityNotice = false
 
     private var endedCollections: [V02ThinkingCollection] {
         store.state.collections.filter { $0.currentRoundID == nil }
@@ -126,25 +125,6 @@ struct V02CollectionListView: View {
             Text("不填写名称时，将按顺序使用“构思集（1）”等默认名称。")
         }
         .overlay(alignment: .bottom) {
-            if capacityNotice {
-                Text(V02CapacityCopy.collectionLimit)
-                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
-                    .foregroundStyle(NoteTheme.ink)
-                    .padding(.horizontal, 18)
-                    .frame(minHeight: 48)
-                    .background(NoteTheme.paper.opacity(0.94), in: Capsule())
-                    .overlay { Capsule().stroke(Color.white.opacity(0.82), lineWidth: 1) }
-                    .shadow(color: NoteTheme.ink.opacity(0.10), radius: 18, y: 8)
-                    .padding(.bottom, NoteTheme.navigationHeight + 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(2))
-                        guard !Task.isCancelled else { return }
-                        capacityNotice = false
-                    }
-            }
-        }
-        .overlay(alignment: .bottom) {
             if let undoReceipt {
                 HStack {
                     Text("本轮构思已结束，\(undoReceipt.snapshot.members.count) 条灵感已收录。")
@@ -230,10 +210,6 @@ struct V02CollectionListView: View {
     }
 
     private func requestNewCollection() {
-        guard V02CollectionOperationPolicy.canCreate(activeCollectionCount: store.activeCollections.count) else {
-            withAnimation(.easeOut(duration: 0.2)) { capacityNotice = true }
-            return
-        }
         newCollectionName = ""
         isCreatingCollection = true
     }
@@ -300,7 +276,7 @@ private struct V02CollectionPaperCard: View {
                         .noteFont(size: 17, weight: .semibold, relativeTo: .headline)
                         .foregroundStyle(NoteTheme.ink)
                         .lineLimit(1)
-                    Text("\(memberCount) / 10 条灵感")
+                    Text("\(memberCount) 条灵感")
                         .noteFont(size: 13, relativeTo: .subheadline)
                         .foregroundStyle(NoteTheme.secondaryInk)
                     if let updateLabel {
@@ -328,7 +304,7 @@ private struct V02CollectionPaperCard: View {
         // padding would shrink the front paper and break the shared 22pt edge.
         .padding(.bottom, V02PrimaryContentLayoutPolicy.stackedPaperBackOffset)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(collection.name)，\(memberCount) / 10 条灵感")
+        .accessibilityLabel("\(collection.name)，\(memberCount) 条灵感")
     }
 
     private var updateLabel: String? {
@@ -426,7 +402,6 @@ private struct V02CollectionWorkbenchView: View {
     @State private var isEnding = false
     @State private var managingAttachments: V02Inspiration?
     @State private var deletingMember: V02Inspiration?
-    @State private var memberCapacityNotice = false
     @FocusState private var editorFocused: Bool
 
     private var collection: V02ThinkingCollection? {
@@ -477,35 +452,12 @@ private struct V02CollectionWorkbenchView: View {
             if !editorFocused {
                 V02FloatingComposerButton(
                     action: {
-                        if !V02CollectionOperationPolicy.canAddMember(memberCount: members.count) {
-                            withAnimation(.easeOut(duration: 0.2)) { memberCapacityNotice = true }
-                        } else {
-                            isAdding = true
-                        }
+                        isAdding = true
                     },
                     label: "新增组内灵感"
                 )
                 .padding(.trailing, NoteTheme.horizontalPadding)
                 .padding(.bottom, V02NavigationLayoutPolicy.workbenchFloatingComposerBottomPadding)
-            }
-        }
-        .overlay(alignment: .bottom) {
-            if memberCapacityNotice {
-                Text(V02CapacityCopy.collectionCapacity)
-                    .noteFont(size: 14, weight: .semibold, relativeTo: .subheadline)
-                    .foregroundStyle(NoteTheme.ink)
-                    .padding(.horizontal, 18)
-                    .frame(minHeight: 48)
-                    .background(NoteTheme.paper.opacity(0.94), in: Capsule())
-                    .overlay { Capsule().stroke(Color.white.opacity(0.82), lineWidth: 1) }
-                    .shadow(color: NoteTheme.ink.opacity(0.10), radius: 18, y: 8)
-                    .padding(.bottom, NoteTheme.navigationHeight + 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .task {
-                        try? await Task.sleep(for: .seconds(2))
-                        guard !Task.isCancelled else { return }
-                        memberCapacityNotice = false
-                }
             }
         }
         .accessibilityHidden(isPresentingWorkbenchSheet)
@@ -596,7 +548,7 @@ private struct V02CollectionWorkbenchView: View {
                         .foregroundStyle(NoteTheme.ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
-                    Text("\(members.count)/\(V02DomainEngine.maximumMembersPerCollection) 条灵感")
+                    Text("\(members.count) 条灵感")
                         .noteFontCapped(size: 11, maximumScale: 1.2, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
                         .lineLimit(1)

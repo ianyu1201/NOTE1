@@ -327,9 +327,6 @@ final class V02Store: ObservableObject {
             guard let roundIndex = state.rounds.firstIndex(where: { $0.id == collection.currentRoundID && $0.state == .thinking }) else {
                 throw V02DomainError.activeRoundRequired
             }
-            guard state.rounds[roundIndex].memberIDs.count < V02DomainEngine.maximumMembersPerCollection else {
-                throw V02DomainError.collectionCapacity
-            }
             state.inspirations.append(inspiration)
             state.rounds[roundIndex].memberIDs.append(inspiration.id)
             state.rounds[roundIndex].events.append(.init(id: UUID(), kind: .memberAdded, occurredAt: now, inspirationID: inspiration.id))
@@ -501,13 +498,9 @@ final class V02Store: ObservableObject {
             guard !inspirationIDs.isEmpty,
                   let collection = state.collections.first(where: { $0.id == collectionID }),
                   let roundID = collection.currentRoundID,
-                  let round = state.rounds.first(where: { $0.id == roundID && $0.state == .thinking }),
+                  state.rounds.contains(where: { $0.id == roundID && $0.state == .thinking }),
                   inspirationIDs.allSatisfy({ id in state.inspirations.contains { $0.id == id && ($0.collectionID == nil || $0.collectionID == collectionID) } }) else {
                 throw V02DomainError.inspirationNotFound
-            }
-            let newCount = inspirationIDs.subtracting(round.memberIDs).count
-            guard round.memberIDs.count + newCount <= V02DomainEngine.maximumMembersPerCollection else {
-                throw V02DomainError.collectionCapacity
             }
             for id in inspirationIDs {
                 try V02DomainEngine.assign(inspirationID: id, to: collectionID, in: &state)

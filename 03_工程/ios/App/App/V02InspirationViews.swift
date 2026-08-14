@@ -42,10 +42,8 @@ struct V02InspirationListView: View {
     private func canAssignSelected(to collection: V02ThinkingCollection) -> Bool {
         guard !selectedInspirations.isEmpty,
               selectedInspirations.allSatisfy({ $0.collectionID == nil || $0.collectionID == collection.id }),
-              let roundID = collection.currentRoundID,
-              let round = store.state.rounds.first(where: { $0.id == roundID }) else { return false }
-        let newIDs = selectedIDs.subtracting(round.memberIDs)
-        return round.memberIDs.count + newIDs.count <= V02DomainEngine.maximumMembersPerCollection
+              collection.currentRoundID != nil else { return false }
+        return true
     }
 
     var body: some View {
@@ -66,22 +64,17 @@ struct V02InspirationListView: View {
                             Text(NoteDateFormatter.group.string(from: group.date))
                                 .noteFontCapped(size: 18, maximumScale: 1.2, weight: .semibold, relativeTo: .headline)
                                 .foregroundStyle(NoteTheme.ink)
-                            Spacer()
-                            Text("\(group.items.count) 条灵感")
-                                .noteFontCapped(size: 13, maximumScale: 1.2, weight: .medium, relativeTo: .subheadline)
-                                .foregroundStyle(NoteTheme.secondaryInk)
                         }
                         .padding(.top, group.id == dateGroups.first?.id ? 0 : 12)
                         .padding(.bottom, 4)
                         ForEach(group.items) { item in
                             V02InspirationTimelineRow(
                                 inspiration: item,
-                                collectionName: collectionName(for: item),
-                                attachmentSymbols: attachmentSymbols(for: item),
                                 thumbnailURL: thumbnailURL(for: item),
                                 isSelecting: isSelecting,
                                 isSelected: selectedIDs.contains(item.id),
                                 onSelect: { toggleSelection(item.id) },
+                                onTuck: { tuckAway(item.id) },
                                 onLongPress: {
                                     // Long press is the batch-selection entry
                                     // point. Preserve an existing selection and
@@ -228,27 +221,20 @@ struct V02InspirationListView: View {
         else { selectedIDs.insert(id) }
     }
 
-    private func collectionName(for item: V02Inspiration) -> String? {
-        guard let collectionID = item.collectionID else { return nil }
-        return store.state.collections.first(where: { $0.id == collectionID })?.name
-    }
-
-    private func attachmentSymbols(for item: V02Inspiration) -> [String] {
-        item.resourceIDs.compactMap { resourceID in
-            guard let resource = store.state.resources.first(where: { $0.id == resourceID }) else { return nil }
-            if resource.mimeType.hasPrefix("audio/") || resource.source == .voiceInspiration { return "waveform" }
-            if resource.mimeType.hasPrefix("image/") { return "photo" }
-            if resource.mimeType == "application/pdf" { return "doc.richtext" }
-            return "doc"
-        }
-    }
-
     private func thumbnailURL(for item: V02Inspiration) -> URL? {
         item.resourceIDs.compactMap { resourceID in
             guard let resource = store.state.resources.first(where: { $0.id == resourceID }),
                   resource.mimeType.hasPrefix("image/") else { return nil }
             return store.resourceURL(resource)
         }.first
+    }
+
+    private func tuckAway(_ id: UUID) {
+        do {
+            try store.tuckAway(id)
+        } catch {
+            reportError(error)
+        }
     }
 
 }
@@ -261,12 +247,11 @@ private struct V02InspirationDateGroup: Identifiable {
 private struct V02InspirationTimelineRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let inspiration: V02Inspiration
-    let collectionName: String?
-    let attachmentSymbols: [String]
     let thumbnailURL: URL?
     let isSelecting: Bool
     let isSelected: Bool
     let onSelect: () -> Void
+    let onTuck: () -> Void
     let onLongPress: () -> Void
     let onOpen: () -> Void
 
@@ -280,6 +265,15 @@ private struct V02InspirationTimelineRow: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isSelected ? "取消选择" : "选择灵感")
+            } else {
+                Button("收起灵感", systemImage: "minus.circle", action: onTuck)
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(NoteTheme.secondaryInk)
+                    .frame(width: 44, height: 44)
+                    .contentShape(.circle)
+                    .buttonStyle(.plain)
+                    .disabled(inspiration.cardFlowState == .tuckedAway)
             }
             Button(action: onOpen) {
                 HStack(alignment: .top, spacing: 16) {
@@ -287,25 +281,17 @@ private struct V02InspirationTimelineRow: View {
                         Text(inspiration.text.isEmpty ? "未命名灵感" : inspiration.text)
                             .noteFont(size: 16, relativeTo: .body)
                             .foregroundStyle(NoteTheme.ink)
-                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                             .multilineTextAlignment(.leading)
+                            .accessibilityLabel(inspiration.text.isEmpty ? "未命名灵感" : inspiration.text)
                         HStack(spacing: 8) {
                             Text(NoteDateFormatter.display(inspiration.createdAt))
-                            if let collectionName { Text("构思集 · \(collectionName)") }
-                            if inspiration.cardFlowState == .tuckedAway { Text("已收起") }
+                            if !inspiration.resourceIDs.isEmpty {
+                                Text("附件 \(inspiration.resourceIDs.count) 个")
+                            }
                         }
                         .noteFontCapped(size: 12, maximumScale: 1.35, relativeTo: .caption)
                         .foregroundStyle(NoteTheme.secondaryInk)
-                        if !attachmentSymbols.isEmpty {
-                            HStack(spacing: 7) {
-                                ForEach(Array(attachmentSymbols.prefix(3).enumerated()), id: \.offset) { _, symbol in
-                                    Image(systemName: symbol)
-                                }
-                                Text("附件 \(inspiration.resourceIDs.count) 个")
-                            }
-                            .noteFontCapped(size: 12, maximumScale: 1.35, relativeTo: .caption)
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -316,13 +302,6 @@ private struct V02InspirationTimelineRow: View {
                             .scaledToFill()
                             .frame(width: 54, height: 54)
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .accessibilityHidden(true)
-                    } else if let symbol = attachmentSymbols.first {
-                        Image(systemName: symbol)
-                            .font(.system(size: 19, weight: .medium))
-                            .foregroundStyle(NoteTheme.secondaryInk)
-                            .frame(width: 48, height: 48)
-                            .background(NoteTheme.ink.opacity(0.045), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .accessibilityHidden(true)
                     }
                 }

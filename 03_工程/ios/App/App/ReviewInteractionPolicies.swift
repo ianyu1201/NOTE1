@@ -111,34 +111,16 @@ enum V02GroupTargetPolicy {
 }
 
 enum V02GroupOperationPolicy {
-    /// The long-press affordance always exposes the two operation types. The
-    /// active-collection count is resolved by the follow-up panel: creation
-    /// reports the five-collection limit and the existing-list panel can show
-    /// an empty or full state without changing the source affordance.
+    /// The long-press affordance always exposes both operation types. Whether
+    /// a target can be selected is resolved by the store's atomic operation.
     static func targetIDs(activeCollectionCount _: Int) -> [String] {
         ["new", "existing"]
-    }
-
-    static func canAccept(memberCount: Int) -> Bool {
-        memberCount < 10
-    }
-
-    static func capacityLabel(memberCount: Int) -> String {
-        canAccept(memberCount: memberCount) ? "\(memberCount)/10" : "已满 10 条"
     }
 }
 
 enum V02CollectionOperationPolicy {
     static func showsEmptyState(activeCollectionCount: Int) -> Bool {
         activeCollectionCount <= 0
-    }
-
-    static func canCreate(activeCollectionCount: Int) -> Bool {
-        max(0, activeCollectionCount) < V02DomainEngine.maximumActiveCollections
-    }
-
-    static func canAddMember(memberCount: Int) -> Bool {
-        max(0, memberCount) < V02DomainEngine.maximumMembersPerCollection
     }
 }
 

@@ -319,9 +319,8 @@ struct V02SearchView: View {
     private func canAssignSelected(to collection: V02ThinkingCollection) -> Bool {
         guard !selectedInspirations.isEmpty,
               selectedInspirations.allSatisfy({ $0.collectionID == nil || $0.collectionID == collection.id }),
-              let roundID = collection.currentRoundID,
-              let round = store.state.rounds.first(where: { $0.id == roundID }) else { return false }
-        return round.memberIDs.count + selectedIDs.subtracting(round.memberIDs).count <= V02DomainEngine.maximumMembersPerCollection
+              collection.currentRoundID != nil else { return false }
+        return true
     }
 
     private func selectableID(for result: V02SearchResult) -> UUID? {
