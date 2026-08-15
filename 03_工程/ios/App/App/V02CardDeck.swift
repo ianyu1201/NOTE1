@@ -82,6 +82,37 @@ enum V02CardPreviewLayoutPolicy {
         max(viewportHeight - previewPaperVerticalInset * 2, 0)
     }
 
+    static func previewStagePaperHeight(for availableHeight: CGFloat, entry: V02CardPreviewEntry) -> CGFloat {
+        let preferredHeight = previewPaperHeight(
+            for: previewPageHeight(for: availableHeight, entry: entry)
+        )
+        let maximumHeight = max(
+            availableHeight - previewControlsReserve - previewPaperVerticalInset * 2,
+            0
+        )
+        return min(preferredHeight, maximumHeight)
+    }
+
+    static func previewStagePaperInsets(for availableHeight: CGFloat, entry: V02CardPreviewEntry) -> EdgeInsets {
+        let paperHeight = previewStagePaperHeight(for: availableHeight, entry: entry)
+        let cardRegionHeight = max(availableHeight - previewControlsReserve, 0)
+        let topInset = max((cardRegionHeight - paperHeight) / 2, previewPaperVerticalInset)
+        return EdgeInsets(
+            top: topInset,
+            leading: 0,
+            bottom: max(availableHeight - paperHeight - topInset, 0),
+            trailing: 0
+        )
+    }
+
+    static func controlsOpacity(forDragProgress progress: CGFloat) -> Double {
+        Double(1 - min(max(progress, 0), 1) * 0.45)
+    }
+
+    static func controlsOffset(forDragProgress progress: CGFloat) -> CGFloat {
+        min(max(progress, 0), 1) * 8
+    }
+
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
         switch entry {
         case .inspiration(let inspiration):
@@ -122,7 +153,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     let deckHeight: CGFloat
     let paperCornerRadius: CGFloat
     let paperHorizontalPadding: CGFloat
-    let paperVerticalInset: CGFloat
+    let paperTopInset: CGFloat
+    let paperBottomInset: CGFloat
     let usesCompactEdgeHints: Bool
     let edgeHintHeight: CGFloat
     let showsLayeredPaper: Bool
@@ -130,6 +162,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     let tuckPrompt: (Card) -> String
     let content: (Card) -> CardContent
     let onTuck: ((Card) -> Void)?
+    let onVerticalProgressChange: (CGFloat) -> Void
 
     @State private var axis: ReviewDragAxis?
     @State private var verticalOffset: CGFloat = 0
@@ -143,20 +176,23 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         cornerRadius: CGFloat = 30,
         horizontalPadding: CGFloat = V02PrimaryContentLayoutPolicy.horizontalInset,
         verticalPaperInset: CGFloat = 0,
+        bottomPaperInset: CGFloat? = nil,
         usesCompactEdgeHints: Bool = false,
         edgeHintHeight: CGFloat = 28,
         showsLayeredPaper: Bool = false,
         isGestureEnabled: Bool = true,
         tuckPrompt: @escaping (Card) -> String = { _ in "收起" },
         @ViewBuilder content: @escaping (Card) -> CardContent,
-        onTuck: ((Card) -> Void)? = nil
+        onTuck: ((Card) -> Void)? = nil,
+        onVerticalProgressChange: @escaping (CGFloat) -> Void = { _ in }
     ) {
         self.cards = cards
         _index = index
         deckHeight = height
         paperCornerRadius = cornerRadius
         paperHorizontalPadding = horizontalPadding
-        paperVerticalInset = verticalPaperInset
+        paperTopInset = verticalPaperInset
+        paperBottomInset = bottomPaperInset ?? verticalPaperInset
         self.usesCompactEdgeHints = usesCompactEdgeHints
         self.edgeHintHeight = edgeHintHeight
         self.showsLayeredPaper = showsLayeredPaper
@@ -164,6 +200,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         self.tuckPrompt = tuckPrompt
         self.content = content
         self.onTuck = onTuck
+        self.onVerticalProgressChange = onVerticalProgressChange
     }
 
     var body: some View {
@@ -290,7 +327,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             // full-width shadow band below the card edge.
             .shadow(color: NoteTheme.ink.opacity(0.055), radius: 12, y: 5)
             .padding(.horizontal, paperHorizontalPadding)
-            .padding(.vertical, paperVerticalInset)
+            .padding(.top, paperTopInset)
+            .padding(.bottom, paperBottomInset)
     }
 
     @ViewBuilder
@@ -331,7 +369,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             }
             .shadow(color: NoteTheme.ink.opacity(0.05), radius: 12, y: 7)
             .padding(.horizontal, paperHorizontalPadding)
-            .padding(.vertical, paperVerticalInset)
+            .padding(.top, paperTopInset)
+            .padding(.bottom, paperBottomInset)
             .accessibilityHidden(true)
     }
 
@@ -350,7 +389,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                     .padding(.horizontal, paperHorizontalPadding + 5)
                 if atTop { Spacer(minLength: 0) }
             }
-            .padding(.vertical, max(paperVerticalInset - 10, 0))
+            .padding(.top, max(paperTopInset - 10, 0))
+            .padding(.bottom, max(paperBottomInset - 10, 0))
             .accessibilityHidden(true)
         } else {
             RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
@@ -361,7 +401,8 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 }
                 .shadow(color: NoteTheme.ink.opacity(0.07), radius: 14, y: 8)
                 .padding(.horizontal, paperHorizontalPadding)
-                .padding(.vertical, paperVerticalInset)
+                .padding(.top, paperTopInset)
+                .padding(.bottom, paperBottomInset)
                 .accessibilityHidden(true)
         }
     }
@@ -376,6 +417,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 switch axis {
                 case .vertical:
                     verticalOffset = value.translation.height
+                    onVerticalProgressChange(min(abs(value.translation.height) / max(height, 1), 1))
                 case .horizontal:
                     if V02CardDeckPolicy.acceptsHorizontalTuck(
                         startX: value.startLocation.x,
@@ -416,7 +458,10 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                 ), !cards.isEmpty {
                     let target = min(max(resolvedIndex + direction, 0), cards.count - 1)
                     guard target != resolvedIndex else {
-                        withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) { verticalOffset = 0 }
+                        withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
+                            verticalOffset = 0
+                            onVerticalProgressChange(0)
+                        }
                         return
                     }
                     let duration = reduceMotion ? 0.12 : 0.24
@@ -424,15 +469,20 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                         verticalOffset = reduceMotion
                             ? (direction > 0 ? -24 : 24)
                             : (direction > 0 ? -height : height)
+                        onVerticalProgressChange(reduceMotion ? 0.2 : 1)
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.01) {
                         index = target
                         verticalOffset = 0
+                        withAnimation(NoteMotion.reveal(reduceMotion: reduceMotion)) {
+                            onVerticalProgressChange(0)
+                        }
                     }
                 } else {
                     withAnimation(NoteMotion.settle(reduceMotion: reduceMotion)) {
                         verticalOffset = 0
                         horizontalOffset = 0
+                        onVerticalProgressChange(0)
                     }
                 }
             }

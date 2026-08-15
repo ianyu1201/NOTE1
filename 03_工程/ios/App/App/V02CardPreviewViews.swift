@@ -20,6 +20,7 @@ struct V02CardPreviewView: View {
     @State private var isShowingCreateCollection = false
     @State private var pendingInspirationID: UUID?
     @State private var newCollectionName = ""
+    @State private var cardDragProgress: CGFloat = 0
 
     private var cards: [V02CardPreviewEntry] { store.cardPreviewEntries }
 
@@ -40,41 +41,40 @@ struct V02CardPreviewView: View {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: emptyStateMessage)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
-                    // The card and its compact controls share one vertical
-                    // composition. The card is centred in the remaining region;
-                    // the controls participate in layout instead of covering it.
+                    // The card and controls share one full-height interaction
+                    // stage. Paper insets reserve the control region without
+                    // clipping the vertical transition into a separate module.
                     GeometryReader { proxy in
                         let currentCard = cards[min(index, cards.count - 1)]
-                        let deckHeight = V02CardPreviewLayoutPolicy.previewPageHeight(
+                        let paperInsets = V02CardPreviewLayoutPolicy.previewStagePaperInsets(
                             for: proxy.size.height,
                             entry: currentCard
                         )
-                        VStack(spacing: V02CardPreviewLayoutPolicy.previewCardToControlsSpacing) {
-                            ZStack {
-                                V02CardDeck(
-                                    cards: cards,
-                                    index: $index,
-                                    height: deckHeight,
-                                    verticalPaperInset: V02CardPreviewLayoutPolicy.previewPaperVerticalInset,
-                                    usesCompactEdgeHints: true,
-                                    edgeHintHeight: V02CardPreviewLayoutPolicy.previewEdgeHintHeight,
-                                    tuckPrompt: { _ in "收起" }
-                                ) { card in
-                                    cardContent(card)
-                                } onTuck: { card in
-                                    switch card {
-                                    case .inspiration(let inspiration):
-                                        do {
-                                            try store.tuckAway(inspiration.id)
-                                            undoAssignmentToken = nil
-                                            undoTuckedInspiration = inspiration
-                                        }
-                                        catch { reportError(error) }
+                        ZStack(alignment: .bottom) {
+                            V02CardDeck(
+                                cards: cards,
+                                index: $index,
+                                height: proxy.size.height,
+                                verticalPaperInset: paperInsets.top,
+                                bottomPaperInset: paperInsets.bottom,
+                                usesCompactEdgeHints: true,
+                                edgeHintHeight: V02CardPreviewLayoutPolicy.previewEdgeHintHeight,
+                                tuckPrompt: { _ in "收起" }
+                            ) { card in
+                                cardContent(card)
+                            } onTuck: { card in
+                                switch card {
+                                case .inspiration(let inspiration):
+                                    do {
+                                        try store.tuckAway(inspiration.id)
+                                        undoAssignmentToken = nil
+                                        undoTuckedInspiration = inspiration
                                     }
+                                    catch { reportError(error) }
                                 }
+                            } onVerticalProgressChange: { progress in
+                                cardDragProgress = progress
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                            .padding(.vertical, V02PrimaryContentLayoutPolicy.topSpacing)
                             .accessibilityHidden(editingInspiration != nil)
 
                             VStack(spacing: V02CardPreviewLayoutPolicy.previewControlSpacing) {
@@ -91,8 +91,13 @@ struct V02CardPreviewView: View {
                                 }
                             }
                             .padding(.bottom, V02CardPreviewLayoutPolicy.previewControlBottomPadding)
+                            .opacity(V02CardPreviewLayoutPolicy.controlsOpacity(forDragProgress: cardDragProgress))
+                            .offset(y: V02CardPreviewLayoutPolicy.controlsOffset(forDragProgress: cardDragProgress))
+                            .scaleEffect(1 - min(cardDragProgress, 1) * 0.02)
+                            .zIndex(2)
                             .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: isShowingCollectionPicker)
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
