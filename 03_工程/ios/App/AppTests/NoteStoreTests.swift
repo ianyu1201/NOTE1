@@ -175,8 +175,15 @@ final class NoteStoreTests: XCTestCase {
         )
         XCTAssertEqual(
             V02CardPreviewLayoutPolicy.previewPageHeight(for: 480, entry: .inspiration(fixture)),
-            V02CardPreviewLayoutPolicy.compactHeight
+            480 - V02CardPreviewLayoutPolicy.previewControlsReserve
         )
+        XCTAssertEqual(
+            V02CardPreviewLayoutPolicy.previewPageHeight(for: 400, entry: .inspiration(fixture)),
+            V02CardPreviewLayoutPolicy.previewMinimumHeight
+        )
+        XCTAssertEqual(V02CardPreviewLayoutPolicy.previewCardToControlsSpacing, 12)
+        XCTAssertEqual(V02CardPreviewLayoutPolicy.previewControlSpacing, 8)
+        XCTAssertGreaterThan(V02CardPreviewLayoutPolicy.previewControlsReserve, 0)
     }
 
     func testV02CardPositionRestoresIdentityAndFallsBackSafely() {

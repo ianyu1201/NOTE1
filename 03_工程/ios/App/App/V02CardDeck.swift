@@ -50,6 +50,11 @@ enum V02CardPreviewLayoutPolicy {
     /// compact viewport while preserving visible canvas above the navigation.
     static let compactHeight: CGFloat = 480
     static let maximumHeight: CGFloat = 540
+    static let previewMinimumHeight: CGFloat = 340
+    static let previewControlsReserve: CGFloat = 108
+    static let previewCardToControlsSpacing: CGFloat = 12
+    static let previewControlSpacing: CGFloat = 8
+    static let previewControlBottomPadding: CGFloat = 14
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
@@ -64,7 +69,11 @@ enum V02CardPreviewLayoutPolicy {
     /// The workbench continues to use the full available page height because it
     /// owns an editor and action row rather than a single-focus review surface.
     static func previewPageHeight(for availableHeight: CGFloat, entry: V02CardPreviewEntry) -> CGFloat {
-        min(pageHeight(for: availableHeight), deckHeight(for: entry))
+        let centeredCardRegion = max(
+            availableHeight - previewControlsReserve,
+            previewMinimumHeight
+        )
+        return min(centeredCardRegion, deckHeight(for: entry))
     }
 
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {

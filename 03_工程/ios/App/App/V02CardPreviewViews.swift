@@ -40,55 +40,55 @@ struct V02CardPreviewView: View {
                     EmptyStateView(systemName: "rectangle.on.rectangle", title: "本轮已经看完", message: emptyStateMessage)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
-                    // The paper owns the entire page body. Keeping the deck in a
-                    // GeometryReader makes its bottom edge follow the space above
-                    // the shared TabView instead of leaving a second blank module
-                    // for the card action.
+                    // The card and its compact controls share one vertical
+                    // composition. The card is centred in the remaining region;
+                    // the controls participate in layout instead of covering it.
                     GeometryReader { proxy in
                         let currentCard = cards[min(index, cards.count - 1)]
                         let deckHeight = V02CardPreviewLayoutPolicy.previewPageHeight(
                             for: proxy.size.height,
                             entry: currentCard
                         )
-                        V02CardDeck(
-                            cards: cards,
-                            index: $index,
-                            height: deckHeight,
-                            tuckPrompt: { _ in "收起" }
-                        ) { card in
-                            cardContent(card)
-                        } onTuck: { card in
-                            switch card {
-                            case .inspiration(let inspiration):
-                                do {
-                                    try store.tuckAway(inspiration.id)
-                                    undoAssignmentToken = nil
-                                    undoTuckedInspiration = inspiration
-                                }
-                                catch { reportError(error) }
-                            }
-                        }
-                        .frame(maxHeight: .infinity, alignment: .top)
-                        .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
-                        .accessibilityHidden(editingInspiration != nil)
-                        .overlay(alignment: .bottom) {
-                            VStack(spacing: 5) {
-                                if cards.indices.contains(index) {
-                                    V02AssignCollectionButton {
-                                        beginGroupPicker(for: cards)
+                        VStack(spacing: 0) {
+                            ZStack {
+                                V02CardDeck(
+                                    cards: cards,
+                                    index: $index,
+                                    height: deckHeight,
+                                    tuckPrompt: { _ in "收起" }
+                                ) { card in
+                                    cardContent(card)
+                                } onTuck: { card in
+                                    switch card {
+                                    case .inspiration(let inspiration):
+                                        do {
+                                            try store.tuckAway(inspiration.id)
+                                            undoAssignmentToken = nil
+                                            undoTuckedInspiration = inspiration
+                                        }
+                                        catch { reportError(error) }
                                     }
                                 }
-                                Text("第 \(min(index + 1, cards.count)) / \(cards.count)")
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                            .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
+                            .padding(.bottom, V02CardPreviewLayoutPolicy.previewCardToControlsSpacing)
+                            .accessibilityHidden(editingInspiration != nil)
+
+                            VStack(spacing: V02CardPreviewLayoutPolicy.previewControlSpacing) {
+                                Text("第 \(min(index + 1, cards.count))/\(cards.count)")
                                     .noteFontCapped(size: 13, maximumScale: 1.25, relativeTo: .caption)
                                     .foregroundStyle(NoteTheme.secondaryInk)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 5)
                                     .background(NoteTheme.ink.opacity(0.045), in: Capsule())
+                                if cards.indices.contains(index) {
+                                    V02AssignCollectionButton {
+                                        beginGroupPicker(for: cards)
+                                    }
+                                }
                             }
-                            // Keep the action readable above the TabView while
-                            // still making it part of the paper, not a separate
-                            // floating module below it.
-                            .padding(.bottom, 14)
+                            .padding(.bottom, V02CardPreviewLayoutPolicy.previewControlBottomPadding)
                             .animation(NoteMotion.reveal(reduceMotion: reduceMotion), value: isShowingCollectionPicker)
                         }
                     }
