@@ -49,12 +49,15 @@ struct V02CardPreviewView: View {
                             for: proxy.size.height,
                             entry: currentCard
                         )
-                        VStack(spacing: 0) {
+                        VStack(spacing: V02CardPreviewLayoutPolicy.previewCardToControlsSpacing) {
                             ZStack {
                                 V02CardDeck(
                                     cards: cards,
                                     index: $index,
                                     height: deckHeight,
+                                    verticalPaperInset: V02CardPreviewLayoutPolicy.previewPaperVerticalInset,
+                                    usesCompactEdgeHints: true,
+                                    edgeHintHeight: V02CardPreviewLayoutPolicy.previewEdgeHintHeight,
                                     tuckPrompt: { _ in "收起" }
                                 ) { card in
                                     cardContent(card)
@@ -71,8 +74,7 @@ struct V02CardPreviewView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                            .padding(.top, V02PrimaryContentLayoutPolicy.topSpacing)
-                            .padding(.bottom, V02CardPreviewLayoutPolicy.previewCardToControlsSpacing)
+                            .padding(.vertical, V02PrimaryContentLayoutPolicy.topSpacing)
                             .accessibilityHidden(editingInspiration != nil)
 
                             VStack(spacing: V02CardPreviewLayoutPolicy.previewControlSpacing) {

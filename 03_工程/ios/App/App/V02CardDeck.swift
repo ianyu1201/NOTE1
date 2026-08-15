@@ -41,8 +41,8 @@ enum V02CardDeckPolicy {
 }
 
 /// Card-preview papers keep a readable minimum height for compact viewports.
-/// The card-preview page may expand this height to the full space above the
-/// shared TabView; its action and page indicator are overlaid on the paper.
+/// The standalone preview reserves a small internal bleed area so the paper's
+/// rounded edge and shadow never sit on the drag viewport's clipping boundary.
 enum V02CardPreviewLayoutPolicy {
     /// The confirmed card-preview composition gives the primary paper enough
     /// height to own the first screen, including sparse collection cards. A
@@ -55,6 +55,8 @@ enum V02CardPreviewLayoutPolicy {
     static let previewCardToControlsSpacing: CGFloat = 12
     static let previewControlSpacing: CGFloat = 8
     static let previewControlBottomPadding: CGFloat = 14
+    static let previewPaperVerticalInset: CGFloat = 18
+    static let previewEdgeHintHeight: CGFloat = 28
     private static let textCharactersPerLine = 18
     private static let maximumTextLines = 7
 
@@ -74,6 +76,10 @@ enum V02CardPreviewLayoutPolicy {
             previewMinimumHeight
         )
         return min(centeredCardRegion, deckHeight(for: entry))
+    }
+
+    static func previewPaperHeight(for viewportHeight: CGFloat) -> CGFloat {
+        max(viewportHeight - previewPaperVerticalInset * 2, 0)
     }
 
     static func deckHeight(for entry: V02CardPreviewEntry) -> CGFloat {
@@ -116,6 +122,9 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
     let deckHeight: CGFloat
     let paperCornerRadius: CGFloat
     let paperHorizontalPadding: CGFloat
+    let paperVerticalInset: CGFloat
+    let usesCompactEdgeHints: Bool
+    let edgeHintHeight: CGFloat
     let showsLayeredPaper: Bool
     let isGestureEnabled: Bool
     let tuckPrompt: (Card) -> String
@@ -133,6 +142,9 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         height: CGFloat = 408,
         cornerRadius: CGFloat = 30,
         horizontalPadding: CGFloat = V02PrimaryContentLayoutPolicy.horizontalInset,
+        verticalPaperInset: CGFloat = 0,
+        usesCompactEdgeHints: Bool = false,
+        edgeHintHeight: CGFloat = 28,
         showsLayeredPaper: Bool = false,
         isGestureEnabled: Bool = true,
         tuckPrompt: @escaping (Card) -> String = { _ in "收起" },
@@ -144,6 +156,9 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
         deckHeight = height
         paperCornerRadius = cornerRadius
         paperHorizontalPadding = horizontalPadding
+        paperVerticalInset = verticalPaperInset
+        self.usesCompactEdgeHints = usesCompactEdgeHints
+        self.edgeHintHeight = edgeHintHeight
         self.showsLayeredPaper = showsLayeredPaper
         self.isGestureEnabled = isGestureEnabled
         self.tuckPrompt = tuckPrompt
@@ -176,15 +191,15 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
                     }
                 }
                 if resolvedIndex > 0 {
-                    paperEdge
+                    adjacentPaperHint(atTop: true)
                         .scaleEffect(0.974)
-                        .offset(y: -20 + max(displayedVerticalOffset, 0) * 0.16)
+                        .offset(y: -4 + max(displayedVerticalOffset, 0) * 0.08)
                         .opacity((verticalOffset > 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
                 }
                 if resolvedIndex + 1 < cards.count {
-                    paperEdge
+                    adjacentPaperHint(atTop: false)
                         .scaleEffect(0.974)
-                        .offset(y: 28 + min(displayedVerticalOffset, 0) * 0.16)
+                        .offset(y: 4 + min(displayedVerticalOffset, 0) * 0.08)
                         .opacity((verticalOffset < 0 ? 1 : 0.56) * (1 - verticalProgress * 0.7))
                 }
                 if verticalOffset > 0, resolvedIndex > 0 {
@@ -275,6 +290,7 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             // full-width shadow band below the card edge.
             .shadow(color: NoteTheme.ink.opacity(0.055), radius: 12, y: 5)
             .padding(.horizontal, paperHorizontalPadding)
+            .padding(.vertical, paperVerticalInset)
     }
 
     @ViewBuilder
@@ -315,19 +331,39 @@ struct V02CardDeck<Card: Identifiable, CardContent: View>: View {
             }
             .shadow(color: NoteTheme.ink.opacity(0.05), radius: 12, y: 7)
             .padding(.horizontal, paperHorizontalPadding)
+            .padding(.vertical, paperVerticalInset)
             .accessibilityHidden(true)
     }
 
-    private var paperEdge: some View {
-        RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-            .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject))
-            .overlay {
+    @ViewBuilder
+    private func adjacentPaperHint(atTop: Bool) -> some View {
+        if usesCompactEdgeHints {
+            VStack(spacing: 0) {
+                if !atTop { Spacer(minLength: 0) }
                 RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
-                    .stroke(NoteTheme.paperBorder, lineWidth: 1)
+                    .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
+                            .stroke(NoteTheme.paperBorder, lineWidth: 1)
+                    }
+                    .frame(height: edgeHintHeight)
+                    .padding(.horizontal, paperHorizontalPadding + 5)
+                if atTop { Spacer(minLength: 0) }
             }
-            .shadow(color: NoteTheme.ink.opacity(0.07), radius: 14, y: 8)
-            .padding(.horizontal, paperHorizontalPadding)
+            .padding(.vertical, max(paperVerticalInset - 10, 0))
             .accessibilityHidden(true)
+        } else {
+            RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
+                .fill(V04ObjectTransitionSurfacePolicy.style(for: V04ObjectTransitionSurfacePolicy.cardObject))
+                .overlay {
+                    RoundedRectangle(cornerRadius: paperCornerRadius, style: .continuous)
+                        .stroke(NoteTheme.paperBorder, lineWidth: 1)
+                }
+                .shadow(color: NoteTheme.ink.opacity(0.07), radius: 14, y: 8)
+                .padding(.horizontal, paperHorizontalPadding)
+                .padding(.vertical, paperVerticalInset)
+                .accessibilityHidden(true)
+        }
     }
 
     private func deckGesture(height: CGFloat) -> some Gesture {
