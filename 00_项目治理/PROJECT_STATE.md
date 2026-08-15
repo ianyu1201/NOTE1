@@ -29,13 +29,13 @@
 | --- | --- |
 | `latest_observed` | `V0.4`，分支 `codex/note1-v04-ui-development`；当前完整提交以该分支 `HEAD` 为准 |
 | `current_approved` | `pending`；现有材料没有独立的版本批准记录，不把来源固定点推定为正式批准版本 |
-| `active_candidate` | `V0.4`，分支 `codex/note1-v04-ui-development`；固定代码候选 `d26dd2e7affad90f3ddf9b0b190f3a01c161b4e9`；`3212aef1…` 只覆盖已被取代的前一候选 `6bb1e365…` |
+| `active_candidate` | `V0.4`，分支 `codex/note1-v04-ui-development`；固定代码候选 `be834725a7c8ad3414a1eca739756cfce672a6e2`；`3212aef1…` 只覆盖已被取代的更早候选 `6bb1e365…` |
 | `source_lineage` | V0.3 关闭点 `b92d2a7938ebf9bf6bca91cde91a6cb9ded60273`；功能候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` |
 | `governance_cycle_id` | `NOTE1-V04-GOV-20260811-01` |
 | `prd_status` | `confirmed-for-implementation`；四页结构、入口语义、完整小票范围及无固定构思集容量已就地更新，未被取代的 V0.3 功能继续作为来源 |
 | `delivery_contract_status` | `contracted`；用户已于 2026-08-14 明确授权进入 S4→S5 UI 开发 |
-| `validation_status` | `development_verified / pending_user_confirmation`；候选 `d26dd2e…` 的卡片居中、页码顺序与连续画布修订已完成针对性 3/3、全量 AppTests 93/93、构建运行和一次最终静态截图；真机、旧系统、辅助设置和主观动效手感继续为 `pending_evidence` |
-| `acceptance_status` | `reopened / pending_user_confirmation`；任务 `01a00032-1157-70a3-842b-91d18404c940` 对 `6bb1e365…` 的有限 `accepted` 不覆盖当前候选 `d26dd2e…`，且不构成 V0.4 正式批准 |
+| `validation_status` | `development_verified / pending_user_confirmation`；候选 `be834725…` 的卡片纸面/视口分离、完整底边和静止薄边提示已完成针对性 3/3、全量 AppTests 93/93、构建运行和一次最终静态截图；真机、旧系统、辅助设置和主观动效手感继续为 `pending_evidence` |
+| `acceptance_status` | `reopened / pending_user_confirmation`；任务 `01a00032-1157-70a3-842b-91d18404c940` 对 `6bb1e365…` 的有限 `accepted` 不覆盖当前候选 `be834725…`，且不构成 V0.4 正式批准 |
 | `version_approval_status` | `not_started` |
 | `archive_status` | `organized`；V0.1–V0.3 运行材料和 V0.3 历史启动包已离开现役工程区，代码与其余文档历史继续由 Git 保存；未删除原始材料 |
 | `anti_drift_status` | `anti-drift enforced`；临时结构化覆盖核对 13 条高影响约束并得到 `semantic_coverage_passed`，单一现役入口、历史降权和 S3 下游边界快照均已具备 |
@@ -67,6 +67,7 @@
 - 用户于 2026-08-15 取代此前参照“提醒事项”的首页快捷收起方向：灵感首页删除左侧“一键完结 / 一键归档 / 快捷收起”控件，整条灵感进入完整编辑；“收起 / 放回卡片流”业务能力继续保留在卡片预览、批量管理和既有对象操作中；
 - 固定候选 `6bb1e365…` 已实现以上四项最新裁决；开发针对性 5/5、全量 93/93、构建运行成功，独立复验再次得到 5/5 与 93/93，两个拖拽录屏的关键中间帧未见异色矩形底板，独立结论为 `accepted`；
 - 用户于 2026-08-15 进一步要求卡片在顶部框架与操作区之间居中，并把页码移到“归入构思集”上方；候选 `d26dd2e…` 已改用单一纵向布局关闭覆盖挤压和下方独立空白分层，开发针对性 3/3、全量 93/93、构建运行与最终静态截图通过；
+- 用户复查发现 `d26dd2e…` 仍将纸面贴住拖拽视口裁剪边界，底部圆角/阴影被截断且完整相邻纸面放大割裂；候选 `be834725…` 已用 18pt 上下安全距离和 28pt 静止薄边提示修复，上一批截图已明确标记 `superseded`；
 - 用户已确认取消“最多 5 个活动构思集、每组最多 10 条灵感”限制；V0.4 不再按数量禁用新建、归入、新增成员或继续构思，旧 5/10 规则只保留为 V0.3 历史事实；
 - 卡片预览、归入与构思集切卡的实际手感，以及适配和无障碍体验，已转为工程基线 `AC-V04-06` 的开发后运行验收；静态图片只裁决布局和关键帧，不裁决阻尼、惯性、焦点或辅助设置体验；
 - Project Delivery Suite 临时语义覆盖矩阵已核对 13 条产品、视觉、平台、目录、数据与验收硬约束，结果为 `semantic_coverage_passed / anti-drift enforced`；矩阵未作为平行永久文件保留，边界快照已进入 `PROJECT_BRIEF.md`；
@@ -81,7 +82,7 @@
 - 真机 VoiceOver、最大辅助字号、减少透明度、增强对比度及 iOS 17–当前支持版本尚未运行验收；验收合同已冻结，但不能写成结果已通过；
 - V0.3 未覆盖的 AC-07、AC-10、AC-11、真机 VoiceOver、系统版本与真实系统入口继续是非回归风险；
 - 最新四项有限修订已独立复验通过，但用户尚未确认实际阻尼、惯性与速度手感；任何自动化或模拟器视觉证据均不得写成该主观体验已批准。
-- 当前候选 `d26dd2e…` 的卡片预览局部布局尚待用户确认；前一候选的独立结论不得外推到该局部修订。
+- 当前候选 `be834725…` 的卡片预览局部布局尚待用户确认；更早候选的独立结论不得外推到该局部修订。
 
 ## 6. 下一步
 
@@ -91,7 +92,7 @@
 
 | 事实面 | 状态 | 依据或边界 |
 | --- | --- | --- |
-| 代码 | `candidate-fixed` | 固定代码候选 `d26dd2e…`；前一候选的独立证据提交 `3212aef1…` 未修改当前候选代码 |
+| 代码 | `candidate-fixed` | 固定代码候选 `be834725…`；更早候选的独立证据提交 `3212aef1…` 未修改当前候选代码 |
 | 运行态 | `development-verified / pending-user-confirmation` | 卡片布局局部修订已完成最小充分开发验证；用户静态确认、真机、旧系统、辅助设置和主观手感未写成通过 |
 | 文档 | `changed-and-verified` | 三份稳定基线已写入本轮局部视觉裁决与返工验收边界 |
 | 规则 | `changed-and-verified` | `AGENTS.md` 的候选提交、自动化数字和证据边界已同步 |
