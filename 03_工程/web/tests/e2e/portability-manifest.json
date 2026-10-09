@@ -1,0 +1,35 @@
+{
+  "auditDate": "2026-10-09",
+  "changes": [
+    "Resolve Playwright from the local package dependency.",
+    "Read BASE_URL and E2E_OUTPUT_DIR from the environment.",
+    "Use installed Chromium by default, with optional BROWSER_CHANNEL."
+  ],
+  "scripts": [
+    {
+      "script": "web-audit.cjs",
+      "sourceSha256": "763d733cd20ffeb9c6957b3afd2d50b006014580bfe0561c01cada6bd0bac313",
+      "publishedSha256": "b394805e5181f9f9ca0a4b711fc71b6ec890429047fd0cf58bad8a91641b243e"
+    },
+    {
+      "script": "supplemental.cjs",
+      "sourceSha256": "1e268c2df092eb1a96a300e8414136a17b74d474ff899b96caaece1255ef9651",
+      "publishedSha256": "3beec4763f54c2843cb88b181970a243cd1277572bd5a6a1403d4b2f983a75e9"
+    },
+    {
+      "script": "boundaries.cjs",
+      "sourceSha256": "cf7fbfa80c684d16e05cc7ac3f054757ad2f6559fca3d2b824a5f4f59c9f60c7",
+      "publishedSha256": "912246ec6915744414be1f5264f23fd45ce14bc096124999a231b1216b0a7ee0"
+    },
+    {
+      "script": "backup-deletion.cjs",
+      "sourceSha256": "3b92deda889de867812eb7a5667b7e44e0240927f9e30ff4a4461ac4935d8425",
+      "publishedSha256": "a1a9f3afa172cd41a51f20bbf9a6d9bfd98178aaae389d845c6ae7c5d9b1017e"
+    },
+    {
+      "script": "fix-regressions.cjs",
+      "sourceSha256": "4b88428add9b1db6d94002c563f0e943f6a5ae92ea097b1e822f215eff006d71",
+      "publishedSha256": "fd9d44427c252cb320d8273ea4f0e872b24481fd30e5ab88fb6e22bb363def30"
+    }
+  ]
+}

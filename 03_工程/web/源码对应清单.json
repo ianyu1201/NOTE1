@@ -1,0 +1,142 @@
+[
+  {
+    "file": "app/portfolio/note1/demo/ActionMenu.tsx",
+    "sha256": "2db646ff854bdf81947f565a998bc934b4250c63dbd3546f5b2118a56f574711",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/Composer.tsx",
+    "sha256": "858cbe7a4d4470e77d6bbb6f75bc9fd7d75f71325702b9daa4bdca79f3f88099",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/InspirationMenu.tsx",
+    "sha256": "f2039a3a8dde39e628186bcfb6803fd11fca844efcbb9865ac24104877ee8644",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/Note1App.tsx",
+    "sha256": "65af7ee757742299c7571ef754ce9527899a9e6d68b851ba28d51b657f595c1f",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/Note1Provider.tsx",
+    "sha256": "52fdc80ff886f83cf9c5691359072d1044ff7bd464d1738000cc33076b5585a7",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/ReceiptGeneration.tsx",
+    "sha256": "9ea5db5f1d25cd2ddb7bf0f8f8d42f25f376c20d1ce8a60b6e7650ee0b225199",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/ReceiptPaper.tsx",
+    "sha256": "e64258c17fb8fd4085afbc0791857ca4a04f065fd0fbea0ac873bb653e7ce786",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/WorkbenchEditor.tsx",
+    "sha256": "c156faa657f60df4bdd0841d2a24b56b8403b35a115ea053d71d3a6ea202ac8c",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/app-context.ts",
+    "sha256": "a685465e7e58e4f0f81ad4a65168b41fcf6ee3b41cb16e8c06115763810c7fc8",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/card-gesture.ts",
+    "sha256": "8549ec0b9047ea6d84ea1220a02f28adf333bc2f14f7941292f85a0172091de5",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/domain/engine.ts",
+    "sha256": "ef0fedeaf9f714edf9ab701d41ca74e6a08cda3bf94779076016540563207ff0",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/domain/types.ts",
+    "sha256": "b10cd18bfa55fd953f865a3d5589f5503f4e17ad7126275b4e9a734e83695280",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/interaction.css",
+    "sha256": "7b5a477677092ca8d308b0a056afa0137fa8e8132eeb61f52019b743e654e4e1",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/note1.css",
+    "sha256": "a42d71634f54e5d9ae24039fac867b6b22bedc8ced5ef539ce35363fad5d0f8c",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/page.tsx",
+    "sha256": "506528ffcb35298e3c340f06701e22d8dbe9587135e83b03ed28e4fb60d2dad0",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/storage/backup.ts",
+    "sha256": "963c7a654a0f73ae8bbec1c083c66289570d3ef61c429122789929d8e35f1573",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/storage/db.ts",
+    "sha256": "16ac6306c500bfc9f9df1af58743fa17213441df20daeffe5897dbcfa817e87d",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/store.ts",
+    "sha256": "5fe6caa3fd500df62e469fe8e640e07c49aead05810ac9ae951f2e04c15faed9",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/ui.tsx",
+    "sha256": "7770869a92eb830b36f1567bcbaa03169d7b190aa098ec13c3e3739f6af731da",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/AccessibleDialog.tsx",
+    "sha256": "cb42c6f20b6301eb61e9cbe30e4c6fb6e9234b0e81f6cb20abad0fd08c8b8777",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/CardsView.tsx",
+    "sha256": "331bd3644ea6024d8ee392929ec3432c47097e4c92d192c8b42a55d0079ee3e4",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/CollectionsView.tsx",
+    "sha256": "4b4d9b2ea374e37335241e42fd039780e1dc58c1ba65433c140abda1283dab82",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/InspirationsView.tsx",
+    "sha256": "c6be5eed439ddafabe17eafaa80ce74e20f2e7a6a255fbf278b99d4dd89a9dbb",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/ReceiptsView.tsx",
+    "sha256": "96ea17504090defc6559f72e19d758e792ecd9dff64bae0e44ff13cab904e9f6",
+    "identical": true
+  },
+  {
+    "file": "app/portfolio/note1/demo/views/Secondary.tsx",
+    "sha256": "0b2dabf698ea4c5f774db7fe7629c16d6b24d63a1205bc9dd16c178f77f661ed",
+    "identical": true
+  },
+  {
+    "file": "tests/note1-domain.test.mjs",
+    "sha256": "908c310747bd975ecea18bd84965730cca3ba99dacc105a7446985efe952de0a",
+    "identical": true
+  },
+  {
+    "file": "tests/note1-backup.test.mjs",
+    "sha256": "26ac09359c210e6911b6b64feae89fa77975ff1e1ea35f3986849e9a0645ea0b",
+    "identical": true
+  },
+  {
+    "file": "tests/note1-card-gesture.test.mjs",
+    "sha256": "a248b26f5bdc30285ac38cde134128f8c7f43cf2ae67b4bea7f9f6acb9681192",
+    "identical": true
+  }
+]

@@ -1,0 +1,210 @@
+{
+  "date": "2026-10-09",
+  "kind": "development_regression",
+  "web": {
+    "unit_tests": {
+      "passed": 26,
+      "failed": 0
+    },
+    "business_checks": [
+      {
+        "id": "W01-four-page-create-cancel",
+        "status": "passed"
+      },
+      {
+        "id": "W02-create-refresh-edit",
+        "status": "passed"
+      },
+      {
+        "id": "W03-attachment-create",
+        "status": "passed"
+      },
+      {
+        "id": "W04-card-tuck-undo",
+        "status": "passed"
+      },
+      {
+        "id": "W05-card-navigation-boundaries",
+        "status": "passed"
+      },
+      {
+        "id": "W06-create-collection-assignment",
+        "status": "passed"
+      },
+      {
+        "id": "W07-end-cancel-unchanged",
+        "status": "passed"
+      },
+      {
+        "id": "W08-generate-one-receipt",
+        "status": "passed"
+      },
+      {
+        "id": "W09-receipt-read-and-export",
+        "status": "passed"
+      },
+      {
+        "id": "W10-search-real-object-and-snapshot-immutable",
+        "status": "passed"
+      },
+      {
+        "id": "W11-backup-download",
+        "status": "passed"
+      },
+      {
+        "id": "W12-invalid-backup-preserves-data",
+        "status": "passed"
+      },
+      {
+        "id": "W13-valid-backup-restore",
+        "status": "passed"
+      },
+      {
+        "id": "W14-history-semantics",
+        "status": "passed"
+      },
+      {
+        "id": "W15-mobile-layout",
+        "status": "passed"
+      },
+      {
+        "id": "W16-console",
+        "status": "passed"
+      },
+      {
+        "id": "W17-close-reopen-tab",
+        "status": "passed"
+      },
+      {
+        "id": "W18-continue-thinking-entry",
+        "status": "passed"
+      },
+      {
+        "id": "W19-receipt-delete-entry",
+        "status": "passed"
+      },
+      {
+        "id": "W20-delete-restore-inspiration",
+        "status": "passed"
+      },
+      {
+        "id": "W21-permanent-delete-confirmation",
+        "status": "passed"
+      },
+      {
+        "id": "W22-keyboard-dialog-focus",
+        "status": "passed"
+      },
+      {
+        "id": "W23-quota-failure-preserves-draft",
+        "status": "passed"
+      },
+      {
+        "id": "W24-multitab-no-lost-write",
+        "status": "passed"
+      },
+      {
+        "id": "W25-no-indexeddb-protection",
+        "status": "passed"
+      },
+      {
+        "id": "W26-backup-bad-digest",
+        "status": "passed"
+      },
+      {
+        "id": "W27-200percent-narrow",
+        "status": "passed"
+      },
+      {
+        "id": "W28-six-active-collections",
+        "status": "passed"
+      },
+      {
+        "id": "W29-eleven-members-reload",
+        "status": "passed"
+      },
+      {
+        "id": "W30-workbench-edit-order-remove",
+        "status": "passed"
+      },
+      {
+        "id": "W31-generation-persistence-failure",
+        "status": "passed"
+      },
+      {
+        "id": "W32-double-generate-unique",
+        "status": "passed"
+      },
+      {
+        "id": "W33-attachment-backup-byte-readback",
+        "status": "passed"
+      },
+      {
+        "id": "W34-future-schema-readonly",
+        "status": "passed"
+      },
+      {
+        "id": "W35-delete-collection-keeps-receipt",
+        "status": "passed"
+      },
+      {
+        "id": "W36-deleted-collection-backup-roundtrip",
+        "status": "passed"
+      },
+      {
+        "id": "W37-clear-trash-protects-receipt-attachment",
+        "status": "passed"
+      },
+      {
+        "id": "E01-atomic-writes-without-broadcast-and-fresh-backup",
+        "status": "passed"
+      },
+      {
+        "id": "E02-broadcast-refresh-preserves-open-draft",
+        "status": "passed"
+      },
+      {
+        "id": "E03-receipt-delete-cancel-delete-restore-snapshot",
+        "status": "passed"
+      },
+      {
+        "id": "E04-clear-trash-confirm-cancel-focus-and-confirm",
+        "status": "passed"
+      },
+      {
+        "id": "E05-history-continues-same-collection-active-receipt-opens-current",
+        "status": "passed"
+      },
+      {
+        "id": "E06-put-failure-aborts-and-draft-retries",
+        "status": "passed"
+      },
+      {
+        "id": "E07-history-excludes-ended-members-and-mixes-types",
+        "status": "passed"
+      },
+      {
+        "id": "E08-continue-moves-member-from-other-active-round",
+        "status": "passed"
+      }
+    ]
+  },
+  "ios": {
+    "runtime": "iOS 27.0",
+    "unit_passed": 93,
+    "ui_flows_passed": 5,
+    "failed": 0,
+    "skipped": 0,
+    "small_screen_max_dynamic_type": "passed",
+    "runtime_warning": "AVAudioSession main-thread activation/deactivation warning; audio impact not measured"
+  },
+  "unverified": [
+    "real_device_voice_and_VoiceOver",
+    "iOS17_to_25",
+    "Safari_and_other_platforms",
+    "actual_system_backup_save_then_restore",
+    "online_deployment",
+    "subjective_gesture_quality",
+    "large_scale_performance_and_migration"
+  ]
+}

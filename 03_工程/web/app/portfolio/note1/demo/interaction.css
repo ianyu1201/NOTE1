@@ -1,0 +1,43 @@
+/* Origin-aware menus retain NOTE1's semantic colors and existing navigation. */
+.note1-action-anchor { position: relative; display: inline-flex; }
+.note1-title-trigger { display:flex; gap:6px; align-items:center; justify-content:center; min-height:44px; padding:0 6px; border:0; background:transparent; color:var(--note1-ink); font:inherit; letter-spacing:inherit; }
+.note1-title-trigger svg { transition:transform .18s ease-out; }
+.note1-title-trigger[aria-expanded=true] svg { transform:rotate(180deg); }
+.note1-action-menu { position:absolute; top:calc(100% + 8px); width:264px; max-width:calc(100vw - 44px); padding:8px; z-index:50; border:1px solid var(--note1-divider); border-radius:24px; background:rgba(253,252,254,.96); color:var(--note1-ink); box-shadow:inset 0 1px 0 white,0 16px 42px rgba(7,16,46,.15); backdrop-filter:blur(24px) saturate(1.2); -webkit-backdrop-filter:blur(24px) saturate(1.2); animation:note1-menu-appear .18s ease-out both; text-align:left; }
+.note1-action-menu.is-center { left:50%; margin-left:-132px; transform-origin:top center; }
+.note1-action-menu.is-right { right:0; transform-origin:top right; }
+.note1-action-menu button { display:flex; align-items:center; gap:12px; width:100%; min-height:48px; padding:12px; border:0; border-radius:16px; background:transparent; color:inherit; font-size:15px; font-weight:500; text-align:left; letter-spacing:0; }
+.note1-action-menu button > span { flex:1; }
+.note1-action-menu small { display:block; margin-top:4px; font-size:12px; color:var(--note1-ink-soft); font-weight:400; }
+.note1-action-menu button:hover,.note1-action-menu button:focus-visible { background:var(--note1-selected); }
+.note1-action-menu button:focus-visible,.note1-title-trigger:focus-visible,.note1-list-context button:focus-visible { outline:2px solid var(--note1-accent); outline-offset:1px; }
+.note1-action-menu button:active,.note1-title-trigger:active { opacity:.7; }
+.note1-list-context { min-height:30px; display:flex; align-items:center; justify-content:space-between; color:var(--note1-ink-soft); font-size:12px; padding:0 4px; }
+.note1-list-context button { min-height:44px; background:none; border:0; color:var(--note1-accent); padding:0 12px; }
+.note1-batch-bar { border:1px solid var(--note1-divider); border-radius:22px; gap:6px; padding:6px 10px; box-shadow:0 8px 26px rgba(7,16,46,.08); }
+.note1-batch-bar .note1-text-btn { min-height:44px; padding:8px; }
+.note1-batch-count { white-space:nowrap; }
+.note1-tuck-hint { position:absolute; right:12px; color:var(--note1-accent); font-size:13px; opacity:var(--tuck-progress,0); transform:translateX(calc((1 - var(--tuck-progress,0))*12px)); }
+.note1-cards-hint { margin:8px 0; text-align:center; color:var(--note1-ink-soft); font-size:11px; }
+.note1-device .note1-cards { height:100%; min-height:0; flex-shrink:0; padding-bottom:12px; }
+.note1-device .note1-cards-stage { min-height:220px; }
+.note1-device .note1-card { width:100%; min-height:min(300px, calc(100% - 108px)); height:min(416px, calc(100% - 108px)); max-height:416px; flex:0 1 auto; padding:28px 26px; }
+.note1-device .note1-card-back { height:min(408px, calc(100% - 116px)); }
+.note1-cards-controls { display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; padding-bottom:14px; transform:translateY(calc(var(--drag-progress,0)*8px)); }
+.note1-cards-controls .note1-cards-counter { margin:0; padding:3px 10px; border-radius:999px; background:rgba(42,23,37,.045); }
+.note1-cards-controls .note1-cards-hint,.note1-cards-controls .note1-cards-actions { grid-column:1 / -1; }
+.note1-device .note1-cards-actions { position:static; width:100%; height:auto; padding-right:0; margin:4px 0 0; overflow:visible; clip:auto; white-space:normal; }
+.note1-device .note1-cards-actions .note1-text-btn { min-height:44px; padding:0 12px; font-size:12px; }
+.note1-card-text { user-select:text; -webkit-user-select:text; }
+@keyframes note1-menu-appear { from { opacity:0; transform:scale(.94) translateY(-4px); } to { opacity:1; transform:none; } }
+@media (min-width:700px) and (max-height:627px) {
+  .note1-device .note1-cards-stage { min-height:190px; }
+  .note1-device .note1-card { min-height:min(300px, 100%); height:min(300px, 100%); padding:20px 24px; }
+  .note1-device .note1-card-back { height:min(292px, calc(100% - 8px)); }
+  .note1-device .note1-card-text { min-height:0; max-height:100%; }
+  .note1-cards-controls { gap:4px; padding-bottom:0; }
+}
+@media (prefers-reduced-transparency:reduce) { .note1-action-menu { background:var(--note1-paper); backdrop-filter:none; -webkit-backdrop-filter:none; } }
+@media (prefers-contrast:more) { .note1-action-menu { border-color:var(--note1-ink); } }
+@media (prefers-reduced-motion:reduce) { .note1-action-menu { animation:none; } .note1-title-trigger svg { transition:none; } }
+@media print { .note1-action-anchor { display:none!important; } }

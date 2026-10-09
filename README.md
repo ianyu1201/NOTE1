@@ -1,8 +1,29 @@
-# NOTE1 iOS App
+# NOTE1 · iOS 与 Web 源码
 
 NOTE1 是一个低压力、完全在本机运行的原生 iOS 灵感记录 App。产品主张是“简单记，快速看”。
 
-当前工程使用原生 SwiftUI，最低 iOS 17，不包含浏览器版本、PWA、WebView、后端、登录、云同步或 AI。正式代码路径已收敛到 V0.2 领域模型与 `V02*` 页面；V0.1 通过 Git 标签保留历史事实，不再参与当前 target 编译。
+原生端使用 SwiftUI，最低 iOS 17，不包含 WebView、后端、登录、云同步或 AI。正式原生代码使用 V0.2 领域模型与 `V02*` 页面；V0.1 通过 Git 标签保留历史事实，不参与当前 target 编译。
+
+本仓库同时提供独立的 React Web 演示版，源码位于 `03_工程/web/`。两端分别在设备或浏览器本机保存数据，没有跨端同步，也不承诺备份格式互通。Web 演示不改变原生产品的技术与视觉合同。
+
+## 快速运行 Web 版
+
+需要 Node.js 22.13 或更新版本：
+
+```bash
+cd 03_工程/web
+npm ci
+npm run dev
+```
+
+打开终端输出的本机地址。构建与单元测试：
+
+```bash
+npm run build
+npm test
+```
+
+完整目录、浏览器端测试步骤和限制见 [Web README](03_工程/web/README.md)。公开源码不等于发布线上网站。
 
 ## 当前状态
 
@@ -43,7 +64,8 @@ NOTE1/
 ├── 02_设计/                     # 唯一现役设计与交互规格
 ├── 03_工程/                     # 现役实现、测试与验收合同
 │   ├── NOTE1_开发与运行验收基线.md
-│   └── ios/                        # 原生 iOS 工程和 XCTest
+│   ├── ios/                        # 原生 iOS 工程和 XCTest
+│   └── web/                        # 独立 Web 演示、领域测试与浏览器测试
 ├── 04_技术决策/                 # 已接受 ADR
 └── 90_历史归档/                 # 已关闭版本的运行证据与历史材料
     ├── V0.1/运行证据/
@@ -95,7 +117,7 @@ open "03_工程/ios/App/App.xcodeproj"
 xcodebuild \
   -project "03_工程/ios/App/App.xcodeproj" \
   -scheme "App" \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=27.0' \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```
@@ -106,22 +128,22 @@ xcodebuild \
 xcodebuild \
   -project "03_工程/ios/App/App.xcodeproj" \
   -scheme "App" \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro,OS=27.0' \
   CODE_SIGNING_ALLOWED=NO \
   test
 ```
 
 ## 当前验证边界
 
-2026-08-11 在实现提交 `137005de23aa8a258bdaae237e9946f50dd0f38a` 上运行 85 项 XCTest，通过 85、失败 0；目录治理后的 `5b5ae6b833a3d3bb04d73fbefe252780e7d50a01` 也完成同一工程路径下的 85/85 XCTest。固定功能验收候选 `35c4ca0208f98aab5be9e99c3b5cac5f8007377e` 此后只调整文档，仍须由独立验收实际复跑。固定起点的 69 项及历史 86/100 项结果只对应各自旧测试集合。自动化结果不替代：
+2026-10-09 已对本次公开的业务源码执行本地双端回归：
 
-- 真机完整闭环；
-- VoiceOver 真实语音导航；
-- 最大辅助字号；
-- 中文输入与权限；
-- iOS 17–25 材质降级；
-- 文件提供器和最终分享投递；
-- 大附件备份恢复与失败回滚。
+- 原生：iOS 27.0 模拟器下，93 项单元测试和 5 条 UI 流程通过；另完成 iPhone 13 mini 最大辅助字号检查。
+- Web：26 项单元测试和 45 个业务、边界与故障检查通过。
+- 以上为开发验证，不代表独立验收、V0.4 正式批准或全部运行警告消失。UI 测试使用专用测试宿主；上述 Xcode 命令运行仓库自带的 93 项单元测试。
+
+真机录音、VoiceOver、旧版 iOS、原生系统文件实际保存后恢复的完整 UI 链及最终分享投递仍未验证。AVAudioSession 主线程调用警告仍需音频专项核验。视觉与动效手感继续按现役合同由用户确认。
+
+公开发布内容与验证说明见 [公开发布说明](03_工程/公开发布说明.md)。既有历史证据只证明各自对应的旧批次，不自动外推至本次代码。
 
 ## V0.4 工作方式
 

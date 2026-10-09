@@ -1,0 +1,13 @@
+:root {
+  --blue: #174bff;
+  --ink: #07102e;
+  --white: #f6f7ff;
+  --signal: #b9ff43;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, a { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.sr-only { position: absolute !important; overflow: hidden !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; border: 0 !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; }
+.project-description { max-width: 720px; margin: 0 auto; padding: 48px 24px; color: var(--ink); line-height: 1.7; }

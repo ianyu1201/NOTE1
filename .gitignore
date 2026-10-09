@@ -9,3 +9,11 @@ xcuserdata/
 
 # 本机历史素材与清理候选，不进入正式版本
 可删除文件/
+
+# 本机配置、签名私钥和测试构建产物
+.env
+.env.*
+*.p12
+*.p8
+*.mobileprovision
+*.xcresult/
