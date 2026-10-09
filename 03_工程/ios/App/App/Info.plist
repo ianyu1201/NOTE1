@@ -51,6 +51,25 @@
 				<string>application/vnd.note1.backup+json</string>
 			</dict>
 		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>NOTE1 本机备份</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.yusiyuan.note1.v02-backup</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>note1backup</string>
+				</array>
+				<key>public.mime-type</key>
+				<string>application/vnd.note1.backup+json</string>
+			</dict>
+		</dict>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

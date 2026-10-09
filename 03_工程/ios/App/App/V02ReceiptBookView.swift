@@ -17,6 +17,7 @@ struct V02ReceiptBookView: View {
     @State private var templateOverrides: [UUID: V02ReceiptTemplate] = [:]
     @State private var latestExtractionTranslation: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var selectedReceipts: [V02Receipt] {
         store.state.receipts.filter { selectedIDs.contains($0.id) }
@@ -243,11 +244,23 @@ struct V02ReceiptBookView: View {
     }
 
     private var emptyBook: some View {
-        ContentUnavailableView(
-            "还没有构思小票",
-            systemImage: V04ReceiptSymbolPolicy.emptyStateSymbol,
-            description: Text("结束一轮构思并生成小票后，会在这里看到最新小票和全部索引。")
-        )
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                // Keep the decorative symbol fixed and the text readable at
+                // accessibility sizes, clear of the shell-owned composer.
+                EmptyStateView(
+                    systemName: V04ReceiptSymbolPolicy.emptyStateSymbol,
+                    title: "还没有构思小票",
+                    message: "结束一轮构思并生成小票后，会在这里看到最新小票和全部索引。"
+                )
+            } else {
+                ContentUnavailableView(
+                    "还没有构思小票",
+                    systemImage: V04ReceiptSymbolPolicy.emptyStateSymbol,
+                    description: Text("结束一轮构思并生成小票后，会在这里看到最新小票和全部索引。")
+                )
+            }
+        }
         .frame(maxWidth: .infinity, minHeight: 430)
         .accessibilityIdentifier("v02.receipt.empty")
     }
